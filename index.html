@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .rounded-card {
+            border-radius: 24px;
+        }
+        .search-bar {
+            border-radius: 50px;
+            transition: box-shadow 0.2s;
+        }
+        .search-bar:hover, .search-bar:focus {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+            outline: none;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+        .iframe-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+
+    <!-- Viewport for opening sites -->
+    <div id="iframeContainer" class="iframe-container">
+        <iframe id="siteView" class="w-full h-full border-none"></iframe>
+    </div>
+
+    <!-- Main Search Interface -->
+    <div id="mainUI" class="min-h-screen flex flex-col items-center justify-center p-4">
+        
+        <!-- Logo Area -->
+        <div class="mb-8 text-center">
+            <h1 class="text-7xl font-bold tracking-tighter">
+                <span class="text-blue-500">G</span><span class="text-red-500">a</span><span class="text-yellow-500">t</span><span class="text-blue-500">e</span><span class="text-green-500">w</span><span class="text-red-500">a</span><span class="text-yellow-500">y</span>
+            </h1>
+            <p class="text-gray-500 mt-2 italic">Private Information Discovery</p>
+        </div>
+
+        <!-- Search Input -->
+        <div class="w-full max-w-2xl">
+            <div class="relative flex items-center">
+                <input type="text" id="searchInput" placeholder="Search the gateway..." 
+                    class="w-full search-bar border border-gray-200 py-3 px-6 text-lg"
+                    onkeypress="handleKeyPress(event)">
+            </div>
+            
+            <div class="flex justify-center mt-8 gap-4">
+                <button onclick="performSearch()" class="bg-gray-50 border border-transparent hover:border-gray-300 px-6 py-2 rounded text-sm text-gray-700">Gateway Search</button>
+                <button onclick="luckySearch()" class="bg-gray-50 border border-transparent hover:border-gray-300 px-6 py-2 rounded text-sm text-gray-700">I'm Feeling Lucky</button>
+            </div>
+        </div>
+
+        <!-- Results Area -->
+        <div id="resultsArea" class="w-full max-w-2xl mt-10 hidden">
+            <p id="resultCount" class="text-sm text-gray-500 mb-4"></p>
+            <div id="resultsList" class="space-y-6">
+                <!-- Results injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- External Gatherer Script -->
+    <script src="https://xpdevs.github.io/gateway/crawl.js"></script>
+
+    <script>
+        // Check for search terms in the link upon arrival
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryParam = urlParams.get('q');
+            if (queryParam) {
+                document.getElementById('searchInput').value = queryParam;
+                performSearch();
+            }
+        };
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') performSearch();
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (!query) return;
+
+            const resultsArea = document.getElementById('resultsArea');
+            const resultsList = document.getElementById('resultsList');
+            const resultCount = document.getElementById('resultCount');
+
+            // Show searching state
+            resultsList.innerHTML = '<p class="text-gray-500">Searching the gateway...</p>';
+            prepareUI();
+
+            try {
+                // Call the function from your external script
+                // Expecting a function named 'startCrawl' or similar in crawl.js
+                const results = await gatewayCrawl(query);
+                displayResults(results);
+            } catch (err) {
+                resultsList.innerHTML = '<p class="text-red-500">Error connecting to the gatherer.</p>';
+            }
+        }
+
+        function prepareUI() {
+            const mainUI = document.getElementById('mainUI');
+            const resultsArea = document.getElementById('resultsArea');
+            mainUI.classList.remove('justify-center');
+            mainUI.classList.add('pt-12');
+            resultsArea.classList.remove('hidden');
+        }
+
+        function displayResults(results) {
+            const resultsList = document.getElementById('resultsList');
+            const resultCount = document.getElementById('resultCount');
+
+            resultsList.innerHTML = '';
+            resultCount.innerText = `Found ${results.length} relevant entries.`;
+
+            if (results.length === 0) {
+                resultsList.innerHTML = '<p class="text-gray-600">No matching information found.</p>';
+                return;
+            }
+
+            results.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'group';
+                div.innerHTML = `
+                    <p class="text-xs text-gray-500 mb-1">${item.url}</p>
+                    <h3 class="text-xl text-blue-700 group-hover:underline cursor-pointer font-medium" 
+                        onclick="openInGateway('${item.url}')">
+                        ${item.title}
+                    </h3>
+                    <p class="text-sm text-gray-700 leading-relaxed">${item.description}</p>
+                `;
+                resultsList.appendChild(div);
+            });
+        }
+
+        function luckySearch() {
+            performSearch(); // For the gatherer, we perform a standard search first
+        }
+
+        function openInGateway(url) {
+            const container = document.getElementById('iframeContainer');
+            const iframe = document.getElementById('siteView');
+            iframe.src = url;
+            container.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
