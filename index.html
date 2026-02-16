@@ -94,7 +94,9 @@
             const urlParams = new URLSearchParams(window.location.search);
             const queryParam = urlParams.get('q');
             if (queryParam) {
-                document.getElementById('searchInput').value = queryParam;
+                // Replace plus signs with spaces for the display
+                const cleanQuery = queryParam.replace(/\+/g, ' ');
+                document.getElementById('searchInput').value = cleanQuery;
                 performSearch();
             }
         };
@@ -116,12 +118,15 @@
             prepareUI();
 
             try {
-                // Call the function from your external script
-                // Expecting a function named 'startCrawl' or similar in crawl.js
-                const results = await gatewayCrawl(query);
-                displayResults(results);
+                // Call the function from your external script (crawl.js)
+                if (typeof gatewayCrawl === 'function') {
+                    const results = await gatewayCrawl(query);
+                    displayResults(results);
+                } else {
+                    resultsList.innerHTML = '<p class="text-red-500">The gatherer is still warming up. Please try again in a moment.</p>';
+                }
             } catch (err) {
-                resultsList.innerHTML = '<p class="text-red-500">Error connecting to the gatherer.</p>';
+                resultsList.innerHTML = '<p class="text-red-500">Could not connect to the gatherer.</p>';
             }
         }
 
@@ -161,7 +166,7 @@
         }
 
         function luckySearch() {
-            performSearch(); // For the gatherer, we perform a standard search first
+            performSearch();
         }
 
         function openInGateway(url) {
