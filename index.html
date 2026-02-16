@@ -91,13 +91,26 @@
     <script>
         // Check for search terms in the link upon arrival
         window.onload = function() {
-            // We look at the very end of the address for the search words
-            const urlParams = new URLSearchParams(window.location.search);
-            const queryParam = urlParams.get('q');
-            if (queryParam) {
-                const cleanQuery = queryParam.replace(/\+/g, ' ');
-                document.getElementById('searchInput').value = cleanQuery;
-                performSearch();
+            // Updated to handle the specific format you requested
+            const searchPart = window.location.search;
+            
+            // Check if the address ends with ?= followed by words
+            if (searchPart.startsWith('?=')) {
+                const queryFromUrl = searchPart.substring(2);
+                if (queryFromUrl) {
+                    const cleanQuery = decodeURIComponent(queryFromUrl.replace(/\+/g, ' '));
+                    document.getElementById('searchInput').value = cleanQuery;
+                    performSearch();
+                }
+            } else {
+                // Keep standard check as a fallback
+                const urlParams = new URLSearchParams(searchPart);
+                const queryParam = urlParams.get('q');
+                if (queryParam) {
+                    const cleanQuery = queryParam.replace(/\+/g, ' ');
+                    document.getElementById('searchInput').value = cleanQuery;
+                    performSearch();
+                }
             }
         };
 
