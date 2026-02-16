@@ -298,7 +298,7 @@
                                 <p class="text-gray-700 leading-relaxed">${topMatch.fullSnippet.split('. ').slice(0, 2).join('. ') + '.'}</p>
                                 <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
                                     <span class="text-xs text-gray-400 uppercase font-bold">Source:</span>
-                                    <a href="${topMatch.url}" target="_blank" class="text-sm text-blue-600 hover:underline">${topMatch.title}</a>
+                                    <a href="${topMatch.url}" target="_self" class="text-sm text-blue-600 hover:underline">${topMatch.title}</a>
                                 </div>
                             </div>
                         `;
@@ -336,7 +336,7 @@
                         <div class="text-sm result-url truncate mb-0.5">
                             ${item.url}
                         </div>
-                        <a href="${item.url}" target="_blank" class="text-xl result-link mb-1 block font-normal">
+                        <a href="${item.url}" target="_self" class="text-xl result-link mb-1 block font-normal">
                             ${item.title}
                         </a>
                         <p class="text-sm result-desc">${item.description}</p>
@@ -369,7 +369,7 @@
             const val = document.getElementById('mainSearchInput').value;
             if(!val) return;
             performSearch('mainSearchInput').then(() => {
-                if(allResults.length > 0) window.open(allResults[0].url, '_blank');
+                if(allResults.length > 0) window.open(allResults[0].url, '_self');
             });
         }
     </script>
