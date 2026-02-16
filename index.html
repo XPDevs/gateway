@@ -7,185 +7,370 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: background-color 0.3s, color 0.3s;
+            font-family: arial, sans-serif;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
         }
-        .rounded-card {
-            border-radius: 24px;
-        }
-        .search-bar {
-            border-radius: 50px;
-            transition: box-shadow 0.2s;
-        }
-        .search-bar:hover, .search-bar:focus {
+        .search-bar-shadow {
             box-shadow: 0 1px 6px rgba(32,33,36,0.28);
-            outline: none;
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        .search-bar-hover:hover {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+            border-color: rgba(223,225,229,0);
         }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .result-link {
+            color: #1a0dab;
+            text-decoration: none;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 10px;
+        .result-link:hover {
+            text-decoration: underline;
         }
-        .iframe-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 100;
+        .result-url {
+            color: #006621;
+            font-style: normal;
+        }
+        .result-desc {
+            color: #4d5156;
+            line-height: 1.58;
+        }
+        .logo-main { font-size: 90px; }
+        .logo-results { font-size: 30px; }
+        
+        .btn-google {
+            background-color: #f8f9fa;
+            border: 1px solid #f8f9fa;
+            border-radius: 4px;
+            color: #3c4043;
+            font-family: arial,sans-serif;
+            font-size: 14px;
+            margin: 11px 4px;
+            padding: 0 16px;
+            line-height: 27px;
+            height: 36px;
+            min-width: 54px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn-google:hover {
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            color: #202124;
+        }
+        .page-num {
+            cursor: pointer;
+            color: #4285f4;
+        }
+        .page-num.active {
+            color: #000;
+            cursor: default;
+        }
+        .loading-ring {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(66, 133, 244, 0.3);
+            border-radius: 50%;
+            border-top-color: #4285f4;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .answer-box {
+            border: 1px solid #dfe1e5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            background: #fff;
         }
     </style>
 </head>
-<body class="bg-white text-gray-900">
+<body class="text-gray-900">
 
-    <!-- Viewport for opening sites -->
-    <div id="iframeContainer" class="iframe-container">
-        <iframe id="siteView" class="w-full h-full border-none"></iframe>
-    </div>
-
-    <!-- Main Search Interface -->
-    <div id="mainUI" class="min-h-screen flex flex-col items-center justify-center p-4">
-        
-        <!-- Logo Area -->
-        <div class="mb-8 text-center">
-            <h1 class="text-7xl font-bold tracking-tighter">
-                <span class="text-blue-500">G</span><span class="text-red-500">a</span><span class="text-yellow-500">t</span><span class="text-blue-500">e</span><span class="text-green-500">w</span><span class="text-red-500">a</span><span class="text-yellow-500">y</span>
-            </h1>
-            <p class="text-gray-500 mt-2 italic">Private Information Discovery</p>
+    <div id="homeUI" class="min-h-screen flex flex-col">
+        <div class="flex justify-end p-4 text-sm gap-4 items-center">
+            <span class="hover:underline cursor-pointer">About</span>
+            <span class="hover:underline cursor-pointer">Store</span>
+            <button class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 transition">Sign in</button>
         </div>
 
-        <!-- Search Input -->
-        <div class="w-full max-w-2xl">
-            <div class="relative flex items-center">
-                <input type="text" id="searchInput" placeholder="Search the gateway..." 
-                    class="w-full search-bar border border-gray-200 py-3 px-6 text-lg"
-                    onkeypress="handleKeyPress(event)">
+        <div class="flex-grow flex flex-col items-center justify-center -mt-20">
+            <div class="mb-8 select-none">
+                <h1 class="logo-main font-bold tracking-tighter">
+                    <span class="text-blue-500">G</span><span class="text-red-500">a</span><span class="text-yellow-500">t</span><span class="text-blue-500">e</span><span class="text-green-500">w</span><span class="text-red-500">a</span><span class="text-yellow-500">y</span>
+                </h1>
             </div>
+
+            <div class="w-full max-w-xl px-4">
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="mainSearchInput" 
+                        placeholder="Ask a question or search..."
+                        class="w-full border border-gray-200 py-3 pl-12 pr-4 rounded-full text-md search-bar-hover focus:outline-none focus:shadow-md transition"
+                        onkeypress="handleKeyPress(event, 'mainSearchInput')">
+                </div>
+                
+                <div class="flex justify-center mt-6">
+                    <button onclick="performSearch('mainSearchInput')" class="btn-google">Gateway Search</button>
+                    <button onclick="luckySearch()" class="btn-google">I'm Feeling Lucky</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-100 text-gray-600 text-sm mt-auto">
+            <div class="px-8 py-3 border-b border-gray-300">United Kingdom</div>
+            <div class="px-8 py-3 flex flex-wrap gap-6 justify-center md:justify-start">
+                <span class="hover:underline cursor-pointer">Advertising</span>
+                <span class="hover:underline cursor-pointer">Business</span>
+                <span class="hover:underline cursor-pointer">How Search works</span>
+                <div class="md:ml-auto flex gap-6">
+                    <span class="hover:underline cursor-pointer">Privacy</span>
+                    <span class="hover:underline cursor-pointer">Terms</span>
+                    <span class="hover:underline cursor-pointer">Settings</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultsUI" class="hidden min-h-screen flex flex-col">
+        <div class="border-b border-gray-200 pt-6 pb-0 sticky top-0 bg-white z-50">
+            <div class="flex items-center px-4 md:px-8 gap-8 max-w-7xl">
+                <h1 class="logo-results font-bold tracking-tighter select-none cursor-pointer" onclick="location.reload()">
+                    <span class="text-blue-500">G</span><span class="text-red-500">a</span><span class="text-yellow-500">t</span><span class="text-blue-500">e</span><span class="text-green-500">w</span><span class="text-red-500">a</span><span class="text-yellow-500">y</span>
+                </h1>
+                
+                <div class="flex-grow max-w-2xl relative">
+                    <input type="text" id="resultsSearchInput" 
+                        class="w-full border border-gray-200 py-2.5 pl-6 pr-12 rounded-full text-md search-bar-shadow focus:outline-none"
+                        onkeypress="handleKeyPress(event, 'resultsSearchInput')">
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center gap-3">
+                        <svg class="h-5 w-5 text-blue-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" onclick="performSearch('resultsSearchInput')"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex px-4 md:px-44 mt-4 text-sm text-gray-600 gap-6">
+                <div class="pb-3 border-b-4 border-blue-500 text-blue-600 font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"></path></svg>
+                    All
+                </div>
+                <div class="pb-3 cursor-pointer">Images</div>
+                <div class="pb-3 cursor-pointer">News</div>
+                <div class="pb-3 cursor-pointer">Videos</div>
+                <div class="pb-3 cursor-pointer">Maps</div>
+            </div>
+        </div>
+
+        <div class="flex-grow px-4 md:px-44 py-4 max-w-4xl">
+            <p id="resultStats" class="text-sm text-gray-500 mb-6"></p>
+            <div id="answerArea"></div>
+            <div id="resultsList" class="space-y-8"></div>
             
-            <div class="flex justify-center mt-8 gap-4">
-                <button onclick="performSearch()" class="bg-gray-50 border border-transparent hover:border-gray-300 px-6 py-2 rounded text-sm text-gray-700">Gateway Search</button>
-                <button onclick="luckySearch()" class="bg-gray-50 border border-transparent hover:border-gray-300 px-6 py-2 rounded text-sm text-gray-700">I'm Feeling Lucky</button>
-            </div>
-        </div>
-
-        <!-- Results Area -->
-        <div id="resultsArea" class="w-full max-w-2xl mt-10 hidden">
-            <p id="resultCount" class="text-sm text-gray-500 mb-4"></p>
-            <div id="resultsList" class="space-y-6">
-                <!-- Results injected here -->
-            </div>
+            <div id="pagination" class="mt-12 mb-12 flex justify-center items-center gap-4 text-sm font-medium"></div>
         </div>
     </div>
-
-    <!-- External Gatherer Script -->
-    <script src="https://xpdevs.github.io/gateway/crawl.js"></script>
 
     <script>
-        // Check for search terms in the link upon arrival
-        window.onload = function() {
-            // Updated to handle the specific format you requested
-            const searchPart = window.location.search;
-            
-            // Check if the address ends with ?= followed by words
-            if (searchPart.startsWith('?=')) {
-                const queryFromUrl = searchPart.substring(2);
-                if (queryFromUrl) {
-                    const cleanQuery = decodeURIComponent(queryFromUrl.replace(/\+/g, ' '));
-                    document.getElementById('searchInput').value = cleanQuery;
-                    performSearch();
-                }
-            } else {
-                // Keep standard check as a fallback
-                const urlParams = new URLSearchParams(searchPart);
-                const queryParam = urlParams.get('q');
-                if (queryParam) {
-                    const cleanQuery = queryParam.replace(/\+/g, ' ');
-                    document.getElementById('searchInput').value = cleanQuery;
-                    performSearch();
-                }
-            }
-        };
+        let allResults = [];
+        let currentPage = 1;
+        const resultsPerPage = 10;
+        const GLOBAL_SEARCH_LIMIT = 500000000000;
 
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') performSearch();
+        function refineQuestion(q) {
+            let terms = q.toLowerCase()
+                .replace(/[?.,!]/g, '')
+                .split(' ')
+                .filter(word => !['what', 'is', 'the', 'how', 'do', 'i', 'who', 'where', 'can', 'you', 'tell', 'me', 'about', 'a', 'an'].includes(word));
+            return terms.join(' ') || q;
         }
 
-        async function performSearch() {
-            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        async function gatewayCrawl(term) {
+            if (!term) return [];
+            
+            const searchKeyword = refineQuestion(term);
+            const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(searchKeyword)}&srlimit=50`;
+            
+            try {
+                const searchRes = await fetch(searchUrl);
+                const searchData = await searchRes.json();
+                if (!searchData.query || !searchData.query.search) return [];
+
+                const pageTitles = searchData.query.search.map(s => s.title);
+                const results = [];
+
+                const detailsUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=info|extlinks|extracts&exintro&explaintext&titles=${encodeURIComponent(pageTitles.join('|'))}&inprop=url&eloffset=0&ellimit=500`;
+                
+                const detailsRes = await fetch(detailsUrl);
+                const detailsData = await detailsRes.json();
+                const pages = detailsData.query.pages;
+
+                for (const id in pages) {
+                    const page = pages[id];
+                    
+                    if (page.extlinks) {
+                        for (let linkObj of page.extlinks) {
+                            const link = linkObj['*'];
+                            if (!link.includes('wikipedia.org') && !link.includes('wikimedia') && !link.includes('doi.org')) {
+                                try {
+                                    const urlObj = new URL(link);
+                                    if (urlObj.pathname === '/' || urlObj.pathname === '') {
+                                        results.unshift({
+                                            title: `${page.title}`,
+                                            url: link,
+                                            description: page.extract ? page.extract.substring(0, 160) + "..." : `Official website for ${page.title}.`,
+                                            isDirect: true,
+                                            fullSnippet: page.extract
+                                        });
+                                        break;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
+
+                    results.push({
+                        title: page.title,
+                        url: page.fullurl,
+                        description: page.extract ? page.extract.substring(0, 180) + "..." : "Informational entry.",
+                        isDirect: false,
+                        fullSnippet: page.extract
+                    });
+                }
+
+                const uniqueResults = [];
+                const seen = new Set();
+                results.forEach(item => {
+                    if (!seen.has(item.url)) {
+                        seen.add(item.url);
+                        uniqueResults.push(item);
+                    }
+                });
+
+                return uniqueResults;
+
+            } catch (err) {
+                return [];
+            }
+        }
+
+        function handleKeyPress(e, inputId) {
+            if (e.key === 'Enter') performSearch(inputId);
+        }
+
+        async function performSearch(inputId) {
+            const query = document.getElementById(inputId).value.trim();
             if (!query) return;
 
-            const resultsArea = document.getElementById('resultsArea');
-            const resultsList = document.getElementById('resultsList');
-            const resultCount = document.getElementById('resultCount');
+            document.getElementById('mainSearchInput').value = query;
+            document.getElementById('resultsSearchInput').value = query;
 
-            // Show searching state
-            resultsList.innerHTML = '<p class="text-gray-500">Searching the gateway...</p>';
-            prepareUI();
+            const homeUI = document.getElementById('homeUI');
+            const resultsUI = document.getElementById('resultsUI');
+            const resultsList = document.getElementById('resultsList');
+            const answerArea = document.getElementById('answerArea');
+
+            homeUI.classList.add('hidden');
+            resultsUI.classList.remove('hidden');
+            answerArea.innerHTML = '';
+            resultsList.innerHTML = `
+                <div class="flex flex-col items-center py-10 gap-4">
+                    <div class="loading-ring"></div>
+                    <p class="text-gray-500">Scanning resources...</p>
+                </div>
+            `;
+            document.getElementById('pagination').innerHTML = '';
 
             try {
-                if (typeof gatewayCrawl === 'function') {
-                    const results = await gatewayCrawl(query);
-                    displayResults(results);
-                } else {
-                    resultsList.innerHTML = '<p class="text-red-500">The gatherer is still warming up. Please try again in a moment.</p>';
+                allResults = await gatewayCrawl(query);
+                currentPage = 1;
+                
+                if (query.includes('?') || query.split(' ').length > 2) {
+                    const topMatch = allResults.find(r => r.fullSnippet && r.fullSnippet.length > 50);
+                    if (topMatch) {
+                        answerArea.innerHTML = `
+                            <div class="answer-box shadow-sm">
+                                <h2 class="text-xl mb-2 font-medium text-gray-800">Quick Answer</h2>
+                                <p class="text-gray-700 leading-relaxed">${topMatch.fullSnippet.split('. ').slice(0, 2).join('. ') + '.'}</p>
+                                <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
+                                    <span class="text-xs text-gray-400 uppercase font-bold">Source:</span>
+                                    <a href="${topMatch.url}" target="_blank" class="text-sm text-blue-600 hover:underline">${topMatch.title}</a>
+                                </div>
+                            </div>
+                        `;
+                    }
                 }
+
+                renderPage();
             } catch (err) {
-                resultsList.innerHTML = '<p class="text-red-500">Could not connect to the gatherer.</p>';
+                resultsList.innerHTML = '<p class="text-red-500">Connection error.</p>';
             }
         }
 
-        function prepareUI() {
-            const mainUI = document.getElementById('mainUI');
-            const resultsArea = document.getElementById('resultsArea');
-            mainUI.classList.remove('justify-center');
-            mainUI.classList.add('pt-12');
-            resultsArea.classList.remove('hidden');
-        }
-
-        function displayResults(results) {
+        function renderPage() {
             const resultsList = document.getElementById('resultsList');
-            const resultCount = document.getElementById('resultCount');
-
+            const resultStats = document.getElementById('resultStats');
+            
             resultsList.innerHTML = '';
-            resultCount.innerText = `Found ${results.length} relevant entries.`;
+            const start = (currentPage - 1) * resultsPerPage;
+            const end = start + resultsPerPage;
+            const pageItems = allResults.slice(start, end);
 
-            if (results.length === 0) {
-                resultsList.innerHTML = '<p class="text-gray-600">No matching information found.</p>';
+            const totalDisplayCount = Math.min(allResults.length, GLOBAL_SEARCH_LIMIT);
+            resultStats.innerText = `Approximately ${totalDisplayCount} results indexed for this query`;
+
+            if (allResults.length === 0) {
+                resultsList.innerHTML = '<p class="text-gray-600">Nothing found.</p>';
                 return;
             }
 
-            results.forEach(item => {
+            pageItems.forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'group';
+                div.className = "max-w-2xl";
                 div.innerHTML = `
-                    <p class="text-xs text-gray-500 mb-1">${item.url}</p>
-                    <h3 class="text-xl text-blue-700 group-hover:underline cursor-pointer font-medium" 
-                        onclick="openInGateway('${item.url}')">
-                        ${item.title}
-                    </h3>
-                    <p class="text-sm text-gray-700 leading-relaxed">${item.description}</p>
+                    <div class="group">
+                        <div class="text-sm result-url truncate mb-0.5">
+                            ${item.url}
+                        </div>
+                        <a href="${item.url}" target="_blank" class="text-xl result-link mb-1 block font-normal">
+                            ${item.title}
+                        </a>
+                        <p class="text-sm result-desc">${item.description}</p>
+                    </div>
                 `;
                 resultsList.appendChild(div);
             });
+
+            renderPagination();
+            window.scrollTo(0, 0);
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(allResults.length / resultsPerPage);
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            for (let i = 1; i <= totalPages; i++) {
+                const num = document.createElement('span');
+                num.className = `page-num px-2 ${i === currentPage ? 'active font-bold' : 'hover:underline text-blue-600'}`;
+                num.innerText = i;
+                if (i !== currentPage) num.onclick = () => { currentPage = i; renderPage(); };
+                container.appendChild(num);
+            }
         }
 
         function luckySearch() {
-            performSearch();
-        }
-
-        function openInGateway(url) {
-            const container = document.getElementById('iframeContainer');
-            const iframe = document.getElementById('siteView');
-            iframe.src = url;
-            container.style.display = 'block';
+            const val = document.getElementById('mainSearchInput').value;
+            if(!val) return;
+            performSearch('mainSearchInput').then(() => {
+                if(allResults.length > 0) window.open(allResults[0].url, '_blank');
+            });
         }
     </script>
 </body>
