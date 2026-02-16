@@ -91,10 +91,10 @@
     <script>
         // Check for search terms in the link upon arrival
         window.onload = function() {
+            // We look at the very end of the address for the search words
             const urlParams = new URLSearchParams(window.location.search);
             const queryParam = urlParams.get('q');
             if (queryParam) {
-                // Replace plus signs with spaces for the display
                 const cleanQuery = queryParam.replace(/\+/g, ' ');
                 document.getElementById('searchInput').value = cleanQuery;
                 performSearch();
@@ -118,7 +118,6 @@
             prepareUI();
 
             try {
-                // Call the function from your external script (crawl.js)
                 if (typeof gatewayCrawl === 'function') {
                     const results = await gatewayCrawl(query);
                     displayResults(results);
