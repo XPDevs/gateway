@@ -1,6 +1,7 @@
 /**
- * Gateway — Wikipedia Search Engine
+ * Gateway — Search Engine
  * XPDevs — https://xpdevs.github.io
+ * Aggregates Wikipedia pages + real website links from references
  */
 (function() {
     'use strict';
@@ -48,29 +49,31 @@
     async function gatewayCrawl(term) {
         if (!term) return [];
 
-        const key = 'w:' + term;
+        const key = 'full:' + term;
         const cached = _cached(key);
         if (cached) return cached;
 
         const results = [];
         try {
             const kw = refineQuery(term) || term;
+
             const sr = await _fetch(
                 `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=30&srinfo=suggestion`
             );
             if (!sr.query?.search?.length) return results;
 
             const suggestion = sr.query?.searchinfo?.suggestion || null;
-            const titles = sr.query.search.slice(0, 20).map(s => s.title);
+            const titles = sr.query.search.slice(0, 15).map(s => s.title);
 
             const dt = await _fetch(
-                `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages&exintro&explaintext&exsentences=3&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200`
+                `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=3&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=10`
             );
 
             for (const id in dt.query.pages) {
                 const p = dt.query.pages[id];
                 if (p.missing) continue;
                 const ext = p.extract || '';
+
                 results.push({
                     title: p.title,
                     url: p.fullurl,
@@ -80,24 +83,81 @@
                     thumbnail: p.thumbnail?.source || null,
                     source: 'wikipedia',
                     sourceLabel: 'Wikipedia',
+                    resultType: 'wiki',
                     score: 10,
+                    domain: 'en.wikipedia.org',
                     suggestion
                 });
+
+                if (p.extlinks) {
+                    const seenDomains = new Set();
+                    for (const linkObj of p.extlinks) {
+                        const link = linkObj['*'];
+                        try {
+                            const urlObj = new URL(link);
+                            const domain = urlObj.hostname.replace(/^www\./, '');
+                            if (domain.includes('wikipedia.org') || domain.includes('wikimedia') ||
+                                domain.includes('doi.org') || domain.includes('creativecommons') ||
+                                domain.includes('mediawiki') || seenDomains.has(domain) ||
+                                urlObj.pathname === '/' || urlObj.pathname === '') continue;
+                            seenDomains.add(domain);
+                            results.push({
+                                title: domain,
+                                url: link,
+                                description: ext
+                                    ? `Referenced by "${p.title}". ${ext.substring(0, 160)}`
+                                    : `External reference from Wikipedia article "${p.title}".`,
+                                fullSnippet: ext || '',
+                                extract: ext || '',
+                                thumbnail: null,
+                                source: 'web',
+                                sourceLabel: domain,
+                                resultType: 'web',
+                                score: 8,
+                                domain,
+                                refersTo: p.title,
+                                suggestion: null
+                            });
+                        } catch(_) {}
+                        if (seenDomains.size >= 5) break;
+                    }
+                }
             }
 
-            results.sort((a, b) => {
-                const aTitle = a.title.toLowerCase();
-                const bTitle = b.title.toLowerCase();
-                const ql = term.toLowerCase();
-                const aExact = aTitle === ql ? 100 : aTitle.startsWith(ql) ? 50 : 0;
-                const bExact = bTitle === ql ? 100 : bTitle.startsWith(ql) ? 50 : 0;
-                return (b.score + bExact) - (a.score + aExact);
-            });
+            const ql = term.toLowerCase();
+            for (const r of results) {
+                const terms = ql.split(/\s+/).filter(Boolean);
+                let s = r.score;
+                const text = (r.title + ' ' + (r.description || '')).toLowerCase();
+                for (const t of terms) {
+                    try {
+                        const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                        s += ((text.match(re) || []).length) * 2;
+                    } catch(_) {}
+                }
+                if (r.title.toLowerCase() === ql) s += 500;
+                else if (r.title.toLowerCase().startsWith(ql)) s += 200;
+                if (r.domain && r.domain.includes(ql)) s += 50;
+                r.score = s;
+            }
 
-        } catch (_) {}
+            results.sort((a, b) => b.score - a.score);
 
-        _store(key, results);
-        return results;
+            const seen = new Set();
+            const deduped = [];
+            for (const r of results) {
+                const key = r.url;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                deduped.push(r);
+            }
+
+            _store(key, deduped);
+            return deduped;
+
+        } catch (_) {
+            return [];
+        }
     }
 
     async function getSuggestions(term) {

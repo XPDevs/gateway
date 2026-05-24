@@ -4,661 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gateway</title>
-    <style>
-        *, *::before, *::after { box-sizing: border-box; }
-
-        :root {
-            --bg: #ffffff;
-            --text: #1f1f1f;
-            --text-secondary: #70757a;
-            --content-bg: #ffffff;
-            --input-bg: #f0f4f9;
-            --border: #dee2e6;
-            --primary: #1a73e8;
-            --active-item: #e2e7ed;
-            --link: #1a0dab;
-            --url-color: #006621;
-            --result-desc: #4d5156;
-            --card-bg: #ffffff;
-            --footer-bg: #f2f2f2;
-            --footer-border: #dadce0;
-            --badge-wiki: #1a73e8;
-        }
-        body.dark {
-            --bg: #131314;
-            --text: #e3e3e3;
-            --text-secondary: #9aa0a6;
-            --content-bg: #131314;
-            --input-bg: #1e1f20;
-            --border: #444746;
-            --primary: #1a73e8;
-            --active-item: #333537;
-            --link: #8ab4f8;
-            --url-color: #bdc1c6;
-            --result-desc: #bdc1c6;
-            --card-bg: #1e1f20;
-            --footer-bg: #171717;
-            --footer-border: #3c4043;
-            --badge-wiki: #8ab4f8;
-        }
-
-        body {
-            font-family: "Inter", "Segoe UI", Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: background .2s ease, color .2s;
-        }
-
-        a { color: var(--link); text-decoration: none; }
-        a:hover { text-decoration: underline; }
-
-        /* ---- Top Nav ---- */
-        .top-nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 20px;
-            font-size: 13px;
-            flex-shrink: 0;
-        }
-        .top-nav-left, .top-nav-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .top-nav a {
-            color: var(--text);
-            opacity: 0.85;
-        }
-        .top-nav a:hover {
-            opacity: 1;
-            text-decoration: underline;
-        }
-        .sign-in-btn {
-            background: var(--primary);
-            color: #fff !important;
-            padding: 8px 24px;
-            border-radius: 4px;
-            font-weight: 500;
-            font-size: 13px;
-            border: none;
-            cursor: pointer;
-            opacity: 1 !important;
-        }
-        .sign-in-btn:hover { opacity: 0.9 !important; text-decoration: none !important; }
-
-        .icon-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 6px;
-            border-radius: 50%;
-            color: var(--text);
-            opacity: 0.7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background .2s ease, opacity .2s;
-        }
-        .icon-btn:hover {
-            background: rgba(128,128,128,0.1);
-            opacity: 1;
-        }
-
-        /* ---- Home Page ---- */
-        #homeUI {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
-        .home-center {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 0 16px;
-            margin-top: -80px;
-        }
-        .home-logo {
-            font-size: 88px;
-            font-weight: 700;
-            letter-spacing: -0.04em;
-            margin-bottom: 28px;
-            user-select: none;
-            line-height: 1;
-        }
-        .home-logo span:nth-child(1) { color: #4285f4; }
-        .home-logo span:nth-child(2) { color: #ea4335; }
-        .home-logo span:nth-child(3) { color: #fbbc05; }
-        .home-logo span:nth-child(4) { color: #4285f4; }
-        .home-logo span:nth-child(5) { color: #34a853; }
-        .home-logo span:nth-child(6) { color: #ea4335; }
-        .home-logo span:nth-child(7) { color: #fbbc05; }
-
-        /* ---- Search Bar ---- */
-        .search-section {
-            width: 100%;
-            max-width: 584px;
-            margin: 0 auto;
-        }
-        .search-bar-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 0 16px;
-            transition: box-shadow .2s, border-color .2s;
-            box-shadow: none;
-        }
-        .search-bar-wrapper:hover,
-        .search-bar-wrapper:focus-within {
-            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
-            border-color: rgba(223,225,229,0);
-        }
-        .search-bar-wrapper .search-icon {
-            flex-shrink: 0;
-            color: #9aa0a6;
-            display: flex;
-            align-items: center;
-            margin-right: 8px;
-        }
-        .search-bar-wrapper input {
-            flex: 1;
-            border: none;
-            outline: none;
-            background: transparent;
-            font-size: 16px;
-            padding: 12px 0;
-            color: var(--text);
-            font-family: inherit;
-            min-width: 0;
-        }
-        .search-bar-wrapper input::placeholder {
-            color: #9aa0a6;
-        }
-        .search-bar-wrapper .clear-btn {
-            display: none;
-            flex-shrink: 0;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            color: var(--text-secondary);
-            border-radius: 50%;
-        }
-        .search-bar-wrapper .clear-btn.visible { display: flex; }
-        .search-bar-wrapper .clear-btn:hover { background: var(--active-item); }
-
-        /* Autocomplete */
-        .search-bar-wrapper.dd-open {
-            border-radius: 24px 24px 0 0 !important;
-            border-bottom-color: transparent;
-        }
-        .autocomplete-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-top: none;
-            border-radius: 0 0 24px 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            z-index: 1000;
-            max-height: 360px;
-            overflow-y: auto;
-            display: none;
-        }
-        .autocomplete-dropdown.show { display: block; }
-        .autocomplete-item {
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 14px;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: background .1s;
-        }
-        .autocomplete-item:hover,
-        .autocomplete-item.highlighted {
-            background: var(--active-item);
-        }
-        .autocomplete-item .autocomplete-icon {
-            color: #9aa0a6;
-            flex-shrink: 0;
-        }
-        .autocomplete-item .match {
-            font-weight: 600;
-        }
-
-        /* ---- Search Buttons ---- */
-        .search-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 28px;
-            flex-wrap: wrap;
-        }
-        .search-btn {
-            background: var(--input-bg);
-            border: 1px solid transparent;
-            border-radius: 4px;
-            color: var(--text);
-            font-size: 14px;
-            padding: 0 16px;
-            height: 36px;
-            line-height: 36px;
-            text-align: center;
-            cursor: pointer;
-            user-select: none;
-            font-family: inherit;
-            transition: border-color .2s, box-shadow .2s;
-        }
-        .search-btn:hover {
-            border-color: var(--border);
-            box-shadow: 0 1px 1px rgba(0,0,0,0.08);
-        }
-
-        /* ---- Footer ---- */
-        .footer {
-            background: var(--footer-bg);
-            border-top: 1px solid var(--footer-border);
-            flex-shrink: 0;
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-        .footer-country {
-            padding: 12px 28px;
-            border-bottom: 1px solid var(--footer-border);
-            font-size: 15px;
-        }
-        .footer-links {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            padding: 12px 28px;
-            gap: 8px 16px;
-        }
-        .footer-links .links-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 20px;
-        }
-        .footer-links a {
-            color: var(--text-secondary);
-            white-space: nowrap;
-        }
-        .footer-links a:hover { text-decoration: underline; }
-        .footer-brand {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            opacity: 0.7;
-        }
-        .footer-brand img { width: 16px; height: 16px; border-radius: 3px; }
-
-        /* ---- Results Page ---- */
-        #resultsUI {
-            display: none;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
-        #resultsUI.visible { display: flex; }
-
-        .results-header {
-            position: sticky;
-            top: 0;
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
-            z-index: 1000;
-            flex-shrink: 0;
-        }
-        .results-top-bar {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            gap: 12px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .results-logo {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            cursor: pointer;
-            flex-shrink: 0;
-            user-select: none;
-            line-height: 1;
-            margin-right: 8px;
-        }
-        .results-logo span:nth-child(1) { color: #4285f4; }
-        .results-logo span:nth-child(2) { color: #ea4335; }
-        .results-logo span:nth-child(3) { color: #fbbc05; }
-        .results-logo span:nth-child(4) { color: #4285f4; }
-        .results-logo span:nth-child(5) { color: #34a853; }
-        .results-logo span:nth-child(6) { color: #ea4335; }
-        .results-logo span:nth-child(7) { color: #fbbc05; }
-
-        .results-search-area {
-            flex: 1;
-            max-width: 640px;
-            position: relative;
-        }
-        .results-search-area .search-bar-wrapper {
-            border-radius: 24px;
-            padding: 0 8px 0 16px;
-        }
-        .results-search-area .search-bar-wrapper input {
-            padding: 8px 0;
-            font-size: 16px;
-        }
-
-        .results-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        /* ---- Tabs ---- */
-        .results-tabs {
-            display: flex;
-            gap: 0;
-            padding: 0 20px;
-            margin: 0 auto;
-            max-width: 1200px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .results-tabs::-webkit-scrollbar { display: none; }
-        .tab-item {
-            padding: 8px 16px 12px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: color .2s, border-color .2s;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            user-select: none;
-        }
-        .tab-item svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
-        .tab-item:hover:not(.active) { color: var(--text); }
-        .tab-item.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        body.dark .tab-item.active {
-            color: #8ab4f8;
-            border-bottom-color: #8ab4f8;
-        }
-
-        /* ---- Results Content ---- */
-        .results-content {
-            flex: 1;
-            max-width: 652px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 12px 20px 60px;
-        }
-        .result-stats {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-        .did-you-mean {
-            font-size: 14px;
-            color: var(--text-secondary);
-            padding: 6px 0;
-        }
-        .did-you-mean a {
-            color: var(--link);
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .did-you-mean a:hover { text-decoration: underline; }
-
-        /* ---- Result Items ---- */
-        .result-item {
-            margin-bottom: 28px;
-        }
-        .result-item-url {
-            font-size: 14px;
-            color: var(--url-color);
-            font-style: normal;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 2px;
-            line-height: 1.5;
-        }
-        .result-item-url .badge {
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 1px 7px;
-            border-radius: 3px;
-            color: #fff;
-            background: var(--badge-wiki);
-            letter-spacing: 0.2px;
-        }
-        .result-item-url .badge.special {
-            background: #e37400;
-        }
-        .result-item-url a {
-            color: var(--url-color);
-            text-decoration: none;
-        }
-        .result-item-url a:hover { text-decoration: underline; }
-        .result-item-title {
-            font-size: 20px;
-            color: var(--link);
-            font-weight: 400;
-            line-height: 1.3;
-            margin-bottom: 3px;
-            display: block;
-        }
-        .result-item-title:hover { text-decoration: underline; }
-        .result-item-desc {
-            font-size: 14px;
-            color: var(--result-desc);
-            line-height: 1.58;
-            word-break: break-word;
-        }
-        .result-item-thumb {
-            float: right;
-            margin: 2px 0 6px 12px;
-            width: 100px;
-            height: 70px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        /* ---- Pagination ---- */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 4px;
-            margin-top: 40px;
-            user-select: none;
-        }
-        .page-link {
-            padding: 4px 10px;
-            cursor: pointer;
-            color: #4285f4;
-            font-size: 14px;
-            border-radius: 4px;
-            transition: background .15s;
-        }
-        .page-link:hover { background: var(--active-item); }
-        .page-link.active {
-            color: var(--text);
-            cursor: default;
-        }
-        .page-link.active:hover { background: transparent; }
-
-        /* ---- Answer Box ---- */
-        .answer-box {
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px 20px;
-            margin-bottom: 28px;
-            background: var(--card-bg);
-        }
-        .answer-box h2 {
-            font-size: 16px;
-            font-weight: 500;
-            margin: 0 0 6px;
-        }
-        .answer-box p {
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.58;
-            color: var(--result-desc);
-        }
-        .answer-box .answer-source {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-        }
-        .answer-box .answer-source .badge {
-            font-size: 10px;
-            font-weight: 600;
-            padding: 1px 6px;
-            border-radius: 3px;
-            color: #fff;
-            background: var(--badge-wiki);
-        }
-        .answer-box .answer-source a { font-size: 13px; }
-
-        /* ---- Spinner ---- */
-        .spinner {
-            width: 32px;
-            height: 32px;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: gw-spin .8s linear infinite;
-        }
-        @keyframes gw-spin { to { transform: rotate(360deg); } }
-
-        /* ---- Loading & Empty ---- */
-        .loading-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 48px 0;
-            gap: 16px;
-        }
-        .loading-state p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin: 0;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 48px 16px;
-            color: var(--text-secondary);
-        }
-        .empty-state svg {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 16px;
-            opacity: 0.4;
-        }
-        .empty-state p { margin: 4px 0; }
-        .empty-state .title { font-size: 16px; }
-        .empty-state .sub { font-size: 13px; }
-
-        /* ---- Image Grid (Images tab) ---- */
-        .image-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 16px;
-        }
-        .image-grid-item {
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            transition: box-shadow .2s;
-        }
-        .image-grid-item:hover { box-shadow: 0 1px 6px rgba(0,0,0,0.15); }
-        .image-grid-item img {
-            width: 100%;
-            height: 130px;
-            object-fit: cover;
-            display: block;
-        }
-        .image-grid-item .img-label {
-            padding: 8px;
-            font-size: 12px;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .image-grid-item a { color: inherit; }
-
-        /* ---- Responsive ---- */
-        @media (orientation: landscape) and (max-height: 500px) {
-            .home-center { margin-top: -40px; }
-            .home-logo { font-size: 48px; margin-bottom: 12px; }
-            .search-buttons { margin-top: 16px; }
-            .results-content { padding-top: 4px; }
-        }
-        @media (max-width: 768px) {
-            .home-logo { font-size: 56px; margin-bottom: 20px; }
-            .search-section { max-width: 100%; padding: 0 4px; }
-            .search-buttons { gap: 4px; }
-            .search-btn { font-size: 13px; padding: 0 12px; }
-            .top-nav { padding: 6px 12px; gap: 8px; font-size: 12px; }
-            .top-nav-left, .top-nav-right { gap: 8px; }
-            .sign-in-btn { padding: 6px 16px; font-size: 12px; }
-
-            .results-top-bar {
-                padding: 8px 12px;
-                gap: 8px;
-            }
-            .results-logo { font-size: 22px; }
-            .results-search-area .search-bar-wrapper input { font-size: 14px; }
-            .results-tabs { padding: 0 6px; }
-            .tab-item { padding: 6px 10px 10px; font-size: 12px; }
-            .results-content { padding: 8px 12px 40px; }
-            .result-item-title { font-size: 18px; }
-            .result-item-thumb { width: 80px; height: 56px; }
-            .footer-country { padding: 10px 16px; font-size: 13px; }
-            .footer-links { padding: 10px 16px; font-size: 13px; flex-direction: column; align-items: center; }
-            .footer-links .links-group { justify-content: center; }
-            .image-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
-            .image-grid-item img { height: 100px; }
-        }
-        @media (max-width: 480px) {
-            .home-logo { font-size: 40px; }
-            .search-bar-wrapper input { font-size: 14px; padding: 10px 0; }
-            .results-header .results-top-bar { flex-wrap: wrap; }
-            .results-logo { font-size: 18px; }
-            .results-search-area { order: 3; max-width: 100%; flex-basis: 100%; margin-top: 4px; }
-        }
-    </style>
+    <link rel="stylesheet" href="ui.css">
 </head>
 <body>
 
@@ -737,7 +83,7 @@
 <div id="resultsUI">
     <header class="results-header">
         <div class="results-top-bar">
-            <div class="results-logo" onclick="location.reload()">
+            <div class="results-logo" onclick="window.location.href=window.location.pathname">
                 <span>G</span><span>a</span><span>t</span><span>e</span><span>w</span><span>a</span><span>y</span>
             </div>
             <div class="results-search-area">
@@ -786,7 +132,9 @@
 
         <div id="resultsList"></div>
 
-        <div class="pagination" id="pagination"></div>
+        <div class="load-more-area" id="loadMoreArea" style="display:none">
+            <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreResults()">Show more results</button>
+        </div>
 
         <div class="empty-state" id="emptyState">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -826,7 +174,7 @@
     const $ = id => document.getElementById(id);
 
     let allResults = [];
-    const PER_PAGE = 10;
+    const PER_PAGE = 12;
     let activeTab = 'all';
     let spellSuggestion = null;
     let lastQuery = '';
@@ -958,31 +306,41 @@
         if (autoState.mainSearchInput) autoState.mainSearchInput.close();
         if (autoState.resultsSearchInput) autoState.resultsSearchInput.close();
 
-        $('homeUI').style.display = 'none';
+        $('homeUI').style.setProperty('display', 'none');
         $('resultsUI').classList.add('visible');
 
-        $('answerArea').innerHTML = '';
-        $('didYouMean').innerHTML = '';
-        $('emptyState').style.display = 'none';
-        $('resultsList').innerHTML = `
-            <div class="loading-state">
-                <div class="spinner"></div>
-                <p>Searching Wikipedia...</p>
-            </div>`;
-        $('resultStats').textContent = '';
-        $('pagination').innerHTML = '';
+        if ($('answerArea')) $('answerArea').innerHTML = '';
+        if ($('didYouMean')) $('didYouMean').innerHTML = '';
+        if ($('emptyState')) $('emptyState').style.display = 'none';
+        if ($('resultsList')) {
+            $('resultsList').innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Searching Wikipedia...</p>
+                </div>`;
+        }
+        if ($('resultStats')) $('resultStats').textContent = '';
+        if ($('loadMoreArea')) $('loadMoreArea').style.display = 'none';
 
         try {
             allResults = await window.gatewayCrawl(q);
 
-            const lq = q.toLowerCase();
+            const lq = q.toLowerCase().replace(/\s+/g, ' ');
+            const lqCompact = lq.replace(/\s+/g, '');
             const secrets = [];
-            if (lq === 'xpdevs' || lq.includes('xpdevs')) {
+            if (lq === 'xpdevs' || lq === 'xp devs' || lq.includes('xpdevs') || lq.includes('xp devs')) {
                 secrets.push({ title:'XPDevs', url:'https://xpdevs.github.io', description:'The official XPDevs website — design systems, tools, and projects.', fullSnippet:'XPDevs creates design systems and web tools.', extract:'XPDevs creates design systems and web tools.', thumbnail:'https://xpdevs.github.io/logo/XPDevs.png', source:'special', score:99999 });
                 secrets.push({ title:'XPDevs on GitHub', url:'https://github.com/XPDevs', description:'XPDevs GitHub organisation — open-source projects and repositories.', fullSnippet:'XPDevs GitHub organisation.', extract:'XPDevs GitHub organisation.', source:'special', score:99998 });
+                secrets.push({ title:'XPDevs Genesis-AI', url:'https://xpdevs.github.io/Genesis-AI', description:'Genesis-AI by XPDevs — AI-powered tools and platforms.', fullSnippet:'Genesis-AI by XPDevs.', extract:'Genesis-AI by XPDevs.', source:'special', score:99997 });
             }
-            if (lq === 'genesis-ai' || lq.includes('genesis-ai')) {
-                secrets.push({ title:'Genesis-AI', url:'https://genesis-ai.xyz', description:'Genesis-AI — AI-powered tools and platforms.', fullSnippet:'Genesis-AI offers AI-powered tools.', extract:'Genesis-AI offers AI-powered tools.', source:'special', score:99997 });
+            if (lq === 'genesis-ai' || lq === 'genesis ai' || lq === 'genesisai' || lq.includes('genesis-ai') || lq.includes('genesis ai')) {
+                secrets.push({ title:'Genesis-AI', url:'https://xpdevs.github.io/Genesis-AI', description:'Genesis-AI by XPDevs — AI-powered tools and platforms.', fullSnippet:'Genesis-AI offers AI-powered tools by XPDevs.', extract:'Genesis-AI offers AI-powered tools by XPDevs.', source:'special', score:99997 });
+            }
+            if (lq === 'james turner' || lq === 'jamesturner' || lq.includes('james') && lq.includes('turner') || lq === 'jt') {
+                secrets.push({ title:'James Turner — XPDevs', url:'https://xpdevs.github.io', description:'James Turner — creator of XPDevs and Genesis-AI.', fullSnippet:'James Turner creates design systems, tools, and AI platforms.', extract:'James Turner creates design systems, tools, and AI platforms.', source:'special', score:99996 });
+            }
+            if (lq === 'opencode' || lq.includes('opencode')) {
+                secrets.push({ title:'OpenCode', url:'https://opencode.ai', description:'OpenCode — AI coding assistant for the command line.', fullSnippet:'OpenCode is an AI coding assistant for the command line.', extract:'OpenCode is an AI coding assistant for the command line.', source:'special', score:99995 });
             }
             allResults = [...secrets, ...allResults];
 
@@ -990,7 +348,14 @@
                 try { const s = await window.gatewaySpellCheck(q); spellSuggestion = s; } catch(_) {}
             }
 
+            try {
+                const url = new URL(window.location);
+                url.searchParams.set('query', q);
+                window.history.replaceState({ query: q }, '', url.toString());
+            } catch(_) {}
+
             window._gwPage = 1;
+            window._gwLoaded = 0;
             window._gwRender();
         } catch(_) {
             $('resultsList').innerHTML = '<p style="color:#ff4d4d;text-align:center;padding:32px">Connection error. Please check your internet and try again.</p>';
@@ -998,28 +363,67 @@
     }
     window.performSearch = performSearch;
 
+    function resultBadge(r) {
+        if (r.source === 'special') return '<span class="badge special">\u2605</span>';
+        if (r.resultType === 'web') return '<span class="badge web">\u25C9</span>';
+        return '<span class="badge wiki">W</span>';
+    }
+
+    function renderItem(r) {
+        if (r.source === 'special') {
+            const urlDisplay = (r.url || '').replace(/^https?:\/\//, '');
+            return `
+                <div class="result-item">
+                    <div class="result-item-url">
+                        <span class="badge special">\u2605</span>
+                        <a href="${r.url}" target="_self">${urlDisplay}</a>
+                    </div>
+                    <a class="result-item-title" href="${r.url}" target="_self">${r.title}</a>
+                    <div class="result-item-desc">${r.description || ''}</div>
+                </div>`;
+        }
+        const isWeb = r.resultType === 'web';
+        const urlDisplay = (r.url || '').replace(/^https?:\/\//, '');
+        const thumb = r.thumbnail && !isWeb
+            ? `<img class="result-item-thumb" src="${r.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+            : '';
+        const badge = isWeb ? '<span class="badge web">\u25C9</span>' : '<span class="badge wiki">W</span>';
+        return `
+            <div class="result-item">
+                ${thumb}
+                <div class="result-item-url">
+                    ${badge}
+                    <a href="${r.url}" target="_self">${urlDisplay}</a>
+                </div>
+                <a class="result-item-title" href="${r.url}" target="_self">${isWeb ? r.domain || r.title : r.title}</a>
+                <div class="result-item-desc">${r.description || ''}</div>
+            </div>`;
+    }
+
+    function renderGridItem(r) {
+        return `
+            <div class="image-grid-item">
+                <a href="${r.url}" target="_self">
+                    <img src="${r.thumbnail}" alt="${r.title}" loading="lazy" onerror="this.closest('.image-grid-item').style.display='none'">
+                    <div class="img-label">${r.title}</div>
+                </a>
+            </div>`;
+    }
+
     window._gwRender = function() {
         const isImages = activeTab === 'images';
         const filtered = isImages ? allResults.filter(r => r.thumbnail) : allResults;
-        const start = (window._gwPage - 1) * PER_PAGE;
-        const pageItems = filtered.slice(start, start + PER_PAGE);
 
-        // Stats
-        const stats = $('resultStats');
-        stats.textContent = `About ${filtered.length} results`;
+        $('resultStats').textContent = `About ${filtered.length} results`;
 
-        // Did you mean
         const dym = $('didYouMean');
         if (spellSuggestion && activeTab === 'all') {
             dym.innerHTML = `Did you mean: <a onclick="searchSuggestion('${spellSuggestion.replace(/['"\\]/g, '')}')">${spellSuggestion}</a>`;
-        } else {
-            dym.innerHTML = '';
-        }
+        } else dym.innerHTML = '';
 
-        // Answer box
         const answerArea = $('answerArea');
         if (activeTab === 'all' && (lastQuery.includes('?') || lastQuery.split(' ').length > 3)) {
-            const top = allResults.find(r => r.extract && r.extract.length > 60);
+            const top = filtered.find(r => (r.resultType === 'wiki' || r.source === 'special') && r.extract && r.extract.length > 60);
             if (top) {
                 const ans = top.extract.split('. ').slice(0, 2).join('. ') + '.';
                 answerArea.innerHTML = `
@@ -1034,59 +438,49 @@
             } else answerArea.innerHTML = '';
         } else answerArea.innerHTML = '';
 
-        // Results
         const list = $('resultsList');
         const empty = $('emptyState');
-        const pagination = $('pagination');
+        const loadMore = $('loadMoreArea');
 
-        if (!pageItems.length) {
+        if (!filtered.length) {
             list.innerHTML = '';
             empty.style.display = '';
-            pagination.innerHTML = '';
+            loadMore.style.display = 'none';
             return;
         }
         empty.style.display = 'none';
 
-        if (isImages) {
-            list.innerHTML = '<div class="image-grid">' +
-                pageItems.map(r => `
-                    <div class="image-grid-item">
-                        <a href="${r.url}" target="_self">
-                            <img src="${r.thumbnail}" alt="${r.title}" loading="lazy" onerror="this.closest('.image-grid-item').style.display='none'">
-                            <div class="img-label">${r.title}</div>
-                        </a>
-                    </div>`).join('') +
-                '</div>';
+        window._gwLoaded = window._gwLoaded || 0;
+        const start = window._gwLoaded;
+        const end = Math.min(start + PER_PAGE, filtered.length);
+        const newItems = filtered.slice(start, end);
+
+        if (start === 0) {
+            if (isImages) {
+                list.innerHTML = '<div class="image-grid">' + newItems.map(renderGridItem).join('') + '</div>';
+            } else {
+                list.innerHTML = newItems.map(renderItem).join('');
+            }
+            window.scrollTo(0, 0);
         } else {
-            list.innerHTML = pageItems.map(r => {
-                const urlDisplay = (r.url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-                const isSpecial = r.source === 'special';
-                const thumb = r.thumbnail && !isSpecial
-                    ? `<img class="result-item-thumb" src="${r.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
-                    : '';
-                return `
-                    <div class="result-item">
-                        ${thumb}
-                        <div class="result-item-url">
-                            <span class="badge${isSpecial ? ' special' : ''}">${isSpecial ? '\u2605' : 'W'}</span>
-                            <a href="${r.url}" target="_self">${urlDisplay}</a>
-                        </div>
-                        <a class="result-item-title" href="${r.url}" target="_self">${r.title}</a>
-                        <div class="result-item-desc">${r.description || ''}</div>
-                    </div>`;
-            }).join('');
+            if (isImages) {
+                list.querySelector('.image-grid').insertAdjacentHTML('beforeend', newItems.map(renderGridItem).join(''));
+            } else {
+                list.insertAdjacentHTML('beforeend', newItems.map(renderItem).join(''));
+            }
         }
 
-        // Pagination
-        const totalPages = Math.ceil(filtered.length / PER_PAGE);
-        if (totalPages <= 1) { pagination.innerHTML = ''; return; }
-        pagination.innerHTML = Array.from({ length: totalPages }, (_, i) => {
-            const n = i + 1;
-            const cls = n === window._gwPage ? 'page-link active' : 'page-link';
-            return `<span class="${cls}" onclick="${n !== window._gwPage ? `window._gwPage=${n};window._gwRender();` : ''}">${n}</span>`;
-        }).join('');
+        window._gwLoaded = end;
 
-        window.scrollTo(0, 0);
+        if (window._gwLoaded < filtered.length) {
+            loadMore.style.display = 'flex';
+        } else {
+            loadMore.style.display = 'none';
+        }
+    }
+
+    window.loadMoreResults = function() {
+        window._gwRender();
     }
 
     // --- Tabs ---
@@ -1094,6 +488,7 @@
         activeTab = tab;
         document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
         window._gwPage = 1;
+        window._gwLoaded = 0;
         window._gwRender();
     };
 
@@ -1102,6 +497,7 @@
         activeTab = tab;
         document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
         window._gwPage = 1;
+        window._gwLoaded = 0;
         window._gwRender();
     };
 
@@ -1145,8 +541,34 @@
     $('mainSearchInput').addEventListener('input', () => updateClearBtn('mainSearchInput'));
     $('resultsSearchInput').addEventListener('input', () => updateClearBtn('resultsSearchInput'));
 
+    // Handle browser back/forward
+    window.addEventListener('popstate', function() {
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get('query');
+        if ($('resultsUI').classList.contains('visible')) {
+            if (q) {
+                $('mainSearchInput').value = q;
+                $('resultsSearchInput').value = q;
+                performSearch('resultsSearchInput');
+            } else {
+                location.reload();
+            }
+        }
+    });
+
     initAutocomplete('mainSearchInput', 'homeAutocomplete');
     initAutocomplete('resultsSearchInput', 'resultsAutocomplete');
+
+    // Restore from URL on page load
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get('query');
+        if (q) {
+            $('mainSearchInput').value = q;
+            $('resultsSearchInput').value = q;
+            performSearch('mainSearchInput');
+        }
+    } catch(_) {}
 })();
 </script>
 </body>
