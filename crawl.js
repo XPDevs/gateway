@@ -1,7 +1,7 @@
 /**
  * Gateway — Multi-Source Search Engine
  * XPDevs — https://xpdevs.github.io
- * Aggregates from Wikipedia, DuckDuckGo, OpenLibrary, and Wikimedia Commons
+ * Aggregates from Wikipedia, DuckDuckGo, OpenLibrary, Wikimedia Commons, and Web search
  */
 (function() {
     'use strict';
@@ -40,6 +40,18 @@
             .join(' ');
     }
 
+    function _wikiDomain() {
+        const lang = (window.gatewayLang || 'en').split('-')[0];
+        const map = {
+            en:'en',es:'es',fr:'fr',de:'de',it:'it',pt:'pt',ru:'ru',
+            ja:'ja','zh':'zh',ko:'ko',ar:'ar',hi:'hi',bn:'bn',
+            tr:'tr',nl:'nl',pl:'pl',sv:'sv',da:'da',fi:'fi',
+            no:'no',cs:'cs',ro:'ro',hu:'hu',el:'el'
+        };
+        const sub = map[lang] || 'en';
+        return sub + '.wikipedia.org';
+    }
+
     async function _fetch(url) {
         const r = await fetch(url);
         if (!r.ok) throw new Error(String(r.status));
@@ -53,14 +65,15 @@
 
         const results = [];
         try {
+            const wikiDomain = _wikiDomain();
             const kw = refineQuery(term) || term;
-            const sr = await _fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=30&srinfo=suggestion`);
+            const sr = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=30&srinfo=suggestion`);
             if (!sr.query?.search?.length) return results;
 
             const suggestion = sr.query?.searchinfo?.suggestion || null;
             const titles = sr.query.search.slice(0, 15).map(s => s.title);
 
-            const dt = await _fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=3&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=10`);
+            const dt = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=3&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=10`);
 
             for (const id in dt.query.pages) {
                 const p = dt.query.pages[id];
@@ -78,7 +91,7 @@
                     sourceLabel: 'Wikipedia',
                     resultType: 'wiki',
                     score: 10,
-                    domain: 'en.wikipedia.org',
+                    domain: wikiDomain,
                     suggestion
                 });
 
@@ -145,20 +158,23 @@
                 });
             }
             if (data.RelatedTopics) {
-                for (const t of data.RelatedTopics.slice(0, 10)) {
+                for (const t of data.RelatedTopics.slice(0, 20)) {
                     if (t.Text) {
+                        let url = t.FirstURL;
+                        let domain = 'duckduckgo.com';
+                        try { if (url) domain = new URL(url).hostname.replace(/^www\./, ''); } catch(_) {}
                         results.push({
-                            title: t.Text.split(' - ')[0] || t.FirstURL,
-                            url: t.FirstURL || `https://duckduckgo.com/?q=${encodeURIComponent(t.Text)}`,
+                            title: t.Text.split(' - ')[0] || url,
+                            url: url || `https://duckduckgo.com/?q=${encodeURIComponent(t.Text)}`,
                             description: t.Text.substring(0, 280),
                             fullSnippet: t.Text,
                             extract: t.Text,
                             thumbnail: t.Icon?.URL ? `https://api.duckduckgo.com${t.Icon.URL}` : null,
                             source: 'duckduckgo',
-                            sourceLabel: 'DuckDuckGo',
+                            sourceLabel: domain,
                             resultType: 'web',
-                            score: 12,
-                            domain: 'duckduckgo.com',
+                            score: 14,
+                            domain,
                             suggestion: null
                         });
                     }
@@ -246,6 +262,60 @@
         return results;
     }
 
+    async function searchWeb(term) {
+        const key = 'websearch:' + term;
+        const cached = _cached(key);
+        if (cached) return cached;
+
+        const results = [];
+        try {
+            const r = await fetch('https://html.duckduckgo.com/html/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'q=' + encodeURIComponent(term)
+            });
+            const html = await r.text();
+            const div = document.createElement('div');
+            div.innerHTML = html;
+
+            const resultItems = div.querySelectorAll('.result');
+            const seen = new Set();
+            for (const item of resultItems) {
+                const titleEl = item.querySelector('.result__title a');
+                const snippetEl = item.querySelector('.result__snippet');
+                if (!titleEl) continue;
+
+                let url = titleEl.getAttribute('href');
+                if (!url || seen.has(url)) continue;
+                seen.add(url);
+
+                const title = titleEl.textContent.trim();
+                const snippet = snippetEl ? snippetEl.textContent.trim() : '';
+                const domain = url ? new URL(url).hostname.replace(/^www\./, '') : '';
+
+                results.push({
+                    title,
+                    url,
+                    description: snippet,
+                    fullSnippet: snippet,
+                    extract: snippet,
+                    thumbnail: null,
+                    source: 'web-search',
+                    sourceLabel: domain || 'Web',
+                    resultType: 'web',
+                    score: 18,
+                    domain,
+                    suggestion: null
+                });
+
+                if (results.length >= 15) break;
+            }
+        } catch (_) {}
+
+        _store(key, results);
+        return results;
+    }
+
     async function gatewayCrawl(term) {
         if (!term) return [];
         const key = 'full:' + term;
@@ -256,7 +326,8 @@
             searchWikipedia(term),
             searchDuckDuckGo(term),
             searchOpenLibrary(term),
-            searchCommons(term)
+            searchCommons(term),
+            searchWeb(term)
         ];
 
         const all = await Promise.allSettled(sources);
@@ -301,7 +372,8 @@
         if (cached) return cached;
 
         try {
-            const data = await _fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&format=json&origin=*&search=${encodeURIComponent(term)}&limit=8&namespace=0`);
+            const wikiDomain = _wikiDomain();
+            const data = await _fetch(`https://${wikiDomain}/w/api.php?action=opensearch&format=json&origin=*&search=${encodeURIComponent(term)}&limit=8&namespace=0`);
             const suggestions = Array.isArray(data[1]) ? data[1] : [];
             _store(key, suggestions);
             return suggestions;
@@ -317,7 +389,8 @@
         if (cached) return cached;
 
         try {
-            const data = await _fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(term)}&srlimit=1`);
+            const wikiDomain = _wikiDomain();
+            const data = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(term)}&srlimit=1`);
             const s = data?.query?.searchinfo?.suggestion || null;
             if (s && s.toLowerCase() !== term.toLowerCase()) {
                 _store(key, s);

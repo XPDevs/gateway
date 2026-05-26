@@ -10,17 +10,66 @@
 </head>
 <body>
 
+<!-- ==================== SETTINGS MODAL ==================== -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings(event)">
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2 data-i18n="settingsTitle">Settings</h2>
+            <button class="icon-btn settings-close" onclick="closeSettings()"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+        </div>
+        <div class="settings-body">
+            <div class="settings-row">
+                <label data-i18n="language">Language</label>
+                <select id="langSelect" onchange="setLanguage(this.value)">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="it">Italiano</option>
+                    <option value="pt">Português</option>
+                    <option value="ru">Русский</option>
+                    <option value="ja">日本語</option>
+                    <option value="zh-CN">简体中文</option>
+                    <option value="zh-TW">繁體中文</option>
+                    <option value="ko">한국어</option>
+                    <option value="ar">العربية</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="bn">বাংলা</option>
+                    <option value="tr">Türkçe</option>
+                    <option value="nl">Nederlands</option>
+                    <option value="pl">Polski</option>
+                    <option value="sv">Svenska</option>
+                    <option value="da">Dansk</option>
+                    <option value="fi">Suomi</option>
+                    <option value="no">Norsk</option>
+                    <option value="cs">Čeština</option>
+                    <option value="ro">Română</option>
+                    <option value="hu">Magyar</option>
+                    <option value="el">Ελληνικά</option>
+                </select>
+            </div>
+            <div class="settings-row">
+                <label data-i18n="darkMode">Dark mode</label>
+                <label class="toggle">
+                    <input type="checkbox" id="settingsDarkToggle" onchange="toggleDarkMode()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ==================== HOME PAGE ==================== -->
 <div id="homeUI">
     <nav class="top-nav">
         <div class="top-nav-left">
-            <a href="#">About</a>
-            <a href="#">Store</a>
+            <a href="#" data-i18n="about">About</a>
+            <a href="#" data-i18n="store">Store</a>
         </div>
         <div class="top-nav-right">
-            <a href="#">Gmail</a>
-            <a href="#">Images</a>
-            <button class="icon-btn" id="darkToggleHome" onclick="toggleDarkMode()" title="Toggle dark mode">
+            <a href="#" data-i18n="gmail">Gmail</a>
+            <a href="#" data-i18n="images">Images</a>
+            <button class="icon-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
                 <svg class="sun" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
@@ -28,7 +77,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                 </svg>
             </button>
-            <button class="sign-in-btn">Sign in</button>
+            <button class="icon-btn settings-btn" onclick="openSettings()" title="Settings">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </button>
+            <button class="sign-in-btn" data-i18n="signIn">Sign in</button>
         </div>
     </nav>
 
@@ -36,6 +91,7 @@
         <div class="home-logo">
             <span>G</span><span>a</span><span>t</span><span>e</span><span>w</span><span>a</span><span>y</span>
         </div>
+        <div class="home-tagline" data-i18n="tagline">Faster than Google. Same results. No API. No index.</div>
 
         <div class="search-section">
             <div class="search-bar-wrapper" style="border-radius:24px;position:relative">
@@ -45,6 +101,7 @@
                     </svg>
                 </span>
                 <input type="text" id="mainSearchInput"
+                    data-i18n-placeholder="searchPlaceholder"
                     placeholder="Search Gateway or type a URL"
                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <button class="clear-btn" id="homeClearBtn" onclick="clearSearch('mainSearchInput')">
@@ -54,24 +111,24 @@
             </div>
 
             <div class="search-buttons">
-                <button class="search-btn" onclick="performSearch('mainSearchInput')">Gateway Search</button>
-                <button class="search-btn" onclick="luckySearch()">I'm Feeling Lucky</button>
+                <button class="search-btn" data-i18n="gatewaySearch" onclick="performSearch('mainSearchInput')">Gateway Search</button>
+                <button class="search-btn" data-i18n="feelingLucky" onclick="luckySearch()">I'm Feeling Lucky</button>
             </div>
         </div>
     </div>
 
     <footer class="footer">
-        <div class="footer-country">United Kingdom</div>
+        <div class="footer-country" data-i18n="unitedKingdom">United Kingdom</div>
         <div class="footer-links">
             <div class="links-group">
-                <a href="#">Advertising</a>
-                <a href="#">Business</a>
-                <a href="#">How Search works</a>
+                <a href="#" data-i18n="advertising">Advertising</a>
+                <a href="#" data-i18n="business">Business</a>
+                <a href="#" data-i18n="howSearchWorks">How Search works</a>
             </div>
             <div class="links-group">
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
-                <a href="#">Settings</a>
+                <a href="#" data-i18n="privacy">Privacy</a>
+                <a href="#" data-i18n="terms">Terms</a>
+                <a href="#" data-i18n="settings">Settings</a>
                 <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
                     <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
                     XPDevs
@@ -112,21 +169,27 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                     </svg>
                 </button>
+                <button class="icon-btn settings-btn" onclick="openSettings()" title="Settings">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </button>
             </div>
         </div>
 
         <div class="results-tabs">
             <div class="tab-item active" data-tab="all" onclick="switchTab('all')">
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                All
+                <span data-i18n="all">All</span>
             </div>
             <div class="tab-item" data-tab="images" onclick="switchTab('images')">
                 <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                Images
+                <span data-i18n="images">Images</span>
             </div>
             <div class="tab-item" data-tab="books" onclick="switchTab('books')">
                 <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
-                Books
+                <span data-i18n="books">Books</span>
             </div>
         </div>
     </header>
@@ -139,30 +202,30 @@
         <div id="resultsList"></div>
 
         <div class="load-more-area" id="loadMoreArea" style="display:none">
-            <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreResults()">Show more results</button>
+            <button class="load-more-btn" data-i18n="showMoreResults" id="loadMoreBtn" onclick="loadMoreResults()">Show more results</button>
         </div>
 
         <div class="empty-state" id="emptyState">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <p class="title">No results found</p>
-            <p class="sub">Try different keywords or check your spelling</p>
+            <p class="title" data-i18n="noResultsFound">No results found</p>
+            <p class="sub" data-i18n="tryDifferentKeywords">Try different keywords or check your spelling</p>
         </div>
     </div>
 
     <footer class="footer">
-        <div class="footer-country">United Kingdom</div>
+        <div class="footer-country" data-i18n="unitedKingdom">United Kingdom</div>
         <div class="footer-links">
             <div class="links-group">
-                <a href="#">Advertising</a>
-                <a href="#">Business</a>
-                <a href="#">How Search works</a>
+                <a href="#" data-i18n="advertising">Advertising</a>
+                <a href="#" data-i18n="business">Business</a>
+                <a href="#" data-i18n="howSearchWorks">How Search works</a>
             </div>
             <div class="links-group">
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
-                <a href="#">Settings</a>
+                <a href="#" data-i18n="privacy">Privacy</a>
+                <a href="#" data-i18n="terms">Terms</a>
+                <a href="#" data-i18n="settings">Settings</a>
                 <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
                     <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
                     XPDevs
@@ -173,425 +236,6 @@
 </div>
 
 <script src="crawl.js"></script>
-<script>
-(function() {
-    'use strict';
-
-    const $ = id => document.getElementById(id);
-
-    let allResults = [];
-    const PER_PAGE = 12;
-    let activeTab = 'all';
-    let spellSuggestion = null;
-    let lastQuery = '';
-    window._gwPage = 1;
-    window._gwLoaded = 0;
-
-    const SOURCE_TABS = {
-        all: null,
-        images: 'image',
-        books: 'book'
-    };
-
-    // --- Dark Mode ---
-    function applyDark(enabled) {
-        document.body.classList.toggle('dark', enabled);
-        localStorage.setItem('gw-dark', enabled ? '1' : '0');
-        document.querySelectorAll('.sun').forEach(el => el.style.display = enabled ? 'none' : '');
-        document.querySelectorAll('.moon').forEach(el => el.style.display = enabled ? '' : 'none');
-    }
-    window.toggleDarkMode = function() {
-        applyDark(!document.body.classList.contains('dark'));
-    };
-    if (localStorage.getItem('gw-dark') === '1') applyDark(true);
-
-    // --- Clear button ---
-    window.clearSearch = function(inputId) {
-        const input = $(inputId);
-        if (input) { input.value = ''; input.focus(); }
-        updateClearBtn(inputId);
-    };
-    function updateClearBtn(inputId) {
-        const input = $(inputId);
-        const btn = inputId === 'mainSearchInput' ? $('homeClearBtn') : $('resultsClearBtn');
-        if (input && btn) btn.classList.toggle('visible', input.value.length > 0);
-    }
-
-    // --- Autocomplete ---
-    const autoState = {};
-
-    function initAutocomplete(inputId, dropdownId) {
-        const input = $(inputId);
-        const dd = $(dropdownId);
-        if (!input || !dd) return;
-        const wrapper = input.closest('.search-bar-wrapper');
-
-        let timer, sug = [], hl = -1, open = false;
-
-        function close() {
-            dd.classList.remove('show');
-            if (wrapper) wrapper.classList.remove('dd-open');
-            open = false;
-            hl = -1;
-        }
-        function highlight(idx) {
-            const items = dd.querySelectorAll('.autocomplete-item');
-            items.forEach((el, i) => el.classList.toggle('highlighted', i === idx));
-            hl = idx;
-            if (idx >= 0 && items[idx]) {
-                items[idx].scrollIntoView({ block: 'nearest' });
-            }
-        }
-        function select(idx) {
-            if (idx < 0 || idx >= sug.length) return;
-            input.value = sug[idx];
-            close();
-            updateClearBtn(inputId);
-            doSearch(inputId);
-        }
-        function render(list) {
-            sug = list;
-            dd.innerHTML = '';
-            if (!list.length) { close(); return; }
-            list.forEach((s, i) => {
-                const div = document.createElement('div');
-                div.className = 'autocomplete-item';
-                const idx = s.toLowerCase().indexOf(input.value.toLowerCase());
-                div.innerHTML = '<span class="autocomplete-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></span>'
-                    + (idx >= 0
-                        ? s.slice(0, idx) + '<span class="match">' + s.slice(idx, idx + input.value.length) + '</span>' + s.slice(idx + input.value.length)
-                        : s);
-                div.onclick = () => { input.value = s; close(); updateClearBtn(inputId); doSearch(inputId); };
-                div.onmouseenter = () => highlight(i);
-                dd.appendChild(div);
-            });
-            dd.classList.add('show');
-            if (wrapper) wrapper.classList.add('dd-open');
-            open = true;
-            hl = -1;
-        }
-
-        input.addEventListener('input', function() {
-            clearTimeout(timer);
-            const val = this.value.trim();
-            if (val.length < 2) { close(); return; }
-            timer = setTimeout(async () => {
-                if (typeof Gateway !== 'undefined' && Gateway.suggest) {
-                    const sugs = await Gateway.suggest(val);
-                    render(sugs);
-                }
-            }, 250);
-        });
-
-        input.addEventListener('keydown', function(e) {
-            if (!open) return;
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const next = hl < sug.length - 1 ? hl + 1 : 0;
-                highlight(next);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                const prev = hl > 0 ? hl - 1 : sug.length - 1;
-                highlight(prev);
-            } else if (e.key === 'Enter' && hl >= 0) {
-                e.preventDefault();
-                select(hl);
-            } else if (e.key === 'Escape') {
-                close();
-            }
-        });
-        input.addEventListener('blur', () => setTimeout(close, 150));
-        input.addEventListener('focus', function() {
-            if (sug.length && this.value.trim().length >= 2) {
-                dd.classList.add('show');
-                if (wrapper) wrapper.classList.add('dd-open');
-                open = true;
-            }
-        });
-
-        autoState[inputId] = { close };
-    }
-
-    function doSearch(inputId) {
-        const input = $(inputId);
-        if (!input || !input.value.trim()) return;
-        if (autoState[inputId]) autoState[inputId].close();
-        performSearch(inputId);
-    }
-
-    // --- Search ---
-    async function performSearch(inputId) {
-        const input = $(inputId);
-        if (!input) return;
-        const q = input.value.trim();
-        if (!q) return;
-
-        lastQuery = q;
-        spellSuggestion = null;
-
-        if ($('mainSearchInput')) $('mainSearchInput').value = q;
-        if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
-        updateClearBtn('mainSearchInput');
-        updateClearBtn('resultsSearchInput');
-
-        if (autoState.mainSearchInput) autoState.mainSearchInput.close();
-        if (autoState.resultsSearchInput) autoState.resultsSearchInput.close();
-
-        if ($('homeUI')) $('homeUI').style.display = 'none';
-        if ($('resultsUI')) $('resultsUI').classList.add('visible');
-
-        if ($('answerArea')) $('answerArea').innerHTML = '';
-        if ($('didYouMean')) $('didYouMean').innerHTML = '';
-        if ($('emptyState')) $('emptyState').style.display = 'none';
-        if ($('resultsList')) {
-            $('resultsList').innerHTML = `
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Searching Wikipedia and Web...</p>
-                </div>`;
-        }
-        if ($('resultStats')) $('resultStats').textContent = '';
-        if ($('loadMoreArea')) $('loadMoreArea').style.display = 'none';
-
-        try {
-            allResults = await window.gatewayCrawl(q);
-
-            if (allResults.length) {
-                try { const s = await window.gatewaySpellCheck(q); spellSuggestion = s; } catch(_) {}
-            }
-
-            window._gwPage = 1;
-            window._gwLoaded = 0;
-
-            try {
-                const url = new URL(window.location);
-                url.searchParams.set('query', q);
-                window.history.replaceState({ query: q }, '', url.toString());
-            } catch(_) {}
-
-            window._gwRender();
-        } catch(_) {
-            if ($('resultsList')) {
-                $('resultsList').innerHTML = '<p style="color:#ff4d4d;text-align:center;padding:32px">Connection error. Please check your internet and try again.</p>';
-            }
-        }
-    }
-    window.performSearch = performSearch;
-
-    function resultBadge(r) {
-        if (r.source === 'special') return '<span class="badge special">\u2605</span>';
-        if (r.resultType === 'web') return '<span class="badge web">\u25C9</span>';
-        if (r.resultType === 'book') return '<span class="badge book">B</span>';
-        return '<span class="badge wiki">W</span>';
-    }
-
-    function renderItem(r) {
-        if (r.source === 'special') {
-            const urlDisplay = (r.url || '').replace(/^https?:\/\//, '');
-            return `
-                <div class="result-item">
-                    <div class="result-item-url">
-                        <span class="badge special">\u2605</span>
-                        <a href="${r.url}" target="_self">${urlDisplay}</a>
-                    </div>
-                    <a class="result-item-title" href="${r.url}" target="_self">${r.title}</a>
-                    <div class="result-item-desc">${r.description || ''}</div>
-                </div>`;
-        }
-        const isWeb = r.resultType === 'web';
-        const urlDisplay = (r.url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-        const thumb = r.thumbnail && !isWeb
-            ? `<img class="result-item-thumb" src="${r.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
-            : '';
-        const badge = resultBadge(r);
-        return `
-            <div class="result-item">
-                ${thumb}
-                <div class="result-item-url">
-                    ${badge}
-                    <a href="${r.url}" target="_self">${urlDisplay}</a>
-                </div>
-                <a class="result-item-title" href="${r.url}" target="_self">${isWeb ? r.domain || r.title : r.title}</a>
-                <div class="result-item-desc">${r.description || ''}</div>
-            </div>`;
-    }
-
-    function renderGridItem(r) {
-        return `
-            <div class="image-grid-item">
-                <a href="${r.url}" target="_self">
-                    <img src="${r.thumbnail}" alt="${r.title}" loading="lazy" onerror="this.closest('.image-grid-item').style.display='none'">
-                    <div class="img-label">${r.title}</div>
-                </a>
-            </div>`;
-    }
-
-    window._gwRender = function() {
-        const isImages = activeTab === 'images';
-        const filtered = isImages ? allResults.filter(r => r.thumbnail) : allResults;
-
-        if ($('resultStats')) {
-            $('resultStats').textContent = `About ${filtered.length} results`;
-        }
-
-        const dym = $('didYouMean');
-        if (dym) {
-            if (spellSuggestion && activeTab === 'all') {
-                dym.innerHTML = `Did you mean: <a onclick="searchSuggestion('${spellSuggestion.replace(/['"\\]/g, '')}')">${spellSuggestion}</a>`;
-            } else dym.innerHTML = '';
-        }
-
-        const answerArea = $('answerArea');
-        if (answerArea) {
-            if (activeTab === 'all' && (lastQuery.includes('?') || lastQuery.split(' ').length > 3)) {
-                const top = filtered.find(r => (r.resultType === 'wiki' || r.source === 'special') && r.extract && r.extract.length > 60);
-                if (top) {
-                    const ans = top.extract.split('. ').slice(0, 2).join('. ') + '.';
-                    answerArea.innerHTML = `
-                        <div class="answer-box">
-                            <h2>Quick Answer</h2>
-                            <p>${ans}</p>
-                            <div class="answer-source">
-                                <span class="badge">Wikipedia</span>
-                                <a href="${top.url}" target="_self">${top.title}</a>
-                            </div>
-                        </div>`;
-                } else answerArea.innerHTML = '';
-            } else answerArea.innerHTML = '';
-        }
-
-        const list = $('resultsList');
-        const empty = $('emptyState');
-        const loadMore = $('loadMoreArea');
-
-        if (!list) return;
-
-        if (!filtered.length) {
-            list.innerHTML = '';
-            if (empty) empty.style.display = '';
-            if (loadMore) loadMore.style.display = 'none';
-            return;
-        }
-        if (empty) empty.style.display = 'none';
-
-        window._gwLoaded = window._gwLoaded || 0;
-        const start = window._gwLoaded;
-        const end = Math.min(start + PER_PAGE, filtered.length);
-        const newItems = filtered.slice(start, end);
-
-        if (start === 0) {
-            if (isImages) {
-                list.innerHTML = '<div class="image-grid">' + newItems.map(renderGridItem).join('') + '</div>';
-            } else {
-                list.innerHTML = newItems.map(renderItem).join('');
-            }
-            window.scrollTo(0, 0);
-        } else {
-            if (isImages) {
-                const grid = list.querySelector('.image-grid');
-                if (grid) grid.insertAdjacentHTML('beforeend', newItems.map(renderGridItem).join(''));
-            } else {
-                list.insertAdjacentHTML('beforeend', newItems.map(renderItem).join(''));
-            }
-        }
-
-        window._gwLoaded = end;
-
-        if (loadMore) {
-            loadMore.style.display = (window._gwLoaded < filtered.length) ? 'flex' : 'none';
-        }
-    }
-
-    window.loadMoreResults = function() {
-        window._gwRender();
-    }
-
-    // --- Tabs ---
-    window.switchTab = function(tab) {
-        activeTab = tab;
-        document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
-        window._gwPage = 1;
-        window._gwLoaded = 0;
-        if ($('resultsList')) $('resultsList').innerHTML = '';
-        window._gwRender();
-    };
-
-    // --- I'm Feeling Lucky ---
-    window.luckySearch = function() {
-        const val = $('mainSearchInput').value.trim();
-        if (!val) return;
-        performSearch('mainSearchInput').then(() => {
-            const filtered = activeTab === 'images' ? allResults.filter(r => r.thumbnail) : allResults;
-            if (filtered.length) window.open(filtered[0].url, '_self');
-        });
-    };
-
-    window.searchSuggestion = function(term) {
-        if ($('mainSearchInput')) $('mainSearchInput').value = term;
-        if ($('resultsSearchInput')) $('resultsSearchInput').value = term;
-        updateClearBtn('mainSearchInput');
-        updateClearBtn('resultsSearchInput');
-        performSearch('resultsSearchInput');
-    };
-
-    // --- Key handling ---
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            if ($('resultsUI') && $('resultsUI').classList.contains('visible')) {
-                if ($('resultsSearchInput')) $('resultsSearchInput').focus();
-            } else {
-                if ($('mainSearchInput')) $('mainSearchInput').focus();
-            }
-        }
-        if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
-            e.preventDefault();
-            const input = ($('resultsUI') && $('resultsUI').classList.contains('visible')) ? $('resultsSearchInput') : $('mainSearchInput');
-            if (input) input.focus();
-        }
-    });
-
-    // --- Init ---
-    if ($('mainSearchInput')) {
-        $('mainSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('mainSearchInput'); });
-        $('mainSearchInput').addEventListener('input', () => updateClearBtn('mainSearchInput'));
-    }
-    if ($('resultsSearchInput')) {
-        $('resultsSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('resultsSearchInput'); });
-        $('resultsSearchInput').addEventListener('input', () => updateClearBtn('resultsSearchInput'));
-    }
-
-    initAutocomplete('mainSearchInput', 'homeAutocomplete');
-    initAutocomplete('resultsSearchInput', 'resultsAutocomplete');
-
-    function getQueryParam() {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('query') || params.get('q') || '';
-    }
-
-    // Handle browser back/forward
-    window.addEventListener('popstate', function() {
-        const q = getQueryParam();
-        if ($('resultsUI') && $('resultsUI').classList.contains('visible')) {
-            if (q) {
-                if ($('mainSearchInput')) $('mainSearchInput').value = q;
-                if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
-                performSearch('resultsSearchInput');
-            } else {
-                location.reload();
-            }
-        }
-    });
-
-    // Restore from URL on page load
-    try {
-        const q = getQueryParam();
-        if (q) {
-            if ($('mainSearchInput')) $('mainSearchInput').value = q;
-            if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
-            performSearch('mainSearchInput');
-        }
-    } catch(_) {}
-})();
-</script>
+<script src="main.js"></script>
 </body>
 </html>
