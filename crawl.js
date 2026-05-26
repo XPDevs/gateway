@@ -1,7 +1,7 @@
 /**
- * Gateway — Search Engine
+ * Gateway — Multi-Source Search Engine
  * XPDevs — https://xpdevs.github.io
- * Aggregates Wikipedia pages + real website links from references
+ * Aggregates from Wikipedia, DuckDuckGo, OpenLibrary, and Wikimedia Commons
  */
 (function() {
     'use strict';
@@ -46,28 +46,21 @@
         return r.json();
     }
 
-    async function gatewayCrawl(term) {
-        if (!term) return [];
-
-        const key = 'full:' + term;
+    async function searchWikipedia(term) {
+        const key = 'wiki:' + term;
         const cached = _cached(key);
         if (cached) return cached;
 
         const results = [];
         try {
             const kw = refineQuery(term) || term;
-
-            const sr = await _fetch(
-                `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=30&srinfo=suggestion`
-            );
+            const sr = await _fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=30&srinfo=suggestion`);
             if (!sr.query?.search?.length) return results;
 
             const suggestion = sr.query?.searchinfo?.suggestion || null;
             const titles = sr.query.search.slice(0, 15).map(s => s.title);
 
-            const dt = await _fetch(
-                `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=3&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=10`
-            );
+            const dt = await _fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=3&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=10`);
 
             for (const id in dt.query.pages) {
                 const p = dt.query.pages[id];
@@ -91,7 +84,7 @@
 
                 if (p.extlinks) {
                     const seenDomains = new Set();
-                    for (const linkObj of p.extlinks) {
+                    for (const linkObj of p.extlinks.slice(0, 5)) {
                         const link = linkObj['*'];
                         try {
                             const urlObj = new URL(link);
@@ -104,9 +97,7 @@
                             results.push({
                                 title: domain,
                                 url: link,
-                                description: ext
-                                    ? `Referenced by "${p.title}". ${ext.substring(0, 160)}`
-                                    : `External reference from Wikipedia article "${p.title}".`,
+                                description: ext ? `Referenced by "${p.title}". ${ext.substring(0, 160)}` : `External link from Wikipedia article "${p.title}".`,
                                 fullSnippet: ext || '',
                                 extract: ext || '',
                                 thumbnail: null,
@@ -114,50 +105,193 @@
                                 sourceLabel: domain,
                                 resultType: 'web',
                                 score: 8,
-                                domain,
+                                domain: domain,
                                 refersTo: p.title,
                                 suggestion: null
                             });
                         } catch(_) {}
-                        if (seenDomains.size >= 5) break;
                     }
                 }
             }
+        } catch (_) {}
 
-            const ql = term.toLowerCase();
-            for (const r of results) {
-                const terms = ql.split(/\s+/).filter(Boolean);
-                let s = r.score;
-                const text = (r.title + ' ' + (r.description || '')).toLowerCase();
-                for (const t of terms) {
-                    try {
-                        const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                        s += ((text.match(re) || []).length) * 2;
-                    } catch(_) {}
+        _store(key, results);
+        return results;
+    }
+
+    async function searchDuckDuckGo(term) {
+        const key = 'ddg:' + term;
+        const cached = _cached(key);
+        if (cached) return cached;
+
+        const results = [];
+        try {
+            const data = await _fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(term)}&format=json&no_html=1&skip_disambig=1`);
+            if (data.AbstractText) {
+                results.push({
+                    title: data.Heading || data.AbstractSource || 'Instant Answer',
+                    url: data.AbstractURL || `https://duckduckgo.com/?q=${encodeURIComponent(term)}`,
+                    description: data.AbstractText.substring(0, 280),
+                    fullSnippet: data.AbstractText,
+                    extract: data.AbstractText,
+                    thumbnail: data.Image ? `https://api.duckduckgo.com${data.Image}` : null,
+                    source: 'duckduckgo',
+                    sourceLabel: 'DuckDuckGo',
+                    resultType: 'web',
+                    score: 15,
+                    domain: 'duckduckgo.com',
+                    isAnswer: true,
+                    suggestion: null
+                });
+            }
+            if (data.RelatedTopics) {
+                for (const t of data.RelatedTopics.slice(0, 10)) {
+                    if (t.Text) {
+                        results.push({
+                            title: t.Text.split(' - ')[0] || t.FirstURL,
+                            url: t.FirstURL || `https://duckduckgo.com/?q=${encodeURIComponent(t.Text)}`,
+                            description: t.Text.substring(0, 280),
+                            fullSnippet: t.Text,
+                            extract: t.Text,
+                            thumbnail: t.Icon?.URL ? `https://api.duckduckgo.com${t.Icon.URL}` : null,
+                            source: 'duckduckgo',
+                            sourceLabel: 'DuckDuckGo',
+                            resultType: 'web',
+                            score: 12,
+                            domain: 'duckduckgo.com',
+                            suggestion: null
+                        });
+                    }
                 }
-                if (r.title.toLowerCase() === ql) s += 500;
-                else if (r.title.toLowerCase().startsWith(ql)) s += 200;
-                if (r.domain && r.domain.includes(ql)) s += 50;
-                r.score = s;
             }
+        } catch (_) {}
 
-            results.sort((a, b) => b.score - a.score);
+        _store(key, results);
+        return results;
+    }
 
-            const seen = new Set();
-            const deduped = [];
-            for (const r of results) {
-                const key = r.url;
-                if (seen.has(key)) continue;
-                seen.add(key);
-                deduped.push(r);
+    async function searchOpenLibrary(term) {
+        const key = 'ol:' + term;
+        const cached = _cached(key);
+        if (cached) return cached;
+
+        const results = [];
+        try {
+            const kw = refineQuery(term) || term;
+            const data = await _fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(kw)}&limit=12`);
+            if (data.docs) {
+                for (const doc of data.docs) {
+                    const authors = doc.author_name || [];
+                    const desc = (authors.length ? `By ${authors.join(', ')}. ` : '') + (doc.first_publish_year ? `Published ${doc.first_publish_year}. ` : '') + (doc.subject?.slice(0, 3).join(', ') || '');
+                    results.push({
+                        title: doc.title,
+                        url: `https://openlibrary.org${doc.key || '/works/' + doc.cover_edition_key}`,
+                        description: desc || doc.title,
+                        fullSnippet: doc.description?.value || desc || doc.title,
+                        extract: doc.description?.value || desc || doc.title,
+                        thumbnail: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+                        source: 'openlibrary',
+                        sourceLabel: 'Books',
+                        resultType: 'book',
+                        score: 5,
+                        domain: 'openlibrary.org',
+                        suggestion: null
+                    });
+                }
             }
+        } catch (_) {}
 
-            _store(key, deduped);
-            return deduped;
+        _store(key, results);
+        return results;
+    }
 
-        } catch (_) {
-            return [];
+    async function searchCommons(term) {
+        const key = 'commons:' + term;
+        const cached = _cached(key);
+        if (cached) return cached;
+
+        const results = [];
+        try {
+            const kw = refineQuery(term) || term;
+            const sr = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srnamespace=6&srlimit=20`);
+            if (!sr.query?.search) return results;
+
+            const titles = sr.query.search.map(s => s.title);
+            const dt = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|size|extmetadata|mime&titles=${encodeURIComponent(titles.join('|'))}`);
+
+            for (const id in dt.query.pages) {
+                const p = dt.query.pages[id];
+                if (p.missing || !p.imageinfo) continue;
+                const ii = p.imageinfo[0];
+                const mime = (ii.mime || '').toLowerCase();
+                if (!mime.startsWith('image/')) continue;
+                results.push({
+                    title: p.title.replace(/^File:/, ''),
+                    url: ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(p.title)}`,
+                    thumbnail: ii.thumburl || ii.url,
+                    description: ii.extmetadata?.ImageDescription?.value || 'Wikimedia Commons Image',
+                    fullSnippet: ii.extmetadata?.ImageDescription?.value || '',
+                    extract: ii.extmetadata?.ImageDescription?.value || '',
+                    source: 'commons',
+                    sourceLabel: 'Images',
+                    resultType: 'image',
+                    score: 5,
+                    domain: 'commons.wikimedia.org',
+                    suggestion: null
+                });
+            }
+        } catch (_) {}
+
+        _store(key, results);
+        return results;
+    }
+
+    async function gatewayCrawl(term) {
+        if (!term) return [];
+        const key = 'full:' + term;
+        const cached = _cached(key);
+        if (cached) return cached;
+
+        const sources = [
+            searchWikipedia(term),
+            searchDuckDuckGo(term),
+            searchOpenLibrary(term),
+            searchCommons(term)
+        ];
+
+        const all = await Promise.allSettled(sources);
+        let merged = all.flatMap(p => p.status === 'fulfilled' ? p.value : []);
+
+        const ql = term.toLowerCase();
+        for (const r of merged) {
+            const terms = ql.split(/\s+/).filter(Boolean);
+            let s = r.score || 0;
+            const text = (r.title + ' ' + (r.description || '')).toLowerCase();
+            for (const t of terms) {
+                try {
+                    const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                    s += ((text.match(re) || []).length) * 2;
+                } catch(_) {}
+            }
+            if (r.title.toLowerCase() === ql) s += 500;
+            else if (r.title.toLowerCase().startsWith(ql)) s += 200;
+            if (r.domain && r.domain.includes(ql)) s += 50;
+            r.score = s;
         }
+
+        merged.sort((a, b) => b.score - a.score);
+
+        const seen = new Set();
+        const deduped = [];
+        for (const r of merged) {
+            const urlKey = r.url;
+            if (seen.has(urlKey)) continue;
+            seen.add(urlKey);
+            deduped.push(r);
+        }
+
+        _store(key, deduped);
+        return deduped;
     }
 
     async function getSuggestions(term) {
@@ -167,9 +301,7 @@
         if (cached) return cached;
 
         try {
-            const data = await _fetch(
-                `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&origin=*&search=${encodeURIComponent(term)}&limit=8&namespace=0`
-            );
+            const data = await _fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&format=json&origin=*&search=${encodeURIComponent(term)}&limit=8&namespace=0`);
             const suggestions = Array.isArray(data[1]) ? data[1] : [];
             _store(key, suggestions);
             return suggestions;
@@ -185,9 +317,7 @@
         if (cached) return cached;
 
         try {
-            const data = await _fetch(
-                `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(term)}&srlimit=1`
-            );
+            const data = await _fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(term)}&srlimit=1`);
             const s = data?.query?.searchinfo?.suggestion || null;
             if (s && s.toLowerCase() !== term.toLowerCase()) {
                 _store(key, s);

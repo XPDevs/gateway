@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gateway</title>
     <link rel="stylesheet" href="ui.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
 
@@ -69,11 +71,11 @@
             <div class="links-group">
                 <a href="#">Privacy</a>
                 <a href="#">Terms</a>
-                        <a href="#">Settings</a>
-                        <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
-                            <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
-                            XPDevs
-                        </a>
+                <a href="#">Settings</a>
+                <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
+                    <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
+                    XPDevs
+                </a>
             </div>
         </div>
     </footer>
@@ -122,6 +124,10 @@
                 <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                 Images
             </div>
+            <div class="tab-item" data-tab="books" onclick="switchTab('books')">
+                <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+                Books
+            </div>
         </div>
     </header>
 
@@ -156,11 +162,11 @@
             <div class="links-group">
                 <a href="#">Privacy</a>
                 <a href="#">Terms</a>
-                        <a href="#">Settings</a>
-                        <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
-                            <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
-                            XPDevs
-                        </a>
+                <a href="#">Settings</a>
+                <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
+                    <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
+                    XPDevs
+                </a>
             </div>
         </div>
     </footer>
@@ -179,6 +185,13 @@
     let spellSuggestion = null;
     let lastQuery = '';
     window._gwPage = 1;
+    window._gwLoaded = 0;
+
+    const SOURCE_TABS = {
+        all: null,
+        images: 'image',
+        books: 'book'
+    };
 
     // --- Dark Mode ---
     function applyDark(enabled) {
@@ -222,9 +235,12 @@
             hl = -1;
         }
         function highlight(idx) {
-            dd.querySelectorAll('.autocomplete-item').forEach((el, i) => el.classList.toggle('highlighted', i === idx));
+            const items = dd.querySelectorAll('.autocomplete-item');
+            items.forEach((el, i) => el.classList.toggle('highlighted', i === idx));
             hl = idx;
-            if (idx >= 0) dd.querySelector('.autocomplete-item')?.scrollIntoView({ block: 'nearest' });
+            if (idx >= 0 && items[idx]) {
+                items[idx].scrollIntoView({ block: 'nearest' });
+            }
         }
         function select(idx) {
             if (idx < 0 || idx >= sug.length) return;
@@ -257,28 +273,42 @@
 
         input.addEventListener('input', function() {
             clearTimeout(timer);
-            updateClearBtn(inputId);
             const val = this.value.trim();
             if (val.length < 2) { close(); return; }
             timer = setTimeout(async () => {
-                try {
-                    const sugs = await window.getSuggestions(val);
+                if (typeof Gateway !== 'undefined' && Gateway.suggest) {
+                    const sugs = await Gateway.suggest(val);
                     render(sugs);
-                } catch(_) { close(); }
+                }
             }, 250);
         });
 
         input.addEventListener('keydown', function(e) {
             if (!open) return;
-            if (e.key === 'ArrowDown') { e.preventDefault(); highlight(hl < sug.length - 1 ? hl + 1 : 0); }
-            else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(hl > 0 ? hl - 1 : sug.length - 1); }
-            else if (e.key === 'Enter' && hl >= 0) { e.preventDefault(); select(hl); }
-            else if (e.key === 'Escape') { close(); }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = hl < sug.length - 1 ? hl + 1 : 0;
+                highlight(next);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = hl > 0 ? hl - 1 : sug.length - 1;
+                highlight(prev);
+            } else if (e.key === 'Enter' && hl >= 0) {
+                e.preventDefault();
+                select(hl);
+            } else if (e.key === 'Escape') {
+                close();
+            }
         });
         input.addEventListener('blur', () => setTimeout(close, 150));
         input.addEventListener('focus', function() {
-            if (sug.length && this.value.trim().length >= 2) { dd.classList.add('show'); open = true; }
+            if (sug.length && this.value.trim().length >= 2) {
+                dd.classList.add('show');
+                if (wrapper) wrapper.classList.add('dd-open');
+                open = true;
+            }
         });
+
         autoState[inputId] = { close };
     }
 
@@ -299,15 +329,16 @@
         lastQuery = q;
         spellSuggestion = null;
 
-        $('mainSearchInput').value = q;
-        $('resultsSearchInput').value = q;
+        if ($('mainSearchInput')) $('mainSearchInput').value = q;
+        if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
         updateClearBtn('mainSearchInput');
         updateClearBtn('resultsSearchInput');
+
         if (autoState.mainSearchInput) autoState.mainSearchInput.close();
         if (autoState.resultsSearchInput) autoState.resultsSearchInput.close();
 
-        $('homeUI').style.setProperty('display', 'none');
-        $('resultsUI').classList.add('visible');
+        if ($('homeUI')) $('homeUI').style.display = 'none';
+        if ($('resultsUI')) $('resultsUI').classList.add('visible');
 
         if ($('answerArea')) $('answerArea').innerHTML = '';
         if ($('didYouMean')) $('didYouMean').innerHTML = '';
@@ -316,7 +347,7 @@
             $('resultsList').innerHTML = `
                 <div class="loading-state">
                     <div class="spinner"></div>
-                    <p>Searching Wikipedia...</p>
+                    <p>Searching Wikipedia and Web...</p>
                 </div>`;
         }
         if ($('resultStats')) $('resultStats').textContent = '';
@@ -325,28 +356,12 @@
         try {
             allResults = await window.gatewayCrawl(q);
 
-            const lq = q.toLowerCase().replace(/\s+/g, ' ');
-            const lqCompact = lq.replace(/\s+/g, '');
-            const secrets = [];
-            if (lq === 'xpdevs' || lq === 'xp devs' || lq.includes('xpdevs') || lq.includes('xp devs')) {
-                secrets.push({ title:'XPDevs', url:'https://xpdevs.github.io', description:'The official XPDevs website — design systems, tools, and projects.', fullSnippet:'XPDevs creates design systems and web tools.', extract:'XPDevs creates design systems and web tools.', thumbnail:'https://xpdevs.github.io/logo/XPDevs.png', source:'special', score:99999 });
-                secrets.push({ title:'XPDevs on GitHub', url:'https://github.com/XPDevs', description:'XPDevs GitHub organisation — open-source projects and repositories.', fullSnippet:'XPDevs GitHub organisation.', extract:'XPDevs GitHub organisation.', source:'special', score:99998 });
-                secrets.push({ title:'XPDevs Genesis-AI', url:'https://xpdevs.github.io/Genesis-AI', description:'Genesis-AI by XPDevs — AI-powered tools and platforms.', fullSnippet:'Genesis-AI by XPDevs.', extract:'Genesis-AI by XPDevs.', source:'special', score:99997 });
-            }
-            if (lq === 'genesis-ai' || lq === 'genesis ai' || lq === 'genesisai' || lq.includes('genesis-ai') || lq.includes('genesis ai')) {
-                secrets.push({ title:'Genesis-AI', url:'https://xpdevs.github.io/Genesis-AI', description:'Genesis-AI by XPDevs — AI-powered tools and platforms.', fullSnippet:'Genesis-AI offers AI-powered tools by XPDevs.', extract:'Genesis-AI offers AI-powered tools by XPDevs.', source:'special', score:99997 });
-            }
-            if (lq === 'james turner' || lq === 'jamesturner' || lq.includes('james') && lq.includes('turner') || lq === 'jt') {
-                secrets.push({ title:'James Turner — XPDevs', url:'https://xpdevs.github.io', description:'James Turner — creator of XPDevs and Genesis-AI.', fullSnippet:'James Turner creates design systems, tools, and AI platforms.', extract:'James Turner creates design systems, tools, and AI platforms.', source:'special', score:99996 });
-            }
-            if (lq === 'opencode' || lq.includes('opencode')) {
-                secrets.push({ title:'OpenCode', url:'https://opencode.ai', description:'OpenCode — AI coding assistant for the command line.', fullSnippet:'OpenCode is an AI coding assistant for the command line.', extract:'OpenCode is an AI coding assistant for the command line.', source:'special', score:99995 });
-            }
-            allResults = [...secrets, ...allResults];
-
             if (allResults.length) {
                 try { const s = await window.gatewaySpellCheck(q); spellSuggestion = s; } catch(_) {}
             }
+
+            window._gwPage = 1;
+            window._gwLoaded = 0;
 
             try {
                 const url = new URL(window.location);
@@ -354,11 +369,11 @@
                 window.history.replaceState({ query: q }, '', url.toString());
             } catch(_) {}
 
-            window._gwPage = 1;
-            window._gwLoaded = 0;
             window._gwRender();
         } catch(_) {
-            $('resultsList').innerHTML = '<p style="color:#ff4d4d;text-align:center;padding:32px">Connection error. Please check your internet and try again.</p>';
+            if ($('resultsList')) {
+                $('resultsList').innerHTML = '<p style="color:#ff4d4d;text-align:center;padding:32px">Connection error. Please check your internet and try again.</p>';
+            }
         }
     }
     window.performSearch = performSearch;
@@ -366,6 +381,7 @@
     function resultBadge(r) {
         if (r.source === 'special') return '<span class="badge special">\u2605</span>';
         if (r.resultType === 'web') return '<span class="badge web">\u25C9</span>';
+        if (r.resultType === 'book') return '<span class="badge book">B</span>';
         return '<span class="badge wiki">W</span>';
     }
 
@@ -383,11 +399,11 @@
                 </div>`;
         }
         const isWeb = r.resultType === 'web';
-        const urlDisplay = (r.url || '').replace(/^https?:\/\//, '');
+        const urlDisplay = (r.url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
         const thumb = r.thumbnail && !isWeb
             ? `<img class="result-item-thumb" src="${r.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
             : '';
-        const badge = isWeb ? '<span class="badge web">\u25C9</span>' : '<span class="badge wiki">W</span>';
+        const badge = resultBadge(r);
         return `
             <div class="result-item">
                 ${thumb}
@@ -414,41 +430,49 @@
         const isImages = activeTab === 'images';
         const filtered = isImages ? allResults.filter(r => r.thumbnail) : allResults;
 
-        $('resultStats').textContent = `About ${filtered.length} results`;
+        if ($('resultStats')) {
+            $('resultStats').textContent = `About ${filtered.length} results`;
+        }
 
         const dym = $('didYouMean');
-        if (spellSuggestion && activeTab === 'all') {
-            dym.innerHTML = `Did you mean: <a onclick="searchSuggestion('${spellSuggestion.replace(/['"\\]/g, '')}')">${spellSuggestion}</a>`;
-        } else dym.innerHTML = '';
+        if (dym) {
+            if (spellSuggestion && activeTab === 'all') {
+                dym.innerHTML = `Did you mean: <a onclick="searchSuggestion('${spellSuggestion.replace(/['"\\]/g, '')}')">${spellSuggestion}</a>`;
+            } else dym.innerHTML = '';
+        }
 
         const answerArea = $('answerArea');
-        if (activeTab === 'all' && (lastQuery.includes('?') || lastQuery.split(' ').length > 3)) {
-            const top = filtered.find(r => (r.resultType === 'wiki' || r.source === 'special') && r.extract && r.extract.length > 60);
-            if (top) {
-                const ans = top.extract.split('. ').slice(0, 2).join('. ') + '.';
-                answerArea.innerHTML = `
-                    <div class="answer-box">
-                        <h2>Quick Answer</h2>
-                        <p>${ans}</p>
-                        <div class="answer-source">
-                            <span class="badge">Wikipedia</span>
-                            <a href="${top.url}" target="_self">${top.title}</a>
-                        </div>
-                    </div>`;
+        if (answerArea) {
+            if (activeTab === 'all' && (lastQuery.includes('?') || lastQuery.split(' ').length > 3)) {
+                const top = filtered.find(r => (r.resultType === 'wiki' || r.source === 'special') && r.extract && r.extract.length > 60);
+                if (top) {
+                    const ans = top.extract.split('. ').slice(0, 2).join('. ') + '.';
+                    answerArea.innerHTML = `
+                        <div class="answer-box">
+                            <h2>Quick Answer</h2>
+                            <p>${ans}</p>
+                            <div class="answer-source">
+                                <span class="badge">Wikipedia</span>
+                                <a href="${top.url}" target="_self">${top.title}</a>
+                            </div>
+                        </div>`;
+                } else answerArea.innerHTML = '';
             } else answerArea.innerHTML = '';
-        } else answerArea.innerHTML = '';
+        }
 
         const list = $('resultsList');
         const empty = $('emptyState');
         const loadMore = $('loadMoreArea');
 
+        if (!list) return;
+
         if (!filtered.length) {
             list.innerHTML = '';
-            empty.style.display = '';
-            loadMore.style.display = 'none';
+            if (empty) empty.style.display = '';
+            if (loadMore) loadMore.style.display = 'none';
             return;
         }
-        empty.style.display = 'none';
+        if (empty) empty.style.display = 'none';
 
         window._gwLoaded = window._gwLoaded || 0;
         const start = window._gwLoaded;
@@ -464,7 +488,8 @@
             window.scrollTo(0, 0);
         } else {
             if (isImages) {
-                list.querySelector('.image-grid').insertAdjacentHTML('beforeend', newItems.map(renderGridItem).join(''));
+                const grid = list.querySelector('.image-grid');
+                if (grid) grid.insertAdjacentHTML('beforeend', newItems.map(renderGridItem).join(''));
             } else {
                 list.insertAdjacentHTML('beforeend', newItems.map(renderItem).join(''));
             }
@@ -472,10 +497,8 @@
 
         window._gwLoaded = end;
 
-        if (window._gwLoaded < filtered.length) {
-            loadMore.style.display = 'flex';
-        } else {
-            loadMore.style.display = 'none';
+        if (loadMore) {
+            loadMore.style.display = (window._gwLoaded < filtered.length) ? 'flex' : 'none';
         }
     }
 
@@ -489,19 +512,11 @@
         document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
         window._gwPage = 1;
         window._gwLoaded = 0;
+        if ($('resultsList')) $('resultsList').innerHTML = '';
         window._gwRender();
     };
 
-    // --- Tabs ---
-    window.switchTab = function(tab) {
-        activeTab = tab;
-        document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
-        window._gwPage = 1;
-        window._gwLoaded = 0;
-        window._gwRender();
-    };
-
-    // --- Lucky ---
+    // --- I'm Feeling Lucky ---
     window.luckySearch = function() {
         const val = $('mainSearchInput').value.trim();
         if (!val) return;
@@ -512,43 +527,54 @@
     };
 
     window.searchSuggestion = function(term) {
-        $('mainSearchInput').value = term;
-        $('resultsSearchInput').value = term;
+        if ($('mainSearchInput')) $('mainSearchInput').value = term;
+        if ($('resultsSearchInput')) $('resultsSearchInput').value = term;
         updateClearBtn('mainSearchInput');
         updateClearBtn('resultsSearchInput');
         performSearch('resultsSearchInput');
     };
 
-    // --- Keyboard ---
+    // --- Key handling ---
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            if ($('resultsUI').classList.contains('visible')) {
-                $('resultsSearchInput').focus();
+            if ($('resultsUI') && $('resultsUI').classList.contains('visible')) {
+                if ($('resultsSearchInput')) $('resultsSearchInput').focus();
             } else {
-                $('mainSearchInput').focus();
+                if ($('mainSearchInput')) $('mainSearchInput').focus();
             }
         }
         if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
             e.preventDefault();
-            const input = $('resultsUI').classList.contains('visible') ? $('resultsSearchInput') : $('mainSearchInput');
+            const input = ($('resultsUI') && $('resultsUI').classList.contains('visible')) ? $('resultsSearchInput') : $('mainSearchInput');
             if (input) input.focus();
         }
     });
 
     // --- Init ---
-    $('mainSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('mainSearchInput'); });
-    $('resultsSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('resultsSearchInput'); });
-    $('mainSearchInput').addEventListener('input', () => updateClearBtn('mainSearchInput'));
-    $('resultsSearchInput').addEventListener('input', () => updateClearBtn('resultsSearchInput'));
+    if ($('mainSearchInput')) {
+        $('mainSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('mainSearchInput'); });
+        $('mainSearchInput').addEventListener('input', () => updateClearBtn('mainSearchInput'));
+    }
+    if ($('resultsSearchInput')) {
+        $('resultsSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('resultsSearchInput'); });
+        $('resultsSearchInput').addEventListener('input', () => updateClearBtn('resultsSearchInput'));
+    }
+
+    initAutocomplete('mainSearchInput', 'homeAutocomplete');
+    initAutocomplete('resultsSearchInput', 'resultsAutocomplete');
+
+    function getQueryParam() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('query') || params.get('q') || '';
+    }
 
     // Handle browser back/forward
     window.addEventListener('popstate', function() {
-        const params = new URLSearchParams(window.location.search);
-        const q = params.get('query');
-        if ($('resultsUI').classList.contains('visible')) {
+        const q = getQueryParam();
+        if ($('resultsUI') && $('resultsUI').classList.contains('visible')) {
             if (q) {
-                $('mainSearchInput').value = q;
-                $('resultsSearchInput').value = q;
+                if ($('mainSearchInput')) $('mainSearchInput').value = q;
+                if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
                 performSearch('resultsSearchInput');
             } else {
                 location.reload();
@@ -556,16 +582,12 @@
         }
     });
 
-    initAutocomplete('mainSearchInput', 'homeAutocomplete');
-    initAutocomplete('resultsSearchInput', 'resultsAutocomplete');
-
     // Restore from URL on page load
     try {
-        const params = new URLSearchParams(window.location.search);
-        const q = params.get('query');
+        const q = getQueryParam();
         if (q) {
-            $('mainSearchInput').value = q;
-            $('resultsSearchInput').value = q;
+            if ($('mainSearchInput')) $('mainSearchInput').value = q;
+            if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
             performSearch('mainSearchInput');
         }
     } catch(_) {}
