@@ -1,21 +1,94 @@
-/**
- * Gateway — Multi-Source Search Engine
- * XPDevs — https://xpdevs.github.io
- * Aggregates from Wikipedia, DuckDuckGo, OpenLibrary, Wikimedia Commons, and Web search
- */
 (function() {
     'use strict';
 
-    const CACHE_TTL = 300000;
+    const CACHE_TTL = 600000;
     const _cache = new Map();
+    const LS_PREFIX = 'gw_';
 
     function _cached(k) {
         const e = _cache.get(k);
         if (e && Date.now() - e.t < CACHE_TTL) return e.d;
         _cache.delete(k);
+        try {
+            const raw = localStorage.getItem(LS_PREFIX + k);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Date.now() - parsed.t < CACHE_TTL) {
+                    _cache.set(k, parsed);
+                    return parsed.d;
+                }
+                localStorage.removeItem(LS_PREFIX + k);
+            }
+        } catch(_) {}
         return null;
     }
-    function _store(k, d) { _cache.set(k, { d, t: Date.now() }); }
+    function _store(k, d) {
+        _cache.set(k, { d, t: Date.now() });
+        try {
+            localStorage.setItem(LS_PREFIX + k, JSON.stringify({ d, t: Date.now() }));
+        } catch(_) {}
+    }
+    function _evictOldCache() {
+        try {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(LS_PREFIX)) keys.push(key);
+            }
+            if (keys.length > 30) {
+                const entries = keys.map(k => ({ k, t: JSON.parse(localStorage.getItem(k) || '{}').t || 0 }))
+                    .sort((a, b) => a.t - b.t);
+                for (let i = 0; i < entries.length - 30; i++) {
+                    localStorage.removeItem(entries[i].k);
+                }
+            }
+        } catch(_) {}
+    }
+    _evictOldCache();
+
+    const DANGEROUS_DOMAINS = new Set([
+        '4chan.org','8kun.top','bestgore.com','liveleak.com','kiwifarms.net',
+        'freenode.net','anon-ib.com','bitcoinmix.org','hydramarket.org',
+        'tor2web.org','onion.city','onion.to','onion.cab','onion.sh',
+        'onion.link','onion.guide','exe.io','shorte.st','adf.ly',
+        'bit.ly','tinyurl.com','ow.ly','goo.gl','is.gd','buff.ly',
+        'tiny.cc','tr.im','x.co','short.cm'
+    ]);
+
+    const DANGEROUS_KEYWORDS = [
+        /malware/i, /virus/i, /exploit/i, /crack\b/i, /keygen/i,
+        /warez/i, /hack/i, /phish/i, /ransomware/i, /trojan/i
+    ];
+
+    function isSafeDomain(domain) {
+        if (!domain) return true;
+        const d = domain.toLowerCase().replace(/^www\./, '');
+        if (DANGEROUS_DOMAINS.has(d)) return false;
+        if (d.split('.').length > 3) return false;
+        return true;
+    }
+
+    function isSafeResult(r) {
+        if (!r.domain) return true;
+        if (!isSafeDomain(r.domain)) return false;
+        const text = (r.title + ' ' + (r.description || '')).toLowerCase();
+        for (const re of DANGEROUS_KEYWORDS) {
+            if (re.test(text)) return false;
+        }
+        return true;
+    }
+
+    function cleanTracking(urlStr) {
+        if (!urlStr) return urlStr;
+        try {
+            const u = new URL(urlStr);
+            const track = new Set(['utm_source','utm_medium','utm_campaign','utm_term','utm_content','fbclid','gclid','ref','source','mc_cid','mc_eid']);
+            for (const k of u.searchParams.keys()) {
+                if (track.has(k)) u.searchParams.delete(k);
+            }
+            return u.toString();
+        } catch(_) { return urlStr; }
+    }
 
     const STOPWORDS = new Set([
         'what','is','the','how','do','i','who','where','can','you','tell','me','about',
@@ -42,20 +115,23 @@
 
     function _wikiDomain() {
         const lang = (window.gatewayLang || 'en').split('-')[0];
-        const map = {
-            en:'en',es:'es',fr:'fr',de:'de',it:'it',pt:'pt',ru:'ru',
+        const map = { en:'en',es:'es',fr:'fr',de:'de',it:'it',pt:'pt',ru:'ru',
             ja:'ja','zh':'zh',ko:'ko',ar:'ar',hi:'hi',bn:'bn',
             tr:'tr',nl:'nl',pl:'pl',sv:'sv',da:'da',fi:'fi',
-            no:'no',cs:'cs',ro:'ro',hu:'hu',el:'el'
-        };
-        const sub = map[lang] || 'en';
-        return sub + '.wikipedia.org';
+            no:'no',cs:'cs',ro:'ro',hu:'hu',el:'el' };
+        return (map[lang] || 'en') + '.wikipedia.org';
     }
 
-    async function _fetch(url) {
-        const r = await fetch(url);
-        if (!r.ok) throw new Error(String(r.status));
-        return r.json();
+    async function _fetch(url, timeoutMs) {
+        const ac = new AbortController();
+        const timer = setTimeout(() => ac.abort(), timeoutMs || 4000);
+        try {
+            const r = await fetch(url, { signal: ac.signal });
+            if (!r.ok) throw new Error(String(r.status));
+            return await r.json();
+        } finally {
+            clearTimeout(timer);
+        }
     }
 
     async function searchWikipedia(term) {
@@ -67,13 +143,13 @@
         try {
             const wikiDomain = _wikiDomain();
             const kw = refineQuery(term) || term;
-            const sr = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=30&srinfo=suggestion`);
+            const sr = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=10&srinfo=suggestion`, 3000);
             if (!sr.query?.search?.length) return results;
 
             const suggestion = sr.query?.searchinfo?.suggestion || null;
-            const titles = sr.query.search.slice(0, 15).map(s => s.title);
+            const titles = sr.query.search.slice(0, 5).map(s => s.title);
 
-            const dt = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=3&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=10`);
+            const dt = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=2&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=5`, 3000);
 
             for (const id in dt.query.pages) {
                 const p = dt.query.pages[id];
@@ -82,8 +158,8 @@
 
                 results.push({
                     title: p.title,
-                    url: p.fullurl,
-                    description: ext ? ext.substring(0, 280) + (ext.length > 280 ? '...' : '') : 'Wikipedia entry',
+                    url: p.fullurl || `https://${wikiDomain}/wiki/${encodeURIComponent(p.title.replace(/ /g, '_'))}`,
+                    description: ext ? ext.substring(0, 200) + (ext.length > 200 ? '...' : '') : 'Wikipedia entry',
                     fullSnippet: ext,
                     extract: ext,
                     thumbnail: p.thumbnail?.source || null,
@@ -97,20 +173,21 @@
 
                 if (p.extlinks) {
                     const seenDomains = new Set();
-                    for (const linkObj of p.extlinks.slice(0, 5)) {
-                        const link = linkObj['*'];
+                    for (const linkObj of p.extlinks.slice(0, 3)) {
+                        const link = cleanTracking(linkObj['*']);
                         try {
                             const urlObj = new URL(link);
                             const domain = urlObj.hostname.replace(/^www\./, '');
                             if (domain.includes('wikipedia.org') || domain.includes('wikimedia') ||
                                 domain.includes('doi.org') || domain.includes('creativecommons') ||
                                 domain.includes('mediawiki') || seenDomains.has(domain) ||
+                                !isSafeDomain(domain) ||
                                 urlObj.pathname === '/' || urlObj.pathname === '') continue;
                             seenDomains.add(domain);
                             results.push({
                                 title: domain,
                                 url: link,
-                                description: ext ? `Referenced by "${p.title}". ${ext.substring(0, 160)}` : `External link from Wikipedia article "${p.title}".`,
+                                description: ext ? `Referenced by "${p.title}". ${ext.substring(0, 100)}` : `External link from Wikipedia article "${p.title}".`,
                                 fullSnippet: ext || '',
                                 extract: ext || '',
                                 thumbnail: null,
@@ -139,12 +216,12 @@
 
         const results = [];
         try {
-            const data = await _fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(term)}&format=json&no_html=1&skip_disambig=1`);
+            const data = await _fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(term)}&format=json&no_html=1&skip_disambig=1`, 3000);
             if (data.AbstractText) {
                 results.push({
                     title: data.Heading || data.AbstractSource || 'Instant Answer',
                     url: data.AbstractURL || `https://duckduckgo.com/?q=${encodeURIComponent(term)}`,
-                    description: data.AbstractText.substring(0, 280),
+                    description: data.AbstractText.substring(0, 200),
                     fullSnippet: data.AbstractText,
                     extract: data.AbstractText,
                     thumbnail: data.Image ? `https://api.duckduckgo.com${data.Image}` : null,
@@ -158,7 +235,7 @@
                 });
             }
             if (data.RelatedTopics) {
-                for (const t of data.RelatedTopics.slice(0, 20)) {
+                for (const t of data.RelatedTopics.slice(0, 12)) {
                     if (t.Text) {
                         let url = t.FirstURL;
                         let domain = 'duckduckgo.com';
@@ -166,7 +243,7 @@
                         results.push({
                             title: t.Text.split(' - ')[0] || url,
                             url: url || `https://duckduckgo.com/?q=${encodeURIComponent(t.Text)}`,
-                            description: t.Text.substring(0, 280),
+                            description: t.Text.substring(0, 200),
                             fullSnippet: t.Text,
                             extract: t.Text,
                             thumbnail: t.Icon?.URL ? `https://api.duckduckgo.com${t.Icon.URL}` : null,
@@ -186,41 +263,6 @@
         return results;
     }
 
-    async function searchOpenLibrary(term) {
-        const key = 'ol:' + term;
-        const cached = _cached(key);
-        if (cached) return cached;
-
-        const results = [];
-        try {
-            const kw = refineQuery(term) || term;
-            const data = await _fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(kw)}&limit=12`);
-            if (data.docs) {
-                for (const doc of data.docs) {
-                    const authors = doc.author_name || [];
-                    const desc = (authors.length ? `By ${authors.join(', ')}. ` : '') + (doc.first_publish_year ? `Published ${doc.first_publish_year}. ` : '') + (doc.subject?.slice(0, 3).join(', ') || '');
-                    results.push({
-                        title: doc.title,
-                        url: `https://openlibrary.org${doc.key || '/works/' + doc.cover_edition_key}`,
-                        description: desc || doc.title,
-                        fullSnippet: doc.description?.value || desc || doc.title,
-                        extract: doc.description?.value || desc || doc.title,
-                        thumbnail: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
-                        source: 'openlibrary',
-                        sourceLabel: 'Books',
-                        resultType: 'book',
-                        score: 5,
-                        domain: 'openlibrary.org',
-                        suggestion: null
-                    });
-                }
-            }
-        } catch (_) {}
-
-        _store(key, results);
-        return results;
-    }
-
     async function searchCommons(term) {
         const key = 'commons:' + term;
         const cached = _cached(key);
@@ -229,11 +271,11 @@
         const results = [];
         try {
             const kw = refineQuery(term) || term;
-            const sr = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srnamespace=6&srlimit=20`);
+            const sr = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srnamespace=6&srlimit=10`, 3000);
             if (!sr.query?.search) return results;
 
             const titles = sr.query.search.map(s => s.title);
-            const dt = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|size|extmetadata|mime&titles=${encodeURIComponent(titles.join('|'))}`);
+            const dt = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|size|extmetadata|mime&titles=${encodeURIComponent(titles.join('|'))}`, 3000);
 
             for (const id in dt.query.pages) {
                 const p = dt.query.pages[id];
@@ -269,11 +311,15 @@
 
         const results = [];
         try {
+            const ac = new AbortController();
+            const timer = setTimeout(() => ac.abort(), 4500);
             const r = await fetch('https://html.duckduckgo.com/html/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'q=' + encodeURIComponent(term)
+                body: 'q=' + encodeURIComponent(term),
+                signal: ac.signal
             });
+            clearTimeout(timer);
             const html = await r.text();
             const div = document.createElement('div');
             div.innerHTML = html;
@@ -287,11 +333,14 @@
 
                 let url = titleEl.getAttribute('href');
                 if (!url || seen.has(url)) continue;
+                url = cleanTracking(url);
                 seen.add(url);
+
+                const domain = url ? new URL(url).hostname.replace(/^www\./, '') : '';
+                if (!isSafeDomain(domain)) continue;
 
                 const title = titleEl.textContent.trim();
                 const snippet = snippetEl ? snippetEl.textContent.trim() : '';
-                const domain = url ? new URL(url).hostname.replace(/^www\./, '') : '';
 
                 results.push({
                     title,
@@ -308,7 +357,7 @@
                     suggestion: null
                 });
 
-                if (results.length >= 15) break;
+                if (results.length >= 10) break;
             }
         } catch (_) {}
 
@@ -320,18 +369,22 @@
         if (!term) return [];
         const key = 'full:' + term;
         const cached = _cached(key);
-        if (cached) return cached;
+        if (cached) {
+            const safe = cached.filter(isSafeResult);
+            return safe.length ? safe : cached;
+        }
 
         const sources = [
             searchWikipedia(term),
             searchDuckDuckGo(term),
-            searchOpenLibrary(term),
             searchCommons(term),
             searchWeb(term)
         ];
 
         const all = await Promise.allSettled(sources);
         let merged = all.flatMap(p => p.status === 'fulfilled' ? p.value : []);
+
+        merged = merged.filter(isSafeResult);
 
         const ql = term.toLowerCase();
         for (const r of merged) {
@@ -361,7 +414,7 @@
             deduped.push(r);
         }
 
-        _store(key, deduped);
+        if (deduped.length) _store(key, deduped);
         return deduped;
     }
 
@@ -373,7 +426,7 @@
 
         try {
             const wikiDomain = _wikiDomain();
-            const data = await _fetch(`https://${wikiDomain}/w/api.php?action=opensearch&format=json&origin=*&search=${encodeURIComponent(term)}&limit=8&namespace=0`);
+            const data = await _fetch(`https://${wikiDomain}/w/api.php?action=opensearch&format=json&origin=*&search=${encodeURIComponent(term)}&limit=8&namespace=0`, 2000);
             const suggestions = Array.isArray(data[1]) ? data[1] : [];
             _store(key, suggestions);
             return suggestions;
@@ -390,7 +443,7 @@
 
         try {
             const wikiDomain = _wikiDomain();
-            const data = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(term)}&srlimit=1`);
+            const data = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(term)}&srlimit=1`, 2000);
             const s = data?.query?.searchinfo?.suggestion || null;
             if (s && s.toLowerCase() !== term.toLowerCase()) {
                 _store(key, s);

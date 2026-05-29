@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How Search works — Gateway</title>
+    <link rel="stylesheet" href="ui.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <script>if(localStorage.getItem('gw-dark')==='1')document.documentElement.classList.add('dark')</script>
+    <style>
+        .about-page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+            flex: 1;
+        }
+        .about-page h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin: 0 0 8px;
+        }
+        .about-page .subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin: 0 0 36px;
+        }
+        .about-page h2 {
+            font-size: 20px;
+            font-weight: 500;
+            margin: 32px 0 12px;
+        }
+        .about-page p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--result-desc);
+            margin: 0 0 16px;
+        }
+        .about-page ul {
+            padding: 0 0 0 20px;
+            margin: 0 0 20px;
+        }
+        .about-page li {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--result-desc);
+            margin-bottom: 6px;
+        }
+        .about-page .sources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 16px 0 24px;
+        }
+        .about-page .source-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            background: var(--card-bg);
+        }
+        .about-page .source-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+        .about-page .source-card p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+        .about-page .tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--input-bg);
+            color: var(--text-secondary);
+            margin: 3px 4px 3px 0;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== TOP NAV ==================== -->
+<nav class="top-nav">
+    <div class="top-nav-left">
+        <a href="/" class="results-logo" style="font-size:22px;font-weight:700;letter-spacing:-0.03em;text-decoration:none">
+            <span>G</span><span>a</span><span>t</span><span>e</span><span>w</span><span>a</span><span>y</span>
+        </a>
+    </div>
+    <div class="top-nav-right">
+        <button class="icon-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
+            <svg class="sun" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <svg class="moon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+        </button>
+    </div>
+</nav>
+
+<!-- ==================== CONTENT ==================== -->
+<div class="about-page">
+    <h1>How Search works</h1>
+    <p class="subtitle">Gateway is a multi-source search engine that pulls results from several free APIs — no central index, no API keys required, and no tracking.</p>
+
+    <h2>No index. No API key. No tracking.</h2>
+    <p>Gateway does not maintain its own search index. Instead, it queries multiple independent sources at once, merges and deduplicates the results, and presents them in a clean Google-like interface.</p>
+    <p>There are no user accounts, no search history stored on servers, and no behavioural tracking. Your queries go directly to the underlying sources — Gateway never sees or stores them.</p>
+
+    <h2>Sources</h2>
+    <p>Each search fans out to the following sources in parallel:</p>
+    <div class="sources-grid">
+        <div class="source-card">
+            <h3>Wikipedia</h3>
+            <p>Top search results with full-text extracts, thumbnails, and direct article links via the MediaWiki API.</p>
+        </div>
+        <div class="source-card">
+            <h3>DuckDuckGo</h3>
+            <p>Organic web results fetched through DuckDuckGo's HTML search endpoint — the same quality as Google or Bing without the tracking.</p>
+        </div>
+        <div class="source-card">
+            <h3>Wikimedia Commons</h3>
+            <p>Free-license images with thumbnails and descriptions for the Images tab.</p>
+        </div>
+    </div>
+    <p>All queries are rate-limited with AbortController timeouts (3s for API sources, 4.5s for web) so slow providers never block the whole search. Results are cached in memory and localStorage for 10 minutes, making repeat searches instant.</p>
+
+    <h2>Ranking &amp; Boosting</h2>
+    <p>Results are scored and sorted by relevance:</p>
+    <ul>
+        <li><strong>Domain boost</strong> — certain trusted sites get a higher base score</li>
+        <li><strong>Keyword match</strong> — results matching more query terms rank higher</li>
+        <li><strong>Exact phrase bonus</strong> — the exact query in the title or description adds extra weight</li>
+        <li><strong>Secret list</strong> — searching "xpdevs" or "gateway" pins official XPDevs pages to the top with a score of 99,999</li>
+    </ul>
+
+    <h2>Safety &amp; Filtering</h2>
+    <p>Every result passes through a safety layer before it reaches you:</p>
+    <ul>
+        <li><strong>Domain blocklist</strong> — 25+ dangerous domains are removed (malware, phishing, shock sites, Tor gateways, URL shorteners)</li>
+        <li><strong>Keyword filter</strong> — results containing dangerous keywords (malware, crack, warez, etc.) are blocked</li>
+        <li><strong>Tracking removal</strong> — query parameters like <code>utm_*</code>, <code>fbclid</code>, <code>ref</code> are stripped from all result URLs</li>
+    </ul>
+
+    <h2>Answer Box</h2>
+    <p>For factual queries, Gateway shows a <strong>Quick Answer</strong> box at the top of the All tab. It pulls a one-sentence extract from Wikipedia and links up to four diverse web sources alongside it, giving you both a direct answer and paths to explore deeper.</p>
+
+    <h2>Dark Mode</h2>
+    <p>Dark mode is stored in <code>localStorage</code> and applied before the page renders — no white flash. The toggle works instantly and persists across sessions.</p>
+
+    <h2>Performance</h2>
+    <p>Gateway is designed to be fast without a server:</p>
+    <ul>
+        <li>All processing happens in your browser</li>
+        <li>Parallel requests to all sources at once</li>
+        <li>Smart payload limits (e.g. 5 Wikipedia articles instead of 15)</li>
+        <li>localStorage cache keeps previous results for instant recall</li>
+    </ul>
+
+    <h2>Open Source</h2>
+    <p>Gateway is built by <a href="https://xpdevs.github.io">XPDevs</a>. The full source is available on <a href="https://github.com/XPDevs/gateway">GitHub</a> — you can inspect, fork, or self-host it.</p>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+    <div class="footer-country" data-i18n-country>United Kingdom</div>
+    <div class="footer-links">
+        <div class="links-group">
+            <a href="about.html">About</a>
+            <a href="advertising.html">Advertising</a>
+            <a href="business.html">Business</a>
+            <a href="how-search-works.html">How Search works</a>
+        </div>
+        <div class="links-group">
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+            <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
+                <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
+                XPDevs
+            </a>
+        </div>
+    </div>
+</footer>
+
+<script>
+(function() {
+    'use strict';
+    function applyDark(enabled) {
+        document.documentElement.classList.toggle('dark', enabled);
+        document.body.classList.toggle('dark', enabled);
+        localStorage.setItem('gw-dark', enabled ? '1' : '0');
+        document.querySelectorAll('.sun').forEach(el => el.style.display = enabled ? 'none' : '');
+        document.querySelectorAll('.moon').forEach(el => el.style.display = enabled ? '' : 'none');
+    }
+    window.toggleDarkMode = function() {
+        applyDark(!document.documentElement.classList.contains('dark'));
+    };
+    if (localStorage.getItem('gw-dark') === '1') applyDark(true);
+})();
+</script>
+</body>
+</html>

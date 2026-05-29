@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="ui.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <script>if(localStorage.getItem('gw-dark')==='1')document.documentElement.classList.add('dark')</script>
 </head>
 <body>
 
@@ -21,6 +22,7 @@
             <div class="settings-row">
                 <label data-i18n="language">Language</label>
                 <select id="langSelect" onchange="setLanguage(this.value)">
+                    <option value="auto">Auto</option>
                     <option value="en">English</option>
                     <option value="es">Español</option>
                     <option value="fr">Français</option>
@@ -55,6 +57,7 @@
                     <span class="slider"></span>
                 </label>
             </div>
+
         </div>
     </div>
 </div>
@@ -63,12 +66,9 @@
 <div id="homeUI">
     <nav class="top-nav">
         <div class="top-nav-left">
-            <a href="#" data-i18n="about">About</a>
-            <a href="#" data-i18n="store">Store</a>
+            <a href="about.html" data-i18n="about">About</a>
         </div>
         <div class="top-nav-right">
-            <a href="#" data-i18n="gmail">Gmail</a>
-            <a href="#" data-i18n="images">Images</a>
             <button class="icon-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
                 <svg class="sun" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -83,7 +83,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
             </button>
-            <button class="sign-in-btn" data-i18n="signIn">Sign in</button>
         </div>
     </nav>
 
@@ -118,17 +117,17 @@
     </div>
 
     <footer class="footer">
-        <div class="footer-country" data-i18n="unitedKingdom">United Kingdom</div>
+        <div class="footer-country" data-i18n-country>United Kingdom</div>
         <div class="footer-links">
             <div class="links-group">
-                <a href="#" data-i18n="advertising">Advertising</a>
-                <a href="#" data-i18n="business">Business</a>
-                <a href="#" data-i18n="howSearchWorks">How Search works</a>
+                <a href="advertising.html" data-i18n="advertising">Advertising</a>
+                <a href="business.html" data-i18n="business">Business</a>
+                <a href="how-search-works.html" data-i18n="howSearchWorks">How Search works</a>
             </div>
             <div class="links-group">
-                <a href="#" data-i18n="privacy">Privacy</a>
-                <a href="#" data-i18n="terms">Terms</a>
-                <a href="#" data-i18n="settings">Settings</a>
+                <a href="privacy.html" data-i18n="privacy">Privacy</a>
+                <a href="terms.html" data-i18n="terms">Terms</a>
+                <a href="#" data-i18n="settings" onclick="openSettings();return false">Settings</a>
                 <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
                     <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
                     XPDevs
@@ -187,10 +186,7 @@
                 <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                 <span data-i18n="images">Images</span>
             </div>
-            <div class="tab-item" data-tab="books" onclick="switchTab('books')">
-                <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
-                <span data-i18n="books">Books</span>
-            </div>
+
         </div>
     </header>
 
@@ -215,17 +211,17 @@
     </div>
 
     <footer class="footer">
-        <div class="footer-country" data-i18n="unitedKingdom">United Kingdom</div>
+        <div class="footer-country" data-i18n-country>United Kingdom</div>
         <div class="footer-links">
             <div class="links-group">
-                <a href="#" data-i18n="advertising">Advertising</a>
-                <a href="#" data-i18n="business">Business</a>
-                <a href="#" data-i18n="howSearchWorks">How Search works</a>
+                <a href="advertising.html" data-i18n="advertising">Advertising</a>
+                <a href="business.html" data-i18n="business">Business</a>
+                <a href="how-search-works.html" data-i18n="howSearchWorks">How Search works</a>
             </div>
             <div class="links-group">
-                <a href="#" data-i18n="privacy">Privacy</a>
-                <a href="#" data-i18n="terms">Terms</a>
-                <a href="#" data-i18n="settings">Settings</a>
+                <a href="privacy.html" data-i18n="privacy">Privacy</a>
+                <a href="terms.html" data-i18n="terms">Terms</a>
+                <a href="#" data-i18n="settings" onclick="openSettings();return false">Settings</a>
                 <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
                     <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
                     XPDevs
