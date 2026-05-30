@@ -105,36 +105,17 @@
 <!-- ==================== CONTENT ==================== -->
 <div class="about-page">
     <h1>How Search works</h1>
-    <p class="subtitle">Gateway is a multi-source search engine that pulls results from several free APIs — no central index, no API keys required, and no tracking.</p>
+    <p class="subtitle">Gateway searches a bundled local index — completely offline, no servers, no tracking.</p>
 
-    <h2>No index. No API key. No tracking.</h2>
-    <p>Gateway does not maintain its own search index. Instead, it queries multiple independent sources at once, merges and deduplicates the results, and presents them in a clean Google-like interface.</p>
-    <p>There are no user accounts, no search history stored on servers, and no behavioural tracking. Your queries go directly to the underlying sources — Gateway never sees or stores them.</p>
+    <h2>Local index</h2>
+    <p>Gateway ships with a comprehensive offline index of thousands of topics across science, history, technology, geography, arts, and more. The index is loaded directly into your browser on startup and stored in IndexedDB for instant access on subsequent visits. No network requests are made when you search.</p>
 
-    <h2>Sources</h2>
-    <p>Each search fans out to the following sources in parallel:</p>
-    <div class="sources-grid">
-        <div class="source-card">
-            <h3>Wikipedia</h3>
-            <p>Top search results with full-text extracts, thumbnails, and direct article links via the MediaWiki API.</p>
-        </div>
-        <div class="source-card">
-            <h3>DuckDuckGo</h3>
-            <p>Organic web results fetched through DuckDuckGo's HTML search endpoint — the same quality as Google or Bing without the tracking.</p>
-        </div>
-        <div class="source-card">
-            <h3>Wikimedia Commons</h3>
-            <p>Free-license images with thumbnails and descriptions for the Images tab.</p>
-        </div>
-    </div>
-    <p>All queries are rate-limited with AbortController timeouts (3s for API sources, 4.5s for web) so slow providers never block the whole search. Results are cached in memory and localStorage for 10 minutes, making repeat searches instant.</p>
-
-    <h2>Ranking &amp; Boosting</h2>
+    <h2>Ranking</h2>
     <p>Results are scored and sorted by relevance:</p>
     <ul>
-        <li><strong>Domain boost</strong> — certain trusted sites get a higher base score</li>
         <li><strong>Keyword match</strong> — results matching more query terms rank higher</li>
         <li><strong>Exact phrase bonus</strong> — the exact query in the title or description adds extra weight</li>
+        <li><strong>Prefix boost</strong> — titles starting with the query get a significant score bump</li>
         <li><strong>Secret list</strong> — searching "xpdevs" or "gateway" pins official XPDevs pages to the top with a score of 99,999</li>
     </ul>
 
@@ -146,8 +127,8 @@
         <li><strong>Tracking removal</strong> — query parameters like <code>utm_*</code>, <code>fbclid</code>, <code>ref</code> are stripped from all result URLs</li>
     </ul>
 
-    <h2>Answer Box</h2>
-    <p>For factual queries, Gateway shows a <strong>Quick Answer</strong> box at the top of the All tab. It pulls a one-sentence extract from Wikipedia and links up to four diverse web sources alongside it, giving you both a direct answer and paths to explore deeper.</p>
+    <h2>Custom index</h2>
+    <p>You can upload your own JSON index via Settings → Upload Index. The uploaded index replaces the built-in one and persists across page reloads in IndexedDB, allowing you to customise Gateway with your own data.</p>
 
     <h2>Dark Mode</h2>
     <p>Dark mode is stored in <code>localStorage</code> and applied before the page renders — no white flash. The toggle works instantly and persists across sessions.</p>
@@ -155,10 +136,9 @@
     <h2>Performance</h2>
     <p>Gateway is designed to be fast without a server:</p>
     <ul>
-        <li>All processing happens in your browser</li>
-        <li>Parallel requests to all sources at once</li>
-        <li>Smart payload limits (e.g. 5 Wikipedia articles instead of 15)</li>
-        <li>localStorage cache keeps previous results for instant recall</li>
+        <li>All processing happens in your browser with zero network requests</li>
+        <li>Results are cached in memory for 10 minutes for instant repeat searches</li>
+        <li>IndexedDB persists the index across sessions without re-downloading</li>
     </ul>
 
     <h2>Open Source</h2>

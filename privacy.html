@@ -34,19 +34,13 @@
     <h1>Privacy</h1>
     <p class="subtitle">Gateway is designed to be private by default. No accounts, no tracking, no data collection.</p>
     <h2>What Gateway collects</h2>
-    <p>Nothing. Gateway runs entirely in your browser. There is no backend server, no database, and no analytics. Your search queries are never sent to Gateway — they go directly to the sources you search (Wikipedia, DuckDuckGo, Wikimedia Commons) and are subject to their privacy policies.</p>
+    <p>Nothing. Gateway runs entirely in your browser with a local search index. There is no backend server, no database, and no analytics. Your search queries never leave your device.</p>
     <h2>Local storage</h2>
-    <p>Gateway uses your browser's <code>localStorage</code> to remember your preferences (language, dark mode, cached search results). This data never leaves your device and can be cleared at any time from your browser settings.</p>
-    <h2>Third-party sources</h2>
-    <p>When you search, your query is sent to the following third-party services:</p>
-    <ul>
-        <li><strong>Wikipedia</strong> — via the MediaWiki API</li>
-        <li><strong>DuckDuckGo</strong> — via the HTML search endpoint</li>
-        <li><strong>Wikimedia Commons</strong> — via the MediaWiki API</li>
-    </ul>
-    <p>Each service operates under its own privacy policy. Gateway does not control what these services log.</p>
+    <p>Gateway uses your browser's <code>localStorage</code> and <code>IndexedDB</code> to remember your preferences (language, dark mode) and to store the search index for offline use. This data never leaves your device and can be cleared at any time from your browser settings.</p>
+    <h2>No third-party services</h2>
+    <p>Gateway performs all searches against a bundled local index. No network requests are made when you search — your queries stay on your device and are never sent to any external service.</p>
     <h2>No cookies</h2>
-    <p>Gateway does not set any cookies of its own. Third-party sources may set cookies according to their own policies.</p>
+    <p>Gateway does not set any cookies.</p>
 </div>
 <footer class="footer">
     <div class="footer-country" data-i18n-country>United Kingdom</div>

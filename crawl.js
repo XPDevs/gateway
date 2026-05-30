@@ -90,29 +90,6 @@
         } catch(_) { return urlStr; }
     }
 
-    const STOPWORDS = new Set([
-        'what','is','the','how','do','i','who','where','can','you','tell','me','about',
-        'a','an','of','in','to','for','on','with','at','by','this','that','are','was',
-        'were','will','have','has','had','does','did','would','could','should','may',
-        'might','shall','be','been','being','get','got','gets','getting','make','made',
-        'makes','making','use','used','uses','using','know','known','knows','knowing',
-        'want','wants','wanted','wanting','need','needs','needed','needing','like',
-        'likes','liked','liking','find','finds','found','finding','give','gives','gave',
-        'given','giving','take','takes','took','taking','see','sees','saw','seeing',
-        'come','comes','came','coming','go','goes','went','gone','going','also','just',
-        'now','then','than','more','most','some','any','all','each','every','own','same',
-        'so','too','very','can','will','not','no','nor','but','or','if','as','up','down',
-        'out','off','over','under','again','further','once','here','there','when','why'
-    ]);
-
-    function refineQuery(q) {
-        return q.toLowerCase()
-            .replace(/[?.,!;:()'"\u2018\u2019\u201c\u201d]/g, '')
-            .split(/\s+/)
-            .filter(w => w && w.length > 1 && !STOPWORDS.has(w))
-            .join(' ');
-    }
-
     function _wikiDomain() {
         const lang = (window.gatewayLang || 'en').split('-')[0];
         const map = { en:'en',es:'es',fr:'fr',de:'de',it:'it',pt:'pt',ru:'ru',
@@ -134,235 +111,104 @@
         }
     }
 
-    async function searchWikipedia(term) {
-        const key = 'wiki:' + term;
-        const cached = _cached(key);
-        if (cached) return cached;
+    let _indexData = null;
 
-        const results = [];
-        try {
-            const wikiDomain = _wikiDomain();
-            const kw = refineQuery(term) || term;
-            const sr = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srlimit=10&srinfo=suggestion`, 3000);
-            if (!sr.query?.search?.length) return results;
-
-            const suggestion = sr.query?.searchinfo?.suggestion || null;
-            const titles = sr.query.search.slice(0, 5).map(s => s.title);
-
-            const dt = await _fetch(`https://${wikiDomain}/w/api.php?action=query&format=json&origin=*&prop=info|extracts|pageimages|extlinks&exintro&explaintext&exsentences=2&titles=${encodeURIComponent(titles.join('|'))}&inprop=url&piprop=thumbnail&pithumbsize=200&ellimit=5`, 3000);
-
-            for (const id in dt.query.pages) {
-                const p = dt.query.pages[id];
-                if (p.missing) continue;
-                const ext = p.extract || '';
-
-                results.push({
-                    title: p.title,
-                    url: p.fullurl || `https://${wikiDomain}/wiki/${encodeURIComponent(p.title.replace(/ /g, '_'))}`,
-                    description: ext ? ext.substring(0, 200) + (ext.length > 200 ? '...' : '') : 'Wikipedia entry',
-                    fullSnippet: ext,
-                    extract: ext,
-                    thumbnail: p.thumbnail?.source || null,
-                    source: 'wikipedia',
-                    sourceLabel: 'Wikipedia',
-                    resultType: 'wiki',
-                    score: 10,
-                    domain: wikiDomain,
-                    suggestion
-                });
-
-                if (p.extlinks) {
-                    const seenDomains = new Set();
-                    for (const linkObj of p.extlinks.slice(0, 3)) {
-                        const link = cleanTracking(linkObj['*']);
-                        try {
-                            const urlObj = new URL(link);
-                            const domain = urlObj.hostname.replace(/^www\./, '');
-                            if (domain.includes('wikipedia.org') || domain.includes('wikimedia') ||
-                                domain.includes('doi.org') || domain.includes('creativecommons') ||
-                                domain.includes('mediawiki') || seenDomains.has(domain) ||
-                                !isSafeDomain(domain) ||
-                                urlObj.pathname === '/' || urlObj.pathname === '') continue;
-                            seenDomains.add(domain);
-                            results.push({
-                                title: domain,
-                                url: link,
-                                description: ext ? `Referenced by "${p.title}". ${ext.substring(0, 100)}` : `External link from Wikipedia article "${p.title}".`,
-                                fullSnippet: ext || '',
-                                extract: ext || '',
-                                thumbnail: null,
-                                source: 'web',
-                                sourceLabel: domain,
-                                resultType: 'web',
-                                score: 8,
-                                domain: domain,
-                                refersTo: p.title,
-                                suggestion: null
-                            });
-                        } catch(_) {}
-                    }
-                }
-            }
-        } catch (_) {}
-
-        _store(key, results);
-        return results;
+    function _openDB() {
+        return new Promise(function(resolve, reject) {
+            var req = indexedDB.open('GatewayIndex', 1);
+            req.onupgradeneeded = function() {
+                req.result.createObjectStore('index', { keyPath: 'id' });
+            };
+            req.onsuccess = function() { resolve(req.result); };
+            req.onerror = function() { reject(req.error); };
+        });
     }
 
-    async function searchDuckDuckGo(term) {
-        const key = 'ddg:' + term;
-        const cached = _cached(key);
-        if (cached) return cached;
-
-        const results = [];
+    async function _loadIndexFromDB() {
         try {
-            const data = await _fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(term)}&format=json&no_html=1&skip_disambig=1`, 3000);
-            if (data.AbstractText) {
-                results.push({
-                    title: data.Heading || data.AbstractSource || 'Instant Answer',
-                    url: data.AbstractURL || `https://duckduckgo.com/?q=${encodeURIComponent(term)}`,
-                    description: data.AbstractText.substring(0, 200),
-                    fullSnippet: data.AbstractText,
-                    extract: data.AbstractText,
-                    thumbnail: data.Image ? `https://api.duckduckgo.com${data.Image}` : null,
-                    source: 'duckduckgo',
-                    sourceLabel: 'DuckDuckGo',
-                    resultType: 'web',
-                    score: 15,
-                    domain: 'duckduckgo.com',
-                    isAnswer: true,
-                    suggestion: null
-                });
-            }
-            if (data.RelatedTopics) {
-                for (const t of data.RelatedTopics.slice(0, 12)) {
-                    if (t.Text) {
-                        let url = t.FirstURL;
-                        let domain = 'duckduckgo.com';
-                        try { if (url) domain = new URL(url).hostname.replace(/^www\./, ''); } catch(_) {}
-                        results.push({
-                            title: t.Text.split(' - ')[0] || url,
-                            url: url || `https://duckduckgo.com/?q=${encodeURIComponent(t.Text)}`,
-                            description: t.Text.substring(0, 200),
-                            fullSnippet: t.Text,
-                            extract: t.Text,
-                            thumbnail: t.Icon?.URL ? `https://api.duckduckgo.com${t.Icon.URL}` : null,
-                            source: 'duckduckgo',
-                            sourceLabel: domain,
-                            resultType: 'web',
-                            score: 14,
-                            domain,
-                            suggestion: null
-                        });
-                    }
-                }
-            }
-        } catch (_) {}
-
-        _store(key, results);
-        return results;
-    }
-
-    async function searchCommons(term) {
-        const key = 'commons:' + term;
-        const cached = _cached(key);
-        if (cached) return cached;
-
-        const results = [];
-        try {
-            const kw = refineQuery(term) || term;
-            const sr = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(kw)}&srnamespace=6&srlimit=10`, 3000);
-            if (!sr.query?.search) return results;
-
-            const titles = sr.query.search.map(s => s.title);
-            const dt = await _fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|size|extmetadata|mime&titles=${encodeURIComponent(titles.join('|'))}`, 3000);
-
-            for (const id in dt.query.pages) {
-                const p = dt.query.pages[id];
-                if (p.missing || !p.imageinfo) continue;
-                const ii = p.imageinfo[0];
-                const mime = (ii.mime || '').toLowerCase();
-                if (!mime.startsWith('image/')) continue;
-                results.push({
-                    title: p.title.replace(/^File:/, ''),
-                    url: ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(p.title)}`,
-                    thumbnail: ii.thumburl || ii.url,
-                    description: ii.extmetadata?.ImageDescription?.value || 'Wikimedia Commons Image',
-                    fullSnippet: ii.extmetadata?.ImageDescription?.value || '',
-                    extract: ii.extmetadata?.ImageDescription?.value || '',
-                    source: 'commons',
-                    sourceLabel: 'Images',
-                    resultType: 'image',
-                    score: 5,
-                    domain: 'commons.wikimedia.org',
-                    suggestion: null
-                });
-            }
-        } catch (_) {}
-
-        _store(key, results);
-        return results;
-    }
-
-    async function searchWeb(term) {
-        const key = 'websearch:' + term;
-        const cached = _cached(key);
-        if (cached) return cached;
-
-        const results = [];
-        try {
-            const ac = new AbortController();
-            const timer = setTimeout(() => ac.abort(), 4500);
-            const r = await fetch('https://html.duckduckgo.com/html/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'q=' + encodeURIComponent(term),
-                signal: ac.signal
+            var db = await _openDB();
+            return new Promise(function(resolve) {
+                var tx = db.transaction('index', 'readonly');
+                var store = tx.objectStore('index');
+                var get = store.get('data');
+                get.onsuccess = function() { resolve(get.result ? get.result.entries : null); };
+                get.onerror = function() { resolve(null); };
             });
-            clearTimeout(timer);
-            const html = await r.text();
-            const div = document.createElement('div');
-            div.innerHTML = html;
+        } catch(_) { return null; }
+    }
 
-            const resultItems = div.querySelectorAll('.result');
-            const seen = new Set();
-            for (const item of resultItems) {
-                const titleEl = item.querySelector('.result__title a');
-                const snippetEl = item.querySelector('.result__snippet');
-                if (!titleEl) continue;
+    async function _saveIndexToDB(data) {
+        try {
+            var db = await _openDB();
+            return new Promise(function(resolve) {
+                var tx = db.transaction('index', 'readwrite');
+                var store = tx.objectStore('index');
+                store.put({ id: 'data', entries: data });
+                tx.oncomplete = function() { resolve(); };
+                tx.onerror = function() { resolve(); };
+            });
+        } catch(_) {}
+    }
 
-                let url = titleEl.getAttribute('href');
-                if (!url || seen.has(url)) continue;
-                url = cleanTracking(url);
-                seen.add(url);
+    (async function() {
+        if (window._GATEWAY_INDEX_DATA) {
+            _indexData = window._GATEWAY_INDEX_DATA;
+            await _saveIndexToDB(_indexData);
+        } else {
+            var saved = await _loadIndexFromDB();
+            if (saved) _indexData = saved;
+        }
+    })();
 
-                const domain = url ? new URL(url).hostname.replace(/^www\./, '') : '';
-                if (!isSafeDomain(domain)) continue;
+    window.gatewaySetIndex = async function(data) {
+        _indexData = data;
+        await _saveIndexToDB(data);
+    };
 
-                const title = titleEl.textContent.trim();
-                const snippet = snippetEl ? snippetEl.textContent.trim() : '';
+    function _mapIndexEntry(e, query) {
+        const ql = query.toLowerCase();
+        let score = 15;
+        const text = (e.t + ' ' + e.d).toLowerCase();
+        const terms = ql.split(/\s+/).filter(Boolean);
+        for (const t of terms) {
+            try {
+                const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                score += ((text.match(re) || []).length) * 3;
+            } catch(_) {}
+        }
+        if (e.t.toLowerCase() === ql) score += 500;
+        else if (e.t.toLowerCase().startsWith(ql)) score += 200;
+        return {
+            title: e.t,
+            url: e.u,
+            description: e.d,
+            fullSnippet: e.d,
+            extract: e.d,
+            thumbnail: null,
+            source: 'index',
+            sourceLabel: 'Index',
+            resultType: 'web',
+            score,
+            domain: e.s,
+            suggestion: null
+        };
+    }
 
-                results.push({
-                    title,
-                    url,
-                    description: snippet,
-                    fullSnippet: snippet,
-                    extract: snippet,
-                    thumbnail: null,
-                    source: 'web-search',
-                    sourceLabel: domain || 'Web',
-                    resultType: 'web',
-                    score: 18,
-                    domain,
-                    suggestion: null
-                });
-
-                if (results.length >= 10) break;
+    async function searchIndex(term) {
+        const idx = _indexData;
+        if (!idx) return [];
+        const ql = term.toLowerCase();
+        const terms = ql.split(/\s+/).filter(Boolean);
+        if (!terms.length) return [];
+        const matched = [];
+        for (const e of idx) {
+            const text = (e.t + ' ' + e.d).toLowerCase();
+            if (terms.every(t => text.includes(t))) {
+                matched.push(_mapIndexEntry(e, term));
+                if (matched.length >= 20) break;
             }
-        } catch (_) {}
-
-        _store(key, results);
-        return results;
+        }
+        return matched;
     }
 
     async function gatewayCrawl(term) {
@@ -374,46 +220,16 @@
             return safe.length ? safe : cached;
         }
 
-        const sources = [
-            searchWikipedia(term),
-            searchDuckDuckGo(term),
-            searchCommons(term),
-            searchWeb(term)
-        ];
-
-        const all = await Promise.allSettled(sources);
-        let merged = all.flatMap(p => p.status === 'fulfilled' ? p.value : []);
-
-        merged = merged.filter(isSafeResult);
-
-        const ql = term.toLowerCase();
-        for (const r of merged) {
-            const terms = ql.split(/\s+/).filter(Boolean);
-            let s = r.score || 0;
-            const text = (r.title + ' ' + (r.description || '')).toLowerCase();
-            for (const t of terms) {
-                try {
-                    const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                    s += ((text.match(re) || []).length) * 2;
-                } catch(_) {}
-            }
-            if (r.title.toLowerCase() === ql) s += 500;
-            else if (r.title.toLowerCase().startsWith(ql)) s += 200;
-            if (r.domain && r.domain.includes(ql)) s += 50;
-            r.score = s;
-        }
-
-        merged.sort((a, b) => b.score - a.score);
-
+        let indexed = await searchIndex(term);
+        indexed.sort((a, b) => b.score - a.score);
         const seen = new Set();
         const deduped = [];
-        for (const r of merged) {
+        for (const r of indexed) {
             const urlKey = r.url;
             if (seen.has(urlKey)) continue;
             seen.add(urlKey);
             deduped.push(r);
         }
-
         if (deduped.length) _store(key, deduped);
         return deduped;
     }

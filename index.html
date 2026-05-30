@@ -57,6 +57,10 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="settings-row">
+                <label>Upload Index</label>
+                <input type="file" id="indexUpload" accept=".json" onchange="handleIndexUpload(event)" style="font-size:12px">
+            </div>
 
         </div>
     </div>
@@ -90,7 +94,7 @@
         <div class="home-logo">
             <span>G</span><span>a</span><span>t</span><span>e</span><span>w</span><span>a</span><span>y</span>
         </div>
-        <div class="home-tagline" data-i18n="tagline">Faster than Google. Same results. No API. No index.</div>
+        <div class="home-tagline" data-i18n="tagline">Faster than Google. Same results.</div>
 
         <div class="search-section">
             <div class="search-bar-wrapper" style="border-radius:24px;position:relative">
@@ -231,6 +235,7 @@
     </footer>
 </div>
 
+<script src="index.js"></script>
 <script src="crawl.js"></script>
 <script src="main.js"></script>
 </body>
