@@ -10,7 +10,7 @@
     // ======================== TRANSLATIONS ========================
 
     const LANG = {
-        en: { about:'About', images:'Images', searchPlaceholder:'Search Gateway or type a URL', gatewaySearch:'Gateway Search', feelingLucky:"I'm Feeling Lucky", unitedKingdom:'United Kingdom', advertising:'Advertising', business:'Business', howSearchWorks:'How Search works', privacy:'Privacy', terms:'Terms', settings:'Settings', all:'All', showMoreResults:'Show more results', noResultsFound:'No results found', tryDifferentKeywords:'Try different keywords or check your spelling', didYouMean:'Did you mean:', quickAnswer:'Quick Answer', searchingMultipleSources:'Searching multiple sources...', connectionError:'Connection error. Please check your internet and try again.', tagline:'Faster than Google. Same results.', resultsStats:'About {count} results', settingsTitle:'Settings', language:'Language', darkMode:'Dark mode', close:'Close', wikipedia:'Wikipedia' },
+        en: { about:'About', images:'Images', searchPlaceholder:'Search the Gateway index, ask Quick Wiki, or type a URL', gatewaySearch:'Gateway Search', feelingLucky:"I'm Feeling Lucky", unitedKingdom:'United Kingdom', advertising:'Advertising', business:'Business', howSearchWorks:'How Search works', privacy:'Privacy', terms:'Terms', settings:'Settings', all:'All', showMoreResults:'Show more results', noResultsFound:'No results found', tryDifferentKeywords:'Try different keywords or check your spelling', didYouMean:'Did you mean:', quickAnswer:'Quick Answer', quickWiki:'Quick Wiki', quickWikiExample:'Try "release date of PlayStation 5"', quickWikiHint:'Ask a question for a sourced, deterministic answer', indexLoading:'Loading the local web index…', indexPages:'{count} pages in the local index', searchingMultipleSources:'Searching the Gateway index and open sources…', connectionError:'Connection error. Please check your internet and try again.', tagline:'Your own index of the web.', resultsStats:'{count} ranked results', settingsTitle:'Settings', language:'Language', darkMode:'Dark mode', close:'Close', wikipedia:'Wikipedia', openData:'Open data', noGenerativeAi:'No generative AI' },
         es: { about:'Acerca de', images:'Imágenes', searchPlaceholder:'Buscar en Gateway o escribe una URL', gatewaySearch:'Buscar con Gateway', feelingLucky:'Voy a tener suerte', unitedKingdom:'Reino Unido', advertising:'Publicidad', business:'Negocios', howSearchWorks:'Cómo funciona la Búsqueda', privacy:'Privacidad', terms:'Términos', settings:'Configuración', all:'Todo', showMoreResults:'Mostrar más resultados', noResultsFound:'No se encontraron resultados', tryDifferentKeywords:'Prueba con otras palabras o revisa la ortografía', didYouMean:'Quizás quisiste decir:', quickAnswer:'Respuesta rápida', searchingMultipleSources:'Buscando en múltiples fuentes...', connectionError:'Error de conexión. Verifica tu internet e inténtalo de nuevo.', tagline:'Más rápido que Google. Mismos resultados.', resultsStats:'Aprox. {count} resultados', settingsTitle:'Configuración', language:'Idioma', darkMode:'Modo oscuro', close:'Cerrar', wikipedia:'Wikipedia' },
         fr: { about:'À propos', images:'Images', searchPlaceholder:'Rechercher sur Gateway ou saisir une URL', gatewaySearch:'Recherche Gateway', feelingLucky:'J\'ai de la chance', unitedKingdom:'Royaume-Uni', advertising:'Publicité', business:'Entreprises', howSearchWorks:'Fonctionnement de la Recherche', privacy:'Confidentialité', terms:'Conditions', settings:'Paramètres', all:'Tout', showMoreResults:'Plus de résultats', noResultsFound:'Aucun résultat trouvé', tryDifferentKeywords:'Essayez différents mots-clés ou vérifiez l\'orthographe', didYouMean:'Vouliez-vous dire :', quickAnswer:'Réponse rapide', searchingMultipleSources:'Recherche multi-sources...', connectionError:'Erreur de connexion. Vérifiez votre connexion et réessayez.', tagline:'Plus rapide que Google. Mêmes résultats.', resultsStats:'Environ {count} résultats', settingsTitle:'Paramètres', language:'Langue', darkMode:'Mode sombre', close:'Fermer', wikipedia:'Wikipédia' },
         de: { about:'Über uns', images:'Bilder', searchPlaceholder:'Gateway durchsuchen oder URL eingeben', gatewaySearch:'Gateway-Suche', feelingLucky:'Auf gut Glück', unitedKingdom:'Vereinigtes Königreich', advertising:'Werbung', business:'Unternehmen', howSearchWorks:'So funktioniert die Suche', privacy:'Datenschutz', terms:'AGB', settings:'Einstellungen', all:'Alle', showMoreResults:'Weitere Ergebnisse', noResultsFound:'Keine Ergebnisse gefunden', tryDifferentKeywords:'Versuchen Sie andere Suchbegriffe oder überprüfen Sie die Rechtschreibung', didYouMean:'Meinten Sie:', quickAnswer:'Kurze Antwort', searchingMultipleSources:'Durchsuche mehrere Quellen...', connectionError:'Verbindungsfehler. Bitte Internet prüfen und erneut versuchen.', tagline:'Schneller als Google. Gleiche Ergebnisse.', resultsStats:'Ca. {count} Ergebnisse', settingsTitle:'Einstellungen', language:'Sprache', darkMode:'Dunkelmodus', close:'Schließen', wikipedia:'Wikipedia' },
@@ -36,6 +36,43 @@
         hu: { about:'Névjegy', images:'Képek', searchPlaceholder:'Keresés a Gatewayben vagy URL megadása', gatewaySearch:'Gateway-keresés', feelingLucky:'Szerencsém van', unitedKingdom:'Egyesült Királyság', advertising:'Hirdetés', business:'Vállalkozások', howSearchWorks:'Hogyan működik a keresés', privacy:'Adatvédelem', terms:'Feltételek', settings:'Beállítások', all:'Összes', showMoreResults:'Több találat mutatása', noResultsFound:'Nincs találat', tryDifferentKeywords:'Próbáljon más kulcsszavakat vagy ellenőrizze a helyesírást', didYouMean:'Esetleg erre gondolt:', quickAnswer:'Gyors válasz', searchingMultipleSources:'Keresés több forrásban...', connectionError:'Kapcsolódási hiba. Ellenőrizze az internetkapcsolatot és próbálja újra.', tagline:'Gyorsabb, mint a Google. Ugyanazok az eredmények.', resultsStats:'Kb. {count} találat', settingsTitle:'Beállítások', language:'Nyelv', darkMode:'Sötét mód', close:'Bezár', wikipedia:'Wikipédia' },
         el: { about:'Σχετικά', images:'Εικόνες', searchPlaceholder:'Αναζήτηση στο Gateway ή πληκτρολογήστε URL', gatewaySearch:'Αναζήτηση Gateway', feelingLucky:'Τυχερός', unitedKingdom:'Ηνωμένο Βασίλειο', advertising:'Διαφήμιση', business:'Επιχειρήσεις', howSearchWorks:'Πώς λειτουργεί η Αναζήτηση', privacy:'Απόρρητο', terms:'Όροι', settings:'Ρυθμίσεις', all:'Όλα', showMoreResults:'Εμφάνιση περισσότερων αποτελεσμάτων', noResultsFound:'Δεν βρέθηκαν αποτελέσματα', tryDifferentKeywords:'Δοκιμάστε διαφορετικές λέξεις-κλειδιά ή ελέγξτε την ορθογραφία', didYouMean:'Μήπως εννοείτε:', quickAnswer:'Γρήγορη απάντηση', searchingMultipleSources:'Αναζήτηση σε πολλαπλές πηγές...', connectionError:'Σφάλμα σύνδεσης. Ελέγξτε το διαδίκτυο και δοκιμάστε ξανά.', tagline:'Ταχύτερο από το Google. Ίδια αποτελέσματα.', resultsStats:'Περίπου {count} αποτελέσματα', settingsTitle:'Ρυθμίσεις', language:'Γλώσσα', darkMode:'Σκοτεινή λειτουργία', close:'Κλείσιμο', wikipedia:'Βικιπαίδεια' }
     };
+
+    // These labels are shared by the search UI and were added after the
+    // original locale table. Keep the table complete so a language switch
+    // never silently falls back to an English loading state or AI badge.
+    const QUICK_COPY = {
+        en: { quickWiki:'Quick Wiki', quickWikiExample:'Try "release date of PlayStation 5"', quickWikiHint:'Ask a question for a sourced, deterministic answer', indexLoading:'Loading the local web index…', indexPages:'{count} pages in the local index', openData:'Open data', noGenerativeAi:'No generative AI' },
+        es: { quickWiki:'Wiki rápida', quickWikiExample:'Prueba "fecha de lanzamiento de PlayStation 5"', quickWikiHint:'Haz una pregunta para obtener una respuesta determinista y con fuentes', indexLoading:'Cargando el índice web local…', indexPages:'{count} páginas en el índice local', openData:'Datos abiertos', noGenerativeAi:'Sin IA generativa' },
+        fr: { quickWiki:'Wiki rapide', quickWikiExample:'Essayez « date de sortie de PlayStation 5 »', quickWikiHint:'Posez une question pour une réponse sourcée et déterministe', indexLoading:'Chargement de l’index web local…', indexPages:'{count} pages dans l’index local', openData:'Données ouvertes', noGenerativeAi:'Pas d’IA générative' },
+        de: { quickWiki:'Schnellwiki', quickWikiExample:'„Veröffentlichungsdatum der PlayStation 5“ ausprobieren', quickWikiHint:'Stelle eine Frage für eine determinierte Antwort mit Quellen', indexLoading:'Lokaler Web-Index wird geladen…', indexPages:'{count} Seiten im lokalen Index', openData:'Offene Daten', noGenerativeAi:'Keine generative KI' },
+        it: { quickWiki:'Wiki rapida', quickWikiExample:'Prova "data di uscita di PlayStation 5"', quickWikiHint:'Fai una domanda per una risposta deterministica e sourced', indexLoading:'Caricamento dell’indice web locale…', indexPages:'{count} pagine nell’indice locale', openData:'Dati aperti', noGenerativeAi:'Nessuna IA generativa' },
+        pt: { quickWiki:'Wiki rápida', quickWikiExample:'Experimente "data de lançamento do PlayStation 5"', quickWikiHint:'Faça uma pergunta para obter uma resposta determinística com fontes', indexLoading:'A carregar o índice web local…', indexPages:'{count} páginas no índice local', openData:'Dados abertos', noGenerativeAi:'Sem IA generativa' },
+        ru: { quickWiki:'Быстрая Вики', quickWikiExample:'Попробуйте «дата выхода PlayStation 5»', quickWikiHint:'Задайте вопрос для детерминированного ответа со ссылками', indexLoading:'Загрузка локального веб-индекса…', indexPages:'{count} страниц в локальном индексе', openData:'Открытые данные', noGenerativeAi:'Без генеративного ИИ' },
+        ja: { quickWiki:'クイックウィキ', quickWikiExample:'「PlayStation 5の発売日」を試す', quickWikiHint:'出典付きの決定的な回答を質問できます', indexLoading:'ローカルウェブインデックスを読み込み中…', indexPages:'ローカルインデックスに{count}ページ', openData:'オープンデータ', noGenerativeAi:'生成AI不使用' },
+        'zh-CN': { quickWiki:'快速维基', quickWikiExample:'试试“PlayStation 5 何时发布”', quickWikiHint:'提问以获取有来源的确定性答案', indexLoading:'正在加载本地网页索引…', indexPages:'本地索引中有 {count} 个页面', openData:'开放数据', noGenerativeAi:'不使用生成式 AI' },
+        'zh-TW': { quickWiki:'快速維基', quickWikiExample:'試試「PlayStation 5 什麼時候 release」', quickWikiHint:'提問以取得有來源且具決定性的答案', indexLoading:'正在載入本機網頁索引…', indexPages:'本機索引中有 {count} 個頁面', openData:'開放資料', noGenerativeAi:'不使用生成式 AI' },
+        ko: { quickWiki:'빠른 위키', quickWikiExample:'“PlayStation 5 출시일”을 입력해 보세요', quickWikiHint:'출처가 있는 결정적 답변을 질문하세요', indexLoading:'로컬 웹 인덱스를 불러오는 중…', indexPages:'로컬 인덱스에 {count}개 페이지', openData:'공개 데이터', noGenerativeAi:'생성형 AI 없음' },
+        ar: { quickWiki:'ويكي سريع', quickWikiExample:'جرّب "تاريخ إصدار PlayStation 5"', quickWikiHint:'اطرح سؤالًا للحصول على إجابة موثقة وحتمية', indexLoading:'جارٍ تحميل فهرس الويب المحلي…', indexPages:'{count} صفحة في الفهرس المحلي', openData:'بيانات مفتوحة', noGenerativeAi:'لا يوجد ذكاء اصطناعي توليدي' },
+        hi: { quickWiki:'त्वरित विकी', quickWikiExample:'"PlayStation 5 कब जारी हुआ" आज़माएँ', quickWikiHint:'स्रोत सहित निश्चित उत्तर के लिए प्रश्न पूछें', indexLoading:'स्थानीय वेब इंडेक्स लोड हो रहा है…', indexPages:'स्थानीय इंडेक्स में {count} पृष्ठ', openData:'खुला डेटा', noGenerativeAi:'कोई जनरेटिव AI नहीं' },
+        bn: { quickWiki:'দ্রুত উইকি', quickWikiExample:'“PlayStation 5 কখন প্রকাশিত হয়” চেষ্টা করুন', quickWikiHint:'উৎসসহ নির্ধারিত উত্তর পেতে প্রশ্ন করুন', indexLoading:'স্থানীয় ওয়েব ইনডেক্স লোড হচ্ছে…', indexPages:'স্থানীয় ইনডেক্সে {count}টি পৃষ্ঠা', openData:'উন্মুক্ত ডেটা', noGenerativeAi:'কোনো জেনারেটিভ AI নয়' },
+        tr: { quickWiki:'Hızlı wiki', quickWikiExample:'"PlayStation 5 ne zaman çıktı" sorusunu deneyin', quickWikiHint:'Kaynaklı ve deterministik bir yanıt için soru sorun', indexLoading:'Yerel web dizini yükleniyor…', indexPages:'Yerel dizinde {count} sayfa', openData:'Açık veri', noGenerativeAi:'Üretken yapay zekâ yok' },
+        nl: { quickWiki:'Snelle wiki', quickWikiExample:'Probeer "releasedatum PlayStation 5"', quickWikiHint:'Stel een vraag voor een gedetermineerd antwoord met bronnen', indexLoading:'Lokale webindex laden…', indexPages:'{count} pagina’s in de lokale index', openData:'Open gegevens', noGenerativeAi:'Geen generatieve AI' },
+        pl: { quickWiki:'Szybka wiki', quickWikiExample:'Spróbuj „data premiery PlayStation 5”', quickWikiHint:'Zadaj pytanie, aby otrzymać deterministyczną odpowiedź ze źródłami', indexLoading:'Ładowanie lokalnego indeksu stron…', indexPages:'{count} stron w lokalnym indeksie', openData:'Otwarte dane', noGenerativeAi:'Bez generatywnej AI' },
+        sv: { quickWiki:'Snabb wiki', quickWikiExample:'Prova ”releasedatum för PlayStation 5”', quickWikiHint:'Ställ en fråga för ett källbelagt, deterministiskt svar', indexLoading:'Laddar lokal webindex…', indexPages:'{count} sidor i den lokala indexen', openData:'Öppna data', noGenerativeAi:'Ingen generativ AI' },
+        da: { quickWiki:'Hurtig wiki', quickWikiExample:'Prøv "udgivelsesdato for PlayStation 5"', quickWikiHint:'Stil et spørgsmål for et kildebelagt, deterministisk svar', indexLoading:'Indlæser lokalt webindeks…', indexPages:'{count} sider i det lokale indeks', openData:'Åbne data', noGenerativeAi:'Ingen generativ AI' },
+        fi: { quickWiki:'Pika-wiki', quickWikiExample:'Kokeile "PlayStation 5 julkaisupäivä"', quickWikiHint:'Kysy lähteistetty, deterministinen vastaus', indexLoading:'Ladataan paikallista verkkoindeksiä…', indexPages:'{count} sivua paikallisessa indeksissä', openData:'Avoin data', noGenerativeAi:'Ei generatiivista tekoälyä' },
+        no: { quickWiki:'Hurtig wiki', quickWikiExample:'Prøv «utgivelsesdato for PlayStation 5»', quickWikiHint:'Still et spørsmål for et kilderespondert, deterministisk svar', indexLoading:'Laster lokal webindeks…', indexPages:'{count} sider i den lokale indeksen', openData:'Åpne data', noGenerativeAi:'Ingen generativ KI' },
+        cs: { quickWiki:'Rychlá wiki', quickWikiExample:'Zkuste „datum vydání PlayStation 5“', quickWikiHint:'Položte otázku pro determinovanou odpověď se zdroji', indexLoading:'Načítá se místní webový index…', indexPages:'{count} stránek v místním indexu', openData:'Otevřená data', noGenerativeAi:'Bez generativní AI' },
+        ro: { quickWiki:'Wiki rapid', quickWikiExample:'Încearcă „data lansării PlayStation 5”', quickWikiHint:'Pune o întrebare pentru un răspuns determinist cu surse', indexLoading:'Se încarcă indexul web local…', indexPages:'{count} pagini în indexul local', openData:'Date deschise', noGenerativeAi:'Fără AI generativ' },
+        hu: { quickWiki:'Gyors wiki', quickWikiExample:'Próbáld: „mikor jelent meg a PlayStation 5?”', quickWikiHint:'Kérdezz forrásolt, determinisztikus választ', indexLoading:'A helyi webindex betöltése…', indexPages:'{count} oldal a helyi indexben', openData:'Nyílt adatok', noGenerativeAi:'Nincs generatív AI' },
+        el: { quickWiki:'Γρήγορο wiki', quickWikiExample:'Δοκίμασε «ποτε κυκλοφόρησε το PlayStation 5»', quickWikiHint:'Κάνε ερώτηση για τεκμηριωμένη, ντετερμινιστική απάντηση', indexLoading:'Φόρτωση τοπικού web index…', indexPages:'{count} σελίδες στο τοπικό index', openData:'Ανοιχτά δεδομένα', noGenerativeAi:'Χωρίς παραγωγική AI' }
+    };
+    for (const code of Object.keys(LANG)) {
+        const copy = QUICK_COPY[code] || QUICK_COPY.en;
+        for (const key of Object.keys(QUICK_COPY.en)) {
+            if (!LANG[code][key]) LANG[code][key] = copy[key];
+        }
+    }
 
     const LANG_LIST = [
         { code:'en', name:'English' }, { code:'es', name:'Español' }, { code:'fr', name:'Français' },
@@ -81,14 +118,21 @@
 
     function detectBrowserLang() {
         try {
-            const raw = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-            return LANG[raw] ? raw : 'en';
+            const raw = String(navigator.language || navigator.userLanguage || 'en');
+            if (LANG[raw]) return raw;
+            const lower = raw.toLowerCase();
+            if (lower.startsWith('zh')) {
+                return /(?:tw|hk|mo|hant)/i.test(lower) ? 'zh-TW' : 'zh-CN';
+            }
+            const base = lower.split('-')[0];
+            return LANG[base] ? base : 'en';
         } catch(_) { return 'en'; }
     }
 
-    let _lang = localStorage.getItem('gw-lang') || 'auto';
-    if (_lang !== 'auto' && !LANG[_lang]) _lang = 'auto';
-    if (_lang === 'auto') _lang = detectBrowserLang();
+    let _langPreference = localStorage.getItem('gw-lang') || 'auto';
+    if (_langPreference !== 'auto' && !LANG[_langPreference]) _langPreference = 'auto';
+    let _lang = _langPreference === 'auto' ? detectBrowserLang() : _langPreference;
+    let localIndexCount = 0;
 
     function _t(key, vars) {
         let s = (LANG[_lang] && LANG[_lang][key]) || LANG.en[key] || key;
@@ -98,13 +142,14 @@
 
     function updateCountry() {
         const code = detectCountry();
-        const stored = localStorage.getItem('gw-lang') || 'auto';
-        const displayLang = stored === 'auto' ? detectBrowserLang() : stored;
+        const displayLang = _langPreference === 'auto' ? detectBrowserLang() : _langPreference;
         const name = countryName(code, displayLang);
         document.querySelectorAll('[data-i18n-country]').forEach(el => el.textContent = name);
     }
 
     function _applyTranslations() {
+        document.documentElement.lang = _lang || 'en';
+        document.documentElement.dir = /^ar\b/i.test(_lang || '') ? 'rtl' : 'ltr';
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return;
@@ -115,20 +160,36 @@
         });
         document.title = 'Gateway';
         const sel = $('langSelect');
-        if (sel) sel.value = _lang;
+        if (sel) sel.value = _langPreference;
         const dt = $('settingsDarkToggle');
         if (dt) dt.checked = document.body.classList.contains('dark');
+        const indexStats = $('indexStats');
+        if (indexStats) {
+            indexStats.textContent = localIndexCount
+                ? _t('indexPages', { count: localIndexCount.toLocaleString(_lang) })
+                : _t('indexLoading');
+        }
     }
 
     window.setLanguage = function(lang) {
         if (lang !== 'auto' && !LANG[lang]) return;
+        const previousLang = _lang;
+        const previousPreference = _langPreference;
+        _langPreference = lang;
         localStorage.setItem('gw-lang', lang);
         _lang = lang === 'auto' ? detectBrowserLang() : lang;
         window.gatewayLang = _lang;
         _applyTranslations();
         updateCountry();
         const sel = $('langSelect');
-        if (sel) sel.value = lang;
+        if (sel) sel.value = _langPreference;
+        // A language change also changes the Wikipedia/Wikidata endpoint and
+        // cache namespace. Invalidate an in-flight response and refresh a
+        // submitted search so old-language data cannot be shown as current.
+        if (lastQuery && $('resultsUI') && $('resultsUI').classList.contains('visible')
+            && (_lang !== previousLang || _langPreference !== previousPreference)) {
+            performSearch('resultsSearchInput');
+        }
     };
     window.gatewayLang = _lang;
 
@@ -140,7 +201,7 @@
         const dt = $('settingsDarkToggle');
         if (dt) dt.checked = document.body.classList.contains('dark');
         const sel = $('langSelect');
-        if (sel) sel.value = _lang;
+        if (sel) sel.value = _langPreference;
     };
 
     window.closeSettings = function(e) {
@@ -168,9 +229,11 @@
     // ======================== STATE ========================
 
     let allResults = [];
-    const PER_PAGE = 12;
+    const PER_PAGE = 20;
+    let quickWikiResult = null;
     let spellSuggestion = null;
     let lastQuery = '';
+    let searchRequestId = 0;
     window._gwPage = 1;
     window._gwLoaded = 0;
 
@@ -195,6 +258,7 @@
     window.clearSearch = function(inputId) {
         const input = $(inputId);
         if (input) { input.value = ''; input.focus(); }
+        searchRequestId++;
         updateClearBtn(inputId);
     };
     function updateClearBtn(inputId) {
@@ -212,9 +276,10 @@
         const dd = $(dropdownId);
         if (!input || !dd) return;
         const wrapper = input.closest('.search-bar-wrapper');
-        let timer, sug = [], hl = -1, open = false;
+        let timer, sug = [], hl = -1, open = false, suggestionRequest = 0;
 
         function close() {
+            suggestionRequest++;
             dd.classList.remove('show');
             if (wrapper) wrapper.classList.remove('dd-open');
             open = false; hl = -1;
@@ -230,14 +295,27 @@
             input.value = sug[idx]; close(); updateClearBtn(inputId); doSearch(inputId);
         }
         function render(list) {
-            sug = list; dd.innerHTML = '';
-            if (!list.length) { close(); return; }
-            list.forEach((s, i) => {
+            sug = (Array.isArray(list) ? list : []).filter(item => typeof item === 'string' && item.length).slice(0, 8);
+            dd.innerHTML = '';
+            if (!sug.length) { close(); return; }
+            sug.forEach((s, i) => {
                 const div = document.createElement('div');
                 div.className = 'autocomplete-item';
                 const idx = s.toLowerCase().indexOf(input.value.toLowerCase());
-                div.innerHTML = '<span class="autocomplete-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></span>'
-                    + (idx >= 0 ? s.slice(0, idx) + '<span class="match">' + s.slice(idx, idx + input.value.length) + '</span>' + s.slice(idx + input.value.length) : s);
+                const icon = document.createElement('span');
+                icon.className = 'autocomplete-icon';
+                icon.textContent = '⌕';
+                div.appendChild(icon);
+                if (idx >= 0) {
+                    div.appendChild(document.createTextNode(s.slice(0, idx)));
+                    const match = document.createElement('span');
+                    match.className = 'match';
+                    match.textContent = s.slice(idx, idx + input.value.length);
+                    div.appendChild(match);
+                    div.appendChild(document.createTextNode(s.slice(idx + input.value.length)));
+                } else {
+                    div.appendChild(document.createTextNode(s));
+                }
                 div.onclick = () => { input.value = s; close(); updateClearBtn(inputId); doSearch(inputId); };
                 div.onmouseenter = () => highlight(i);
                 dd.appendChild(div);
@@ -250,11 +328,12 @@
         input.addEventListener('input', function() {
             clearTimeout(timer);
             const val = this.value.trim();
+            const token = ++suggestionRequest;
             if (val.length < 2) { close(); return; }
             timer = setTimeout(async () => {
                 if (typeof getSuggestions !== 'undefined') {
                     const sugs = await getSuggestions(val);
-                    render(sugs);
+                    if (token === suggestionRequest && this.value.trim() === val) render(sugs);
                 }
             }, 250);
         });
@@ -336,19 +415,23 @@
             const toAdd = XPDEV_SITES.filter(s => !existing.has(s.url));
             results.unshift(...toAdd);
         }
-        return results;
+        // gatewayCrawl caps its own ranked set at 100; keep the same contract
+        // after adding the small XPDevs shortcut set.
+        return results.slice(0, 100);
     }
 
     // ======================== SEARCH ========================
 
     async function performSearch(inputId) {
         const input = $(inputId);
-        if (!input) return;
+        if (!input) return false;
         const q = input.value.trim();
-        if (!q) return;
+        if (!q) return false;
 
+        const requestId = ++searchRequestId;
         lastQuery = q;
         spellSuggestion = null;
+        quickWikiResult = null;
 
         if ($('mainSearchInput')) $('mainSearchInput').value = q;
         if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
@@ -361,9 +444,15 @@
         if ($('homeUI')) $('homeUI').style.display = 'none';
         if ($('resultsUI')) $('resultsUI').classList.add('visible');
 
-        if ($('answerArea')) $('answerArea').innerHTML = '';
         if ($('didYouMean')) $('didYouMean').innerHTML = '';
         if ($('emptyState')) $('emptyState').style.display = 'none';
+        if ($('answerArea')) {
+            $('answerArea').innerHTML = `
+                <div class="answer-box quick-wiki-loading" aria-live="polite">
+                    <div class="spinner"></div>
+                    <div><strong>${_t('quickWiki')}</strong><span>${_t('quickWikiHint')}</span></div>
+                </div>`;
+        }
         if ($('resultsList')) {
             $('resultsList').innerHTML = `
                 <div class="loading-state">
@@ -375,11 +464,23 @@
         if ($('loadMoreArea')) $('loadMoreArea').style.display = 'none';
 
         try {
-            allResults = await window.gatewayCrawl(q);
-            allResults = _boostXpdevs(allResults, q);
+            const quickPromise = typeof window.gatewayQuickWiki === 'function'
+                ? window.gatewayQuickWiki(q).catch(() => null)
+                : Promise.resolve(null);
+            const [searchedResults, wikiAnswer] = await Promise.all([
+                window.gatewayCrawl(q),
+                quickPromise
+            ]);
+            if (requestId !== searchRequestId) return false;
+
+            allResults = _boostXpdevs(searchedResults || [], q);
+            quickWikiResult = wikiAnswer;
 
             if (allResults.length) {
-                try { const s = await window.gatewaySpellCheck(q); spellSuggestion = s; } catch(_) {}
+                try {
+                    const suggestion = await window.gatewaySpellCheck(q);
+                    if (requestId === searchRequestId) spellSuggestion = suggestion;
+                } catch(_) {}
             }
 
             window._gwPage = 1;
@@ -392,19 +493,58 @@
             } catch(_) {}
 
             window._gwRender();
+            return true;
         } catch(_) {
+            if (requestId !== searchRequestId) return false;
+            if ($('answerArea')) $('answerArea').innerHTML = '';
             if ($('resultsList')) {
-                $('resultsList').innerHTML = '<p style="color:#ff4d4d;text-align:center;padding:32px">' + _t('connectionError') + '</p>';
+                $('resultsList').innerHTML = '<p class="connection-error">' + _t('connectionError') + '</p>';
             }
+            return false;
         }
     }
     window.performSearch = performSearch;
 
     // ======================== RENDER ========================
 
+    function _escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>'"]/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        })[character]);
+    }
+
+    function _safeHref(value) {
+        try {
+            const url = new URL(value);
+            if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return '#';
+            const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
+            const dangerous = new Set([
+                '4chan.org', '8kun.top', 'bestgore.com', 'liveleak.com', 'kiwifarms.net',
+                'freenode.net', 'anon-ib.com', 'bitcoinmix.org', 'hydramarket.org',
+                'tor2web.org', 'onion.city', 'onion.to', 'onion.cab', 'onion.sh',
+                'onion.link', 'onion.guide', 'exe.io', 'shorte.st', 'adf.ly',
+                'bit.ly', 'tinyurl.com', 'ow.ly', 'goo.gl', 'is.gd', 'buff.ly',
+                'tiny.cc', 'tr.im', 'x.co', 'short.cm'
+            ]);
+            if (!host || dangerous.has(host.replace(/^www\./, ''))
+                || host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')
+                || host === '::1' || host === '::' || host.includes(':')
+                || /^(?:0\.0\.0\.0|127(?:\.\d{1,3}){3}|10(?:\.\d{1,3}){3}|169\.254(?:\.\d{1,3}){2}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})$/i.test(host)) {
+                return '#';
+            }
+            return url.href;
+        } catch(_) { return '#'; }
+    }
+
+    function _displayDomain(value) {
+        try {
+            return new URL(value).hostname.toLowerCase().replace(/^www\./, '').replace(/\.$/, '');
+        } catch(_) { return ''; }
+    }
+
     function _fmtUrl(u) {
         if (!u) return '';
-        var clean = u.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        var clean = String(u).replace(/^https?:\/\//, '').replace(/\/$/, '');
         var parts = clean.split('/');
         if (parts.length > 1) {
             return parts[0] + ' \u203A ' + parts.slice(1).join(' \u203A ');
@@ -413,12 +553,17 @@
     }
 
     function renderItem(r) {
-        var urlDisplay = _fmtUrl(r.url);
+        const url = _safeHref(r.url);
+        const urlDisplay = _escapeHtml(_fmtUrl(r.url));
+        const source = r.sourceLabel || (r.resultType === 'wiki' ? _t('wikipedia') : 'Open web');
         return `
             <div class="result-item">
-                <div class="result-item-url">${urlDisplay}</div>
-                <a class="result-item-title" href="${r.url}" target="_self">${r.title}</a>
-                <div class="result-item-desc">${r.description || ''}</div>
+                <div class="result-item-url">
+                    <span>${urlDisplay}</span>
+                    <span class="result-source">${_escapeHtml(source)}</span>
+                </div>
+                <a class="result-item-title" href="${_escapeHtml(url)}" target="_self">${_escapeHtml(r.title)}</a>
+                <div class="result-item-desc">${_escapeHtml(r.description || '')}</div>
             </div>`;
     }
 
@@ -432,31 +577,56 @@
         const dym = $('didYouMean');
         if (dym) {
             if (spellSuggestion) {
-                dym.innerHTML = `${_t('didYouMean')} <a onclick="searchSuggestion('${spellSuggestion.replace(/['"\\]/g, '')}')">${spellSuggestion}</a>`;
+                const queryUrl = '?query=' + encodeURIComponent(spellSuggestion);
+                dym.innerHTML = `${_t('didYouMean')} <a href="${_escapeHtml(queryUrl)}">${_escapeHtml(spellSuggestion)}</a>`;
             } else dym.innerHTML = '';
         }
 
         const answerArea = $('answerArea');
         if (answerArea) {
-            const wikiResult = filtered.find(r => (r.resultType === 'wiki' || r.source === 'special') && r.extract && r.extract.length > 40);
-            if (wikiResult) {
-                const concise = wikiResult.extract.split('. ')[0] + '.';
-                const webLinks = filtered.filter(r =>
-                    r.resultType === 'web' && r.url !== wikiResult.url && !r.url.includes('wikipedia.org') && !r.url.includes('duckduckgo.com')
-                ).slice(0, 4);
-                let linksHtml = '';
-                if (webLinks.length) {
-                    linksHtml = webLinks.map(r =>
-                        `<a href="${r.url}" target="_self" class="answer-link">${r.domain || r.title}</a>`
-                    ).join('');
-                }
+            const quick = quickWikiResult;
+            if (quick && quick.answer) {
+                const quickLinks = (quick.sourceLinks || []).slice(0, 6);
+                const resultLinks = filtered
+                    .filter(r => r.resultType === 'web' && !/wikipedia\.org|wikidata\.org/i.test(r.domain || r.url || ''))
+                    .slice(0, 6)
+                    .map(r => ({ url: r.url, title: r.domain || r.title }));
+                const seenLinkUrls = new Set();
+                const seenLinkDomains = new Set();
+                const links = quickLinks.concat(resultLinks).filter(link => {
+                    if (!link || !link.url) return false;
+                    const safeUrl = _safeHref(link.url);
+                    if (safeUrl === '#') return false;
+                    const domain = _displayDomain(safeUrl);
+                    if (seenLinkUrls.has(safeUrl) || (domain && seenLinkDomains.has(domain))) return false;
+                    seenLinkUrls.add(safeUrl);
+                    if (domain) seenLinkDomains.add(domain);
+                    return true;
+                }).slice(0, 4);
+                const linksHtml = links.map(link =>
+                    `<a href="${_escapeHtml(_safeHref(link.url))}" target="_self" class="answer-link">${_escapeHtml(link.domain || link.title || link.url)}</a>`
+                ).join('<span class="answer-sep">·</span>');
+                const description = quick.description && quick.description !== quick.answer
+                    ? `<p class="quick-wiki-context">${_escapeHtml(quick.description)}</p>` : '';
+                const property = quick.property
+                    ? `<span class="answer-property">${_escapeHtml(quick.property)}</span><span class="answer-sep">·</span>` : '';
+
                 answerArea.innerHTML = `
-                    <div class="answer-box">
-                        <h2>${_t('quickAnswer')}</h2>
-                        <p>${concise}</p>
+                    <div class="answer-box quick-wiki-box">
+                        <div class="quick-wiki-header">
+                            <div class="quick-wiki-mark" aria-hidden="true">W</div>
+                            <div>
+                                <h2>${_escapeHtml(_t('quickWiki'))}</h2>
+                                <span class="quick-wiki-label">${_escapeHtml(quick.label || 'Summary')}</span>
+                            </div>
+                            <span class="no-ai-badge">${_escapeHtml(_t('noGenerativeAi'))}</span>
+                        </div>
+                        <div class="quick-wiki-answer">${_escapeHtml(quick.answer)}</div>
+                        ${description}
                         <div class="answer-meta">
-                            <span class="badge">${_t('wikipedia')}</span>
-                            <a href="${wikiResult.url}" target="_self">${wikiResult.title}</a>
+                            <span class="badge">${_escapeHtml(_t('wikipedia'))}</span>
+                            <a href="${_escapeHtml(_safeHref(quick.url))}" target="_self">${_escapeHtml(quick.title)}</a>
+                            ${property}<span>${_escapeHtml(quick.note || _t('openData'))}</span>
                             ${linksHtml ? '<span class="answer-sep">·</span>' + linksHtml : ''}
                         </div>
                     </div>`;
@@ -499,10 +669,14 @@
     // ======================== LUCKY SEARCH ========================
 
     window.luckySearch = function() {
-        const val = $('mainSearchInput').value.trim();
+        const input = $('mainSearchInput');
+        if (!input) return;
+        const val = input.value.trim();
         if (!val) return;
-        performSearch('mainSearchInput').then(() => {
-            if (allResults.length) window.open(allResults[0].url, '_self');
+        performSearch('mainSearchInput').then(completed => {
+            if (!completed || lastQuery !== val || !allResults.length) return;
+            const target = _safeHref(allResults[0].url);
+            if (target !== '#') window.open(target, '_self');
         });
     };
 
@@ -512,6 +686,13 @@
         updateClearBtn('mainSearchInput');
         updateClearBtn('resultsSearchInput');
         performSearch('resultsSearchInput');
+    };
+
+    window.useQuickWikiExample = function() {
+        if (!$('mainSearchInput')) return;
+        $('mainSearchInput').value = 'release date of PlayStation 5';
+        updateClearBtn('mainSearchInput');
+        performSearch('mainSearchInput');
     };
 
     // ======================== KEY HANDLING ========================
@@ -538,11 +719,11 @@
 
     if ($('mainSearchInput')) {
         $('mainSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('mainSearchInput'); });
-        $('mainSearchInput').addEventListener('input', () => updateClearBtn('mainSearchInput'));
+        $('mainSearchInput').addEventListener('input', () => { searchRequestId++; updateClearBtn('mainSearchInput'); });
     }
     if ($('resultsSearchInput')) {
         $('resultsSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch('resultsSearchInput'); });
-        $('resultsSearchInput').addEventListener('input', () => updateClearBtn('resultsSearchInput'));
+        $('resultsSearchInput').addEventListener('input', () => { searchRequestId++; updateClearBtn('resultsSearchInput'); });
     }
 
     initAutocomplete('mainSearchInput', 'homeAutocomplete');
@@ -575,7 +756,17 @@
         }
     } catch(_) {}
 
+    if ($('indexStats') && typeof window.gatewayIndexSize === 'function') {
+        window.gatewayIndexSize().then(count => {
+            localIndexCount = count || 0;
+            const stats = $('indexStats');
+            if (stats) stats.textContent = localIndexCount
+                ? _t('indexPages', { count: localIndexCount.toLocaleString(_lang) })
+                : _t('indexLoading');
+        }).catch(() => {});
+    }
+
     _applyTranslations();
     updateCountry();
-    window.setLanguage(_lang);
+    window.setLanguage(_langPreference);
 })();

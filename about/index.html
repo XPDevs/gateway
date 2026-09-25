@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="About Gateway, the fast and private search engine by XPDevs. Searches run entirely in your browser against a bundled offline index.">
+    <meta name="description" content="About Gateway, the fast client-side search engine by XPDevs. Search a bundled local index with optional sourced Wikipedia and open-web discovery.">
     <title>About | Gateway</title>
     <link rel="stylesheet" href="../ui.css">
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
@@ -34,10 +34,10 @@
 <div class="about-page">
     <h1>About Gateway</h1>
     <p class="subtitle">A fast, private, multi-source search engine built by XPDevs.</p>
-    <p>Gateway is a client-side search engine that runs entirely in your browser. There is no backend server, no user tracking, and no external network requests. The search index is bundled with the application and loaded locally, making every search completely offline and private.</p>
-    <p>Because everything runs client-side with a local index, Gateway is inherently private. Your search queries never leave your device. There are no third-party API calls, no server logs, and no data collection of any kind.</p>
+    <p>Gateway is a client-side search engine that starts with a bundled local index. There is no Gateway backend, account, or analytics system. The index is loaded into your browser and kept in IndexedDB, so local matching and ranking happen on your device.</p>
+    <p>For fresher coverage, Gateway can optionally query public open-data endpoints. Wikipedia supplies article extracts and cited external links; Wikidata supplies structured claims used by Quick Wiki. The relevant subject is sent only to those services when you search, and the services may process it under their own privacy policies. Gateway does not send your full browsing history or build a profile.</p>
     <h2>Why Gateway?</h2>
-    <p>Most search engines maintain massive server-side indexes requiring enormous infrastructure and data collection. Gateway takes a different approach: a comprehensive local index stored in your browser, delivering instant offline search in a clean, Google-like interface. No data centres, no API subscriptions, and no personal data collection.</p>
+    <p>Most search engines maintain massive server-side indexes requiring enormous infrastructure and data collection. Gateway takes a different approach: a local index stored in your browser, with optional public open-data calls for fresher context. Local matches remain available offline, and Gateway has no data centre, account, or advertising profile.</p>
     <p>Gateway is open source and available on <a href="https://github.com/XPDevs/gateway">GitHub</a>.</p>
 </div>
 <footer class="footer">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Gateway is private by default. No accounts, no tracking, no data collection. Search queries never leave your device.">
+    <meta name="description" content="Gateway is private by default: no accounts, no analytics, and a local index. Live discovery uses disclosed Wikipedia, Wikidata, and cited open-web sources.">
     <title>Privacy | Gateway</title>
     <link rel="stylesheet" href="../ui.css">
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
@@ -35,13 +35,13 @@
     <h1>Privacy</h1>
     <p class="subtitle">Gateway is designed to be private by default. No accounts, no tracking, no data collection.</p>
     <h2>What Gateway collects</h2>
-    <p>Nothing. Gateway runs entirely in your browser with a local search index. There is no backend server, no database, and no analytics. Your search queries never leave your device.</p>
+    <p>Gateway has no accounts, backend database, advertising profile, or analytics script. Search terms are processed in your browser against the local index. When live discovery is enabled by a search, the relevant subject is sent to the public Wikipedia or Wikidata API so Gateway can return current article context, structured facts, and cited links. Those requests are subject to the providers' own policies.</p>
     <h2>Local storage</h2>
-    <p>Gateway uses your browser's <code>localStorage</code> and <code>IndexedDB</code> to remember your preferences (language, dark mode) and to store the search index for offline use. This data never leaves your device and can be cleared at any time from your browser settings.</p>
-    <h2>No third-party services</h2>
-    <p>Gateway performs all searches against a bundled local index. No network requests are made when you search. Your queries stay on your device and are never sent to any external service.</p>
+    <p>Gateway uses your browser's <code>localStorage</code> and <code>IndexedDB</code> to remember language and dark-mode preferences, cache recent searches for up to ten minutes, and store the bundled or uploaded index. This data stays in your browser unless you clear site data.</p>
+    <h2>Third-party sources</h2>
+    <p>Search results can include official websites and external links cited by Wikipedia. Gateway does not crawl or submit data to those destination sites when it displays a result. If you follow a result, the destination may have its own cookies, privacy policy, and tracking practices.</p>
     <h2>No cookies</h2>
-    <p>Gateway does not set any cookies.</p>
+    <p>Gateway does not set its own cookies. Third-party services reached through a result or a public API may set their own cookies under their own policies.</p>
 </div>
 <footer class="footer">
     <div class="footer-country" data-i18n-country>United Kingdom</div>

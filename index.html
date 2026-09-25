@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Gateway by XPDevs. A fast, private, multi-source search engine that runs entirely in your browser with a bundled offline index. No tracking, no servers.">
+    <meta name="description" content="Gateway by XPDevs. Search your own local web index and ask Quick Wiki for deterministic, sourced answers from open data.">
     <title>Gateway</title>
     <link rel="stylesheet" href="ui.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -118,6 +118,16 @@
                 <button class="search-btn" data-i18n="gatewaySearch" onclick="performSearch('mainSearchInput')">Gateway Search</button>
                 <button class="search-btn" data-i18n="feelingLucky" onclick="luckySearch()">I'm Feeling Lucky</button>
             </div>
+
+            <div class="quick-wiki-teaser">
+                <div class="quick-wiki-teaser-mark" aria-hidden="true">W</div>
+                <div class="quick-wiki-teaser-copy">
+                    <strong data-i18n="quickWiki">Quick Wiki</strong>
+                    <span data-i18n="quickWikiHint">Ask a question for a sourced, deterministic answer</span>
+                </div>
+                <button class="quick-wiki-example" data-i18n="quickWikiExample" onclick="useQuickWikiExample()">Try "release date of PlayStation 5"</button>
+                <span class="index-stats" id="indexStats" data-i18n="indexLoading">Loading the local web index…</span>
+            </div>
         </div>
     </div>
 
@@ -157,6 +167,8 @@
                         </svg>
                     </span>
                     <input type="text" id="resultsSearchInput"
+                        data-i18n-placeholder="searchPlaceholder"
+                        placeholder="Search the Gateway index, ask Quick Wiki, or type a URL"
                         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                     <button class="clear-btn" id="resultsClearBtn" onclick="clearSearch('resultsSearchInput')">
                         <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>

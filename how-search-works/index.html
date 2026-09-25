@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Learn how Gateway searches a bundled offline index, ranks results, filters dangerous content, and keeps your data private.">
+    <meta name="description" content="Learn how Gateway combines a bundled local index with sourced Wikipedia, Wikidata, and open-web discovery without generative AI.">
     <title>How Search works | Gateway</title>
     <link rel="stylesheet" href="../ui.css">
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
@@ -106,10 +106,16 @@
 <!-- ==================== CONTENT ==================== -->
 <div class="about-page">
     <h1>How Search works</h1>
-    <p class="subtitle">Gateway searches a bundled local index, completely offline. No servers, no tracking.</p>
+    <p class="subtitle">Gateway combines a bundled local index with optional, sourced open-data discovery. It runs without a Gateway backend and does not use generative AI.</p>
 
     <h2>Local index</h2>
-    <p>Gateway ships with a comprehensive offline index of thousands of topics across science, history, technology, geography, arts, and more. The index is loaded directly into your browser on startup and stored in IndexedDB for instant access on subsequent visits. No network requests are made when you search.</p>
+    <p>Gateway ships with a local index of thousands of Wikipedia articles and selected open-web entries. It is loaded directly into your browser and stored in IndexedDB. Local matching and ranking do not require a request; the current bundled index contains 10,523 entries.</p>
+
+    <h2>Live discovery</h2>
+    <p>For a search, Gateway can ask Wikipedia's public API for matching article extracts and current external links. Wikidata provides structured claims such as release dates, founders, headquarters, and official websites. These requests disclose the searched subject to the public API provider; no full history is sent.</p>
+
+    <h2>Quick Wiki</h2>
+    <p>Quick Wiki is deterministic, not generative. Gateway recognizes common question patterns, matches a Wikipedia article, reads a relevant Wikidata claim when one exists, and formats the value with its property identifier. If structured data is unavailable, it displays a direct extract and labels that fallback clearly.</p>
 
     <h2>Ranking</h2>
     <p>Results are scored and sorted by relevance:</p>
@@ -117,7 +123,8 @@
         <li><strong>Keyword match</strong>: results matching more query terms rank higher</li>
         <li><strong>Exact phrase bonus</strong>: the exact query in the title or description adds extra weight</li>
         <li><strong>Prefix boost</strong>: titles starting with the query get a significant score bump</li>
-        <li><strong>Secret list</strong>: searching "xpdevs" or "gateway" pins official XPDevs pages to the top with a score of 99,999</li>
+        <li><strong>Source signals</strong>: the best article, an official website from Wikidata, and cited non-Wikipedia links receive explicit source-aware scores</li>
+        <li><strong>Deduplication</strong>: tracking parameters are removed and equivalent URLs are shown once</li>
     </ul>
 
     <h2>Safety &amp; Filtering</h2>
@@ -129,17 +136,19 @@
     </ul>
 
     <h2>Custom index</h2>
-    <p>You can upload your own JSON index via Settings → Upload Index. The uploaded index replaces the built-in one and persists across page reloads in IndexedDB, allowing you to customise Gateway with your own data.</p>
+    <p>You can upload your own JSON index via Settings -&gt; Upload Index. The uploaded index replaces the built-in one and persists across page reloads in IndexedDB, allowing you to customise Gateway with your own data.</p>
+    <p>For a bounded, dependency-free crawl of public pages, use <code>npm run build:web-index</code>. It reads <code>seeds.txt</code>, follows links to the configured depth, respects <code>robots.txt</code> by default, and writes a merged JSON index without an AI model or search API.</p>
 
     <h2>Dark Mode</h2>
     <p>Dark mode is stored in <code>localStorage</code> and applied before the page renders, so there is no white flash. The toggle works instantly and persists across sessions.</p>
 
     <h2>Performance</h2>
-    <p>Gateway is designed to be fast without a server:</p>
+    <p>Gateway is designed to be fast without a Gateway server:</p>
     <ul>
-        <li>All processing happens in your browser with zero network requests</li>
-        <li>Results are cached in memory for 10 minutes for instant repeat searches</li>
-        <li>IndexedDB persists the index across sessions without re-downloading</li>
+        <li>Local matching and ranking happen in your browser</li>
+        <li>Public discovery requests are short-lived and independent of the bundled index</li>
+        <li>Search results and API responses are cached for ten minutes for repeat searches</li>
+        <li>IndexedDB persists the index across sessions without re-downloading unchanged data</li>
     </ul>
 
     <h2>Open Source</h2>
