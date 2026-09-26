@@ -163,6 +163,7 @@
         if (sel) sel.value = _langPreference;
         const dt = $('settingsDarkToggle');
         if (dt) dt.checked = document.body.classList.contains('dark');
+        _syncQuickWikiToggle();
         const indexStats = $('indexStats');
         if (indexStats) {
             indexStats.textContent = localIndexCount
@@ -200,6 +201,7 @@
         if (overlay) overlay.classList.add('show');
         const dt = $('settingsDarkToggle');
         if (dt) dt.checked = document.body.classList.contains('dark');
+        _syncQuickWikiToggle();
         const sel = $('langSelect');
         if (sel) sel.value = _langPreference;
     };
@@ -252,6 +254,49 @@
         applyDark(!document.documentElement.classList.contains('dark'));
     };
     if (localStorage.getItem('gw-dark') === '1') applyDark(true);
+
+    // ======================== QUICK WIKI SETTING ========================
+
+    let _quickWikiEnabled = true;
+    try { _quickWikiEnabled = localStorage.getItem('gw-quickwiki') !== '0'; }
+    catch(_) { _quickWikiEnabled = true; }
+
+    function _syncQuickWikiToggle() {
+        const t = $('settingsQuickWikiToggle');
+        if (t) t.checked = _quickWikiEnabled;
+    }
+
+    function applyQuickWiki(enabled) {
+        _quickWikiEnabled = !!enabled;
+        try { localStorage.setItem('gw-quickwiki', _quickWikiEnabled ? '1' : '0'); }
+        catch(_) {}
+        _syncQuickWikiToggle();
+        if (!_quickWikiEnabled) {
+            // Hide the box. Stale in-flight responses are neutralized by the
+            // enabled-guards in renderQuickWiki and the fetch handler below,
+            // so the main results and web enrichment are unaffected.
+            quickWikiResult = null;
+            const area = $('answerArea');
+            if (area) area.innerHTML = '';
+        } else if (lastQuery && $('resultsUI') && $('resultsUI').classList.contains('visible')) {
+            // Re-enable: lazily fetch the answer for the current query only.
+            const requestId = searchRequestId;
+            const q = lastQuery;
+            if (typeof window.gatewayQuickWiki === 'function') {
+                window.gatewayQuickWiki(q).then(wikiAnswer => {
+                    if (requestId !== searchRequestId) return;
+                    if (!wikiAnswer || !wikiAnswer.answer) return;
+                    quickWikiResult = wikiAnswer;
+                    renderQuickWiki();
+                }).catch(() => {});
+            }
+        }
+    }
+    window.toggleQuickWiki = function() {
+        applyQuickWiki(!_quickWikiEnabled);
+    };
+    window.setQuickWikiEnabled = applyQuickWiki;
+    window.gatewayQuickWikiEnabled = function() { return _quickWikiEnabled; };
 
     // ======================== CLEAR BUTTON ========================
 
@@ -458,7 +503,8 @@
         if ($('emptyState')) $('emptyState').style.display = 'none';
         // Quick Wiki is lazy: show a lightweight skeleton now, replace it
         // asynchronously after the main results have already painted.
-        if ($('answerArea')) $('answerArea').innerHTML = _quickWikiSkeleton();
+        // Skipped entirely when Quick Wiki is disabled in Settings.
+        if ($('answerArea')) $('answerArea').innerHTML = _quickWikiEnabled ? _quickWikiSkeleton() : '';
         if ($('resultsList')) {
             $('resultsList').innerHTML = `
                 <div class="loading-state">
@@ -530,9 +576,9 @@
             }).catch(() => {});
         }
 
-        if (typeof window.gatewayQuickWiki === 'function') {
+        if (_quickWikiEnabled && typeof window.gatewayQuickWiki === 'function') {
             window.gatewayQuickWiki(q).then(wikiAnswer => {
-                if (requestId !== searchRequestId) return;
+                if (requestId !== searchRequestId || !_quickWikiEnabled) return;
                 // Wikipedia could not answer: hide the Quick Wiki box
                 // entirely (clear the skeleton) rather than showing a weak
                 // or empty answer.
@@ -674,6 +720,11 @@
         // skeleton is left untouched so the layout does not flash.
         const answerArea = $('answerArea');
         if (!answerArea) return;
+        if (!_quickWikiEnabled) {
+            quickWikiResult = null;
+            answerArea.innerHTML = '';
+            return;
+        }
         const quick = quickWikiResult;
         if (!quick || !quick.answer) return;
         const quickLinks = (quick.sourceLinks || []).slice(0, 6);
@@ -819,6 +870,8 @@
 
     window.useQuickWikiExample = function() {
         if (!$('mainSearchInput')) return;
+        // The user explicitly asked for a Quick Wiki answer.
+        if (!_quickWikiEnabled) applyQuickWiki(true);
         $('mainSearchInput').value = 'release date of PlayStation 5';
         updateClearBtn('mainSearchInput');
         performSearch('mainSearchInput');

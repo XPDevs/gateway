@@ -12,7 +12,7 @@ Live behaviour: main results paint from the local index first (typically millise
   - `content-visibility: auto` on `.result-item`, 20-per-page pagination, in-memory + `localStorage` + IndexedDB caches, request dedup via `_once()` / `_inflight`.
 - **Quick Wiki (lazy, sourced, with image)**
   - Deterministic answers from Wikipedia extracts + Wikidata claims (`P577`, `P571`, `P36`, `P1082`, …); date-intent parsing, never generative AI.
-  - Renders **after** the main list: skeleton placeholder first, replaced asynchronously when `gatewayQuickWiki()` resolves; failures — or queries Wikipedia cannot answer — clear the skeleton and show **no box at all** without touching results.
+  - Renders **after** the main list: skeleton placeholder first, replaced asynchronously when `gatewayQuickWiki()` resolves; failures — or queries Wikipedia cannot answer — clear the skeleton and show **no box at all** without touching results. Can be disabled entirely via Settings (`toggleQuickWiki()` / `setQuickWikiEnabled()` / `gatewayQuickWikiEnabled()`).
   - Summary-only answers are gated on a strong title match (exact or ≥75% subject-word overlap); weak matches return `null`.
   - Answer/context duplicates eliminated: `_dedupeAnswerContext()` strips any context repeating the answer (plus a render-side guard), so the answer sentence never appears twice.
   - Representative image: `pageimages` `thumbnail|original` at 500px, with sibling-article fallback; floated right so body text wraps around it and continues underneath; `<img loading="lazy" decoding="async" fetchpriority="low">` with caption and `onerror` collapse (stacks full-width on mobile).
@@ -54,6 +54,8 @@ python3 -m http.server 8000
 Or `npx serve .`, GitHub Pages, Nginx, etc. Use `http(s)://`, not `file://` (fetch + IndexedDB require it).
 
 Custom index (optional): Settings → Upload Index → select a JSON array of `{t, u, d, s}`. It is validated, persisted to IndexedDB, and versioned (old caches invalidated).
+
+Settings (gear icon): language, dark mode, **Quick Wiki on/off** (persisted as `gw-quickwiki` in `localStorage`, default on — when off, no Quick Wiki box is fetched or rendered and the `Try "release date…"` example re-enables it), and index upload.
 
 ## Architecture
 
