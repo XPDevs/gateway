@@ -422,6 +422,14 @@
 
     // ======================== SEARCH ========================
 
+    function _quickWikiSkeleton() {
+        return `
+            <div class="answer-box quick-wiki-loading" aria-live="polite" aria-busy="true">
+                <div class="spinner"></div>
+                <div><strong>${_t('quickWiki')}</strong><span>${_t('quickWikiHint')}</span></div>
+            </div>`;
+    }
+
     async function performSearch(inputId) {
         const input = $(inputId);
         if (!input) return false;
@@ -429,9 +437,11 @@
         if (!q) return false;
 
         const requestId = ++searchRequestId;
+        const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         lastQuery = q;
         spellSuggestion = null;
         quickWikiResult = null;
+        window._gwSearchMs = null;
 
         if ($('mainSearchInput')) $('mainSearchInput').value = q;
         if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
@@ -446,13 +456,9 @@
 
         if ($('didYouMean')) $('didYouMean').innerHTML = '';
         if ($('emptyState')) $('emptyState').style.display = 'none';
-        if ($('answerArea')) {
-            $('answerArea').innerHTML = `
-                <div class="answer-box quick-wiki-loading" aria-live="polite">
-                    <div class="spinner"></div>
-                    <div><strong>${_t('quickWiki')}</strong><span>${_t('quickWikiHint')}</span></div>
-                </div>`;
-        }
+        // Quick Wiki is lazy: show a lightweight skeleton now, replace it
+        // asynchronously after the main results have already painted.
+        if ($('answerArea')) $('answerArea').innerHTML = _quickWikiSkeleton();
         if ($('resultsList')) {
             $('resultsList').innerHTML = `
                 <div class="loading-state">
@@ -464,44 +470,102 @@
         if ($('loadMoreArea')) $('loadMoreArea').style.display = 'none';
 
         try {
-            const quickPromise = typeof window.gatewayQuickWiki === 'function'
-                ? window.gatewayQuickWiki(q).catch(() => null)
-                : Promise.resolve(null);
-            const [searchedResults, wikiAnswer] = await Promise.all([
-                window.gatewayCrawl(q),
-                quickPromise
-            ]);
-            if (requestId !== searchRequestId) return false;
+            const url = new URL(window.location);
+            url.searchParams.set('query', q);
+            window.history.replaceState({ query: q }, '', url.toString());
+        } catch(_) {}
 
-            allResults = _boostXpdevs(searchedResults || [], q);
-            quickWikiResult = wikiAnswer;
+        window._gwPage = 1;
+        window._gwLoaded = 0;
 
-            if (allResults.length) {
-                try {
-                    const suggestion = await window.gatewaySpellCheck(q);
-                    if (requestId === searchRequestId) spellSuggestion = suggestion;
-                } catch(_) {}
+        // ---- STAGE 1 (fast): local index only, no network. ----
+        // This is what makes Gateway faster than Google for the main list:
+        // the first paint never waits for Wikipedia/Wikidata round-trips.
+        let localResults = [];
+        try {
+            if (typeof window.gatewaySearchLocal === 'function') {
+                localResults = await window.gatewaySearchLocal(q);
+            } else {
+                localResults = await window.gatewayCrawl(q);
             }
+        } catch(_) { localResults = []; }
+        if (requestId !== searchRequestId) return false;
 
-            window._gwPage = 1;
+        allResults = _boostXpdevs(localResults || [], q);
+        const paint = () => {
+            if (requestId !== searchRequestId) return;
+            const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            window._gwSearchMs = Math.max(1, Math.round(t1 - t0));
             window._gwLoaded = 0;
-
-            try {
-                const url = new URL(window.location);
-                url.searchParams.set('query', q);
-                window.history.replaceState({ query: q }, '', url.toString());
-            } catch(_) {}
-
             window._gwRender();
-            return true;
-        } catch(_) {
-            if (requestId !== searchRequestId) return false;
-            if ($('answerArea')) $('answerArea').innerHTML = '';
-            if ($('resultsList')) {
-                $('resultsList').innerHTML = '<p class="connection-error">' + _t('connectionError') + '</p>';
-            }
-            return false;
+        };
+        if (typeof requestAnimationFrame === 'function') {
+            await new Promise(resolve => requestAnimationFrame(() => { paint(); resolve(); }));
+        } else {
+            paint();
         }
+        if (requestId !== searchRequestId) return false;
+
+        // ---- STAGE 2 (async enrichment): full crawl + Quick Wiki + spell. ----
+        // Each resolves independently and re-renders only its own section,
+        // so a slow network never blocks or replaces the fast main list
+        // with a spinner.
+        if (typeof window.gatewayCrawl === 'function') {
+            window.gatewayCrawl(q).then(full => {
+                if (requestId !== searchRequestId || !Array.isArray(full) || !full.length) return;
+                const seen = new Set(allResults.map(r => r.url));
+                let added = 0;
+                for (const r of _boostXpdevs(full, q)) {
+                    if (!seen.has(r.url)) { seen.add(r.url); allResults.push(r); added++; }
+                }
+                if (added > 0) {
+                    allResults.sort((a, b) => (b.score || 0) - (a.score || 0));
+                    // Preserve already-rendered items; only extend on "show more".
+                    if ($('resultStats')) {
+                        const secs = window._gwSearchMs != null ? (window._gwSearchMs / 1000).toFixed(2) : null;
+                        $('resultStats').textContent = _t('resultsStats', { count: allResults.length })
+                            + (secs != null ? ` (${secs} seconds)` : '');
+                    }
+                }
+            }).catch(() => {});
+        }
+
+        if (typeof window.gatewayQuickWiki === 'function') {
+            window.gatewayQuickWiki(q).then(wikiAnswer => {
+                if (requestId !== searchRequestId) return;
+                // Wikipedia could not answer: hide the Quick Wiki box
+                // entirely (clear the skeleton) rather than showing a weak
+                // or empty answer.
+                if (!wikiAnswer || !wikiAnswer.answer) {
+                    quickWikiResult = null;
+                    const area = $('answerArea');
+                    if (area) area.innerHTML = '';
+                    return;
+                }
+                quickWikiResult = wikiAnswer;
+                renderQuickWiki();
+            }).catch(() => {
+                if (requestId !== searchRequestId) return;
+                // No Quick Wiki match: remove the skeleton so it never
+                // blocks the already-visible main results.
+                const area = $('answerArea');
+                if (area && area.querySelector('.quick-wiki-loading')) area.innerHTML = '';
+            });
+        } else if ($('answerArea')) {
+            $('answerArea').innerHTML = '';
+        }
+
+        if (typeof window.gatewaySpellCheck === 'function') {
+            window.gatewaySpellCheck(q).then(suggestion => {
+                if (requestId !== searchRequestId) return;
+                if (suggestion && suggestion.toLowerCase() !== q.toLowerCase()) {
+                    spellSuggestion = suggestion;
+                    renderDidYouMean();
+                }
+            }).catch(() => {});
+        }
+
+        return true;
     }
     window.performSearch = performSearch;
 
@@ -552,13 +616,40 @@
         return clean;
     }
 
+    function _faviconHtml(domain, size) {
+        // Every web URL shows its favicon: Google S2 primary, DDG fallback,
+        // letter avatar as the final fallback so nothing renders icon-less.
+        const d = _escapeHtml(domain || '');
+        if (!d) return '';
+        const px = size || 16;
+        const primary = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=32';
+        const fallback = 'https://icons.duckduckgo.com/ip3/' + encodeURIComponent(domain) + '.ico';
+        const letter = (domain || '?').trim().charAt(0).toUpperCase();
+        return `<span class="result-favicon-wrap" aria-hidden="true">`
+            + `<img class="result-favicon" width="${px}" height="${px}" alt="" loading="lazy" decoding="async" `
+            + `src="${_escapeHtml(primary)}" `
+            + `onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src='${_escapeHtml(fallback)}';}`
+            + `else{this.style.display='none';var p=this.parentElement;if(p)p.classList.add('favicon-fallback');`
+            + `if(p&&!p.querySelector('.favicon-letter')){var s=document.createElement('span');s.className='favicon-letter';s.textContent='${_escapeHtml(letter)}';p.appendChild(s);}}" />`
+            + `</span>`;
+    }
+
+    function _answerLinkHtml(link) {
+        const safe = _safeHref(link.url);
+        const domain = _displayDomain(safe) || link.domain || '';
+        return `<span class="answer-link-wrap">${_faviconHtml(domain, 14)}`
+            + `<a href="${_escapeHtml(safe)}" target="_self" class="answer-link">${_escapeHtml(link.domain || link.title || link.url)}</a></span>`;
+    }
+
     function renderItem(r) {
         const url = _safeHref(r.url);
         const urlDisplay = _escapeHtml(_fmtUrl(r.url));
+        const domain = _displayDomain(r.url || '') || r.domain || '';
         const source = r.sourceLabel || (r.resultType === 'wiki' ? _t('wikipedia') : 'Open web');
         return `
             <div class="result-item">
                 <div class="result-item-url">
+                    ${_faviconHtml(domain, 16)}
                     <span>${urlDisplay}</span>
                     <span class="result-source">${_escapeHtml(source)}</span>
                 </div>
@@ -567,71 +658,109 @@
             </div>`;
     }
 
+    function renderDidYouMean() {
+        const dym = $('didYouMean');
+        if (!dym) return;
+        if (spellSuggestion) {
+            const queryUrl = '?query=' + encodeURIComponent(spellSuggestion);
+            dym.innerHTML = `${_t('didYouMean')} <a href="${_escapeHtml(queryUrl)}">${_escapeHtml(spellSuggestion)}</a>`;
+        } else dym.innerHTML = '';
+    }
+
+    function renderQuickWiki() {
+        // Lazy: called only after the main results have painted, and again
+        // when the async Quick Wiki fetch resolves. Never blocks Stage 1.
+        // While pending (quickWikiResult === null and skeleton visible) the
+        // skeleton is left untouched so the layout does not flash.
+        const answerArea = $('answerArea');
+        if (!answerArea) return;
+        const quick = quickWikiResult;
+        if (!quick || !quick.answer) return;
+        const quickLinks = (quick.sourceLinks || []).slice(0, 6);
+        const resultLinks = allResults
+            .filter(r => r.resultType === 'web' && !/wikipedia\.org|wikidata\.org/i.test(r.domain || r.url || ''))
+            .slice(0, 6)
+            .map(r => ({ url: r.url, title: r.domain || r.title, domain: r.domain }));
+        const seenLinkUrls = new Set();
+        const seenLinkDomains = new Set();
+        const links = quickLinks.concat(resultLinks).filter(link => {
+            if (!link || !link.url) return false;
+            const safeUrl = _safeHref(link.url);
+            if (safeUrl === '#') return false;
+            const domain = _displayDomain(safeUrl);
+            if (seenLinkUrls.has(safeUrl) || (domain && seenLinkDomains.has(domain))) return false;
+            seenLinkUrls.add(safeUrl);
+            if (domain) seenLinkDomains.add(domain);
+            return true;
+        }).slice(0, 4);
+        const linksHtml = links.map(_answerLinkHtml).join('<span class="answer-sep">·</span>');
+        // Defense-in-depth against duplicate answer/context text (e.g. stale
+        // caches): strip any context that repeats the answer verbatim.
+        let contextText = String(quick.description || '').replace(/\s+/g, ' ').trim();
+        const answerNorm = String(quick.answer || '').replace(/\s+/g, ' ').trim().replace(/…\s*$/, '');
+        if (contextText && answerNorm) {
+            if (contextText === quick.answer || contextText === answerNorm
+                || contextText.startsWith(quick.answer) || contextText.startsWith(answerNorm)
+                || contextText.toLowerCase().startsWith(answerNorm.toLowerCase())) {
+                const cut = contextText.startsWith(quick.answer)
+                    ? contextText.slice(quick.answer.length)
+                    : contextText.slice(answerNorm.length);
+                contextText = cut.replace(/^[\s,;:.—–-]+/, '').trim();
+                if (contextText.length < 40) contextText = '';
+            }
+        }
+        const description = contextText
+            ? `<p class="quick-wiki-context">${_escapeHtml(contextText)}</p>` : '';
+        const property = quick.property
+            ? `<span class="answer-property">${_escapeHtml(quick.property)}</span><span class="answer-sep">·</span>` : '';
+        const imageHtml = quick.image
+            ? `<figure class="quick-wiki-figure">`
+              + `<img class="quick-wiki-image" src="${_escapeHtml(quick.image)}" `
+              + `alt="${_escapeHtml(quick.imageAlt || ('Image for ' + quick.title))}" `
+              + `loading="lazy" decoding="async" fetchpriority="low" `
+              + `onerror="this.closest('.quick-wiki-figure').style.display='none'" />`
+              + `<figcaption class="quick-wiki-caption">${_escapeHtml(quick.title)} · Wikipedia</figcaption>`
+              + `</figure>`
+            : '';
+
+        answerArea.innerHTML = `
+            <div class="answer-box quick-wiki-box">
+                <div class="quick-wiki-header">
+                    <div class="quick-wiki-mark" aria-hidden="true">W</div>
+                    <div>
+                        <h2>${_escapeHtml(_t('quickWiki'))}</h2>
+                        <span class="quick-wiki-label">${_escapeHtml(quick.label || 'Summary')}</span>
+                    </div>
+                    <span class="no-ai-badge">${_escapeHtml(_t('noGenerativeAi'))}</span>
+                </div>
+                <div class="quick-wiki-body">
+                    ${imageHtml}
+                    <div class="quick-wiki-text">
+                        <div class="quick-wiki-answer">${_escapeHtml(quick.answer)}</div>
+                        ${description}
+                    </div>
+                </div>
+                <div class="answer-meta">
+                    <span class="badge">${_escapeHtml(_t('wikipedia'))}</span>
+                    <a href="${_escapeHtml(_safeHref(quick.url))}" target="_self">${_escapeHtml(quick.title)}</a>
+                    ${property}<span>${_escapeHtml(quick.note || _t('openData'))}</span>
+                    ${linksHtml ? '<span class="answer-sep">·</span>' + linksHtml : ''}
+                </div>
+            </div>`;
+    }
+    window.renderQuickWiki = renderQuickWiki;
+
     window._gwRender = function() {
         const filtered = allResults;
 
         if ($('resultStats')) {
-            $('resultStats').textContent = _t('resultsStats', { count: filtered.length });
+            const secs = window._gwSearchMs != null ? (window._gwSearchMs / 1000).toFixed(2) : null;
+            $('resultStats').textContent = _t('resultsStats', { count: filtered.length })
+                + (secs != null ? ` (${secs} seconds)` : '');
         }
 
-        const dym = $('didYouMean');
-        if (dym) {
-            if (spellSuggestion) {
-                const queryUrl = '?query=' + encodeURIComponent(spellSuggestion);
-                dym.innerHTML = `${_t('didYouMean')} <a href="${_escapeHtml(queryUrl)}">${_escapeHtml(spellSuggestion)}</a>`;
-            } else dym.innerHTML = '';
-        }
-
-        const answerArea = $('answerArea');
-        if (answerArea) {
-            const quick = quickWikiResult;
-            if (quick && quick.answer) {
-                const quickLinks = (quick.sourceLinks || []).slice(0, 6);
-                const resultLinks = filtered
-                    .filter(r => r.resultType === 'web' && !/wikipedia\.org|wikidata\.org/i.test(r.domain || r.url || ''))
-                    .slice(0, 6)
-                    .map(r => ({ url: r.url, title: r.domain || r.title }));
-                const seenLinkUrls = new Set();
-                const seenLinkDomains = new Set();
-                const links = quickLinks.concat(resultLinks).filter(link => {
-                    if (!link || !link.url) return false;
-                    const safeUrl = _safeHref(link.url);
-                    if (safeUrl === '#') return false;
-                    const domain = _displayDomain(safeUrl);
-                    if (seenLinkUrls.has(safeUrl) || (domain && seenLinkDomains.has(domain))) return false;
-                    seenLinkUrls.add(safeUrl);
-                    if (domain) seenLinkDomains.add(domain);
-                    return true;
-                }).slice(0, 4);
-                const linksHtml = links.map(link =>
-                    `<a href="${_escapeHtml(_safeHref(link.url))}" target="_self" class="answer-link">${_escapeHtml(link.domain || link.title || link.url)}</a>`
-                ).join('<span class="answer-sep">·</span>');
-                const description = quick.description && quick.description !== quick.answer
-                    ? `<p class="quick-wiki-context">${_escapeHtml(quick.description)}</p>` : '';
-                const property = quick.property
-                    ? `<span class="answer-property">${_escapeHtml(quick.property)}</span><span class="answer-sep">·</span>` : '';
-
-                answerArea.innerHTML = `
-                    <div class="answer-box quick-wiki-box">
-                        <div class="quick-wiki-header">
-                            <div class="quick-wiki-mark" aria-hidden="true">W</div>
-                            <div>
-                                <h2>${_escapeHtml(_t('quickWiki'))}</h2>
-                                <span class="quick-wiki-label">${_escapeHtml(quick.label || 'Summary')}</span>
-                            </div>
-                            <span class="no-ai-badge">${_escapeHtml(_t('noGenerativeAi'))}</span>
-                        </div>
-                        <div class="quick-wiki-answer">${_escapeHtml(quick.answer)}</div>
-                        ${description}
-                        <div class="answer-meta">
-                            <span class="badge">${_escapeHtml(_t('wikipedia'))}</span>
-                            <a href="${_escapeHtml(_safeHref(quick.url))}" target="_self">${_escapeHtml(quick.title)}</a>
-                            ${property}<span>${_escapeHtml(quick.note || _t('openData'))}</span>
-                            ${linksHtml ? '<span class="answer-sep">·</span>' + linksHtml : ''}
-                        </div>
-                    </div>`;
-            } else answerArea.innerHTML = '';
-        }
+        renderDidYouMean();
+        renderQuickWiki();
 
         const list = $('resultsList');
         const empty = $('emptyState');

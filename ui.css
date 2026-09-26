@@ -455,6 +455,8 @@ a:hover { text-decoration: underline; }
 /* ---- Result Items (Google style) ---- */
 .result-item {
     margin-bottom: 28px;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 120px;
 }
 .result-item-url {
     font-size: 14px;
@@ -471,6 +473,41 @@ a:hover { text-decoration: underline; }
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.result-favicon-wrap {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.result-favicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    display: block;
+}
+.favicon-letter {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    line-height: 1;
+}
+.answer-link-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+.answer-link-wrap .result-favicon-wrap {
+    width: 20px;
+    height: 20px;
+}
+.answer-link-wrap .result-favicon { width: 12px; height: 12px; }
 .result-item-url .result-source {
     flex-shrink: 0;
     max-width: 180px;
@@ -587,6 +624,39 @@ html.dark .no-ai-badge {
     line-height: 1.32;
     font-weight: 600;
     letter-spacing: -0.015em;
+}
+.quick-wiki-body {
+    display: block;
+}
+.quick-wiki-body::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+/* Text wraps around the floated image and continues underneath it,
+   instead of sitting in a narrow column on the left. */
+.quick-wiki-text { min-width: 0; overflow: visible; }
+.quick-wiki-figure {
+    margin: 2px 0 12px 16px;
+    float: right;
+    width: 180px;
+    max-width: 40%;
+}
+.quick-wiki-image {
+    width: 100%;
+    height: auto;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    display: block;
+}
+.quick-wiki-caption {
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-secondary);
 }
 .quick-wiki-context {
     color: var(--result-desc);
@@ -714,6 +784,8 @@ html.dark .no-ai-badge {
     .results-content { padding-top: 4px; }
 }
 @media (max-width: 768px) {
+    .quick-wiki-figure { float: none; width: 100%; max-width: 100%; margin: 0 0 12px; }
+    .quick-wiki-image { max-height: 260px; }
     .home-logo { font-size: 56px; margin-bottom: 20px; }
     .search-section { max-width: 100%; padding: 0 4px; }
     .search-buttons { gap: 4px; }

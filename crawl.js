@@ -9,7 +9,12 @@
     const _inflight = new Map();
     // Bump the prefix when result-shaping or cache semantics change so old
     // browser data cannot be mistaken for the current format.
-    const LS_PREFIX = 'gw_v4_';
+    // v5: Quick Wiki answer/context deduped, summary-only answers gated on a
+    // strong title match, and the bundled index moved to index/.
+    const LS_PREFIX = 'gw_v5_';
+    // Bundled search index lives in the index/ folder (index/index.json +
+    // index/index-meta.json), relative to the app root page.
+    const INDEX_DIR = 'index/';
     let _indexRevision = 'bundled';
     let _indexOverridden = false;
 
@@ -90,6 +95,43 @@
         const part = clean.slice(0, maxChars);
         const sentenceEnd = Math.max(part.lastIndexOf('. '), part.lastIndexOf('! '), part.lastIndexOf('? '));
         return (sentenceEnd > maxChars * 0.45 ? part.slice(0, sentenceEnd + 1) : part).trim() + '…';
+    }
+
+    function _stripTrailingEllipsis(s) {
+        return String(s || '').replace(/…\s*$/, '').trim();
+    }
+
+    function _dedupeAnswerContext(answer, description) {
+        // Quick Wiki showed the same sentences twice (answer + context).
+        // Strip any leading portion of the context that repeats the answer
+        // so the two never display duplicate text.
+        const a = _stripTrailingEllipsis(answer);
+        let d = String(description || '').replace(/\s+/g, ' ').trim();
+        if (!a || !d) return '';
+        if (d === answer || d === a) return '';
+        if (d.startsWith(answer) || d.startsWith(a)) {
+            const rest = (d.startsWith(answer) ? d.slice(answer.length) : d.slice(a.length))
+                .replace(/^[\s,;:.—–-]+/, '').trim();
+            // A stub remainder adds no value next to the answer; hide it.
+            if (rest.length < 40) return '';
+            return rest;
+        }
+        // Case-insensitive containment of the full answer at the start.
+        if (d.toLowerCase().startsWith(a.toLowerCase())) {
+            const rest = d.slice(a.length).replace(/^[\s,;:.—–-]+/, '').trim();
+            if (rest.length < 40) return '';
+            return rest;
+        }
+        return d;
+    }
+
+    function _subjectMatchRatio(subject, title) {
+        const wanted = _unique(_normalize(subject).split(/\s+/).filter(w => w.length > 1 && !STOPWORDS.has(w)));
+        if (!wanted.length) return 0;
+        const titleWords = _unique(_normalize(title).split(/\s+/).filter(Boolean));
+        if (!titleWords.length) return 0;
+        const hits = wanted.filter(w => titleWords.includes(w)).length;
+        return hits / wanted.length;
     }
 
     function _intentById(id) {
@@ -438,7 +480,7 @@
         let remoteMeta = null;
 
         try {
-            const metaResponse = await fetch('index-meta.json', { cache: 'no-cache' });
+            const metaResponse = await fetch(INDEX_DIR + 'index-meta.json', { cache: 'no-cache' });
             if (metaResponse.ok) remoteMeta = await metaResponse.json();
         } catch(_) {}
 
@@ -456,7 +498,7 @@
         }
 
         try {
-            const response = await fetch('index.json', { cache: 'no-cache' });
+            const response = await fetch(INDEX_DIR + 'index.json', { cache: 'no-cache' });
             if (!response.ok) throw new Error(String(response.status));
             const data = await response.json();
             if (Array.isArray(data) && data.length) {
@@ -682,8 +724,8 @@
                 detailData = await _fetch(_mediaWikiUrl(domain, {
                     action: 'query', titles: titles.join('|'), redirects: 1,
                     prop: 'extracts|pageimages|pageprops|info',
-                    exintro: 1, explaintext: 1, exlimit: 'max',
-                    inprop: 'url', piprop: 'thumbnail', pithumbsize: 160
+                    exintro: 1, explaintext: 1, exlimit: 'max', exsectionformat: 'plain',
+                    inprop: 'url', piprop: 'thumbnail|original', pithumbsize: 500
                 }), 5000);
             } catch(_) { return []; }
 
@@ -691,6 +733,23 @@
             const pages = _pageList(detailData).map(page => {
                 const title = page.title || '';
                 const url = cleanTracking(page.fullurl || page.canonicalurl || ('https://' + domain + '/wiki/' + encodeURIComponent(title.replace(/ /g, '_'))));
+                // Prefer the high-resolution original when it is a normal
+                // raster image; otherwise use the 500px thumbnail. The
+                // thumbnail URL is always representative of the article's
+                // page image, so Quick Wiki never renders without one when
+                // Wikipedia provides it.
+                const thumb = page.thumbnail && page.thumbnail.source || null;
+                const original = page.original && page.original.source || null;
+                let image = thumb || original || null;
+                if (original && /\.(jpe?g|png|webp)(\?.*)?$/i.test(original)) {
+                    try {
+                        const w = page.original.width || 0;
+                        const h = page.original.height || 0;
+                        // Skip extremely wide panoramas / tiny icons as the
+                        // representative image; keep a sensible article photo.
+                        if (!w || !h || (w < 2000 && h > 60 && w > 60)) image = original;
+                    } catch(_) { image = original; }
+                }
                 return {
                     pageid: page.pageid,
                     title,
@@ -698,7 +757,9 @@
                     extract: page.extract || '',
                     description: _firstSentences(page.extract || '', 360),
                     qid: page.pageprops && page.pageprops.wikibase_item || null,
-                    thumbnail: page.thumbnail && page.thumbnail.source || null,
+                    thumbnail: image,
+                    thumbnailWidth: (page.thumbnail && page.thumbnail.width) || (page.original && page.original.width) || 0,
+                    originalImage: original,
                     extlinks: [],
                     order: order.has(_normalize(title)) ? order.get(_normalize(title)) : 999
                 };
@@ -921,8 +982,19 @@
 
             if (!fact) fact = _extractDateAnswer(page.extract, page.title, parsed.intent);
             if (!fact) {
+                // No structured/date fact: only answer from the article when
+                // the page is a confident match for the subject. Otherwise
+                // Wikipedia cannot answer this query — return null so no
+                // Quick Wiki box is shown at all.
+                const ratio = _subjectMatchRatio(parsed.subject, page.title);
+                const titleN = _normalize(page.title);
+                const wantedN = _normalize(parsed.subject);
+                const strong = titleN === wantedN || ratio >= 0.75;
+                if (!strong) return null;
+                const summary = _firstSentences(page.extract, 420);
+                if (!summary || summary.length < 40) return null;
                 fact = {
-                    answer: _firstSentences(page.extract, 420),
+                    answer: summary,
                     label: parsed.intent ? parsed.intent.label + ' summary' : 'Article summary',
                     note: parsed.intent
                         ? 'The structured fact was unavailable, so the sourced article summary is shown.'
@@ -934,6 +1006,17 @@
             const officialUrls = await _officialUrls(page);
             const officialLinks = officialUrls.map(url => ({ url, title: _domainFromUrl(url), domain: _domainFromUrl(url) }));
             const sourceLinks = _dedupeSourceLinks(officialLinks.concat(_sourceLinks(page)), 8);
+            // Representative image: prefer the article's page image at a
+            // display-friendly size. Fall back to a sibling result's image
+            // so Quick Wiki almost always has a visual, then to null.
+            let image = page.thumbnail || page.originalImage || null;
+            if (!image) {
+                for (const sibling of pages) {
+                    if (sibling.thumbnail && sibling.extract) { image = sibling.thumbnail; break; }
+                }
+            }
+            if (!fact.answer || String(fact.answer).trim().length < 2) return null;
+            const fullContext = _firstSentences(page.extract, 520);
             const result = {
                 title: page.title,
                 url: page.url,
@@ -941,8 +1024,12 @@
                 label: fact.label,
                 note: fact.note,
                 property: fact.property,
-                description: _firstSentences(page.extract, 520),
+                description: _dedupeAnswerContext(fact.answer, fullContext),
                 extract: page.extract,
+                image: image,
+                imageAlt: image ? ('Representative image for ' + page.title + ' from Wikipedia') : null,
+                pageid: page.pageid || null,
+                language: _wikiLanguage(),
                 source: 'wikipedia',
                 sourceLabel: 'Wikipedia',
                 sourceLinks,
@@ -969,6 +1056,21 @@
             .filter(isSafeResult)
             .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.title).localeCompare(String(b.title)))
             .slice(0, MAX_RESULTS);
+    }
+
+    async function gatewaySearchLocal(term) {
+        // Fast path: local index only, no network. Used to paint the main
+        // results instantly (typically <50ms for ~10k entries) before the
+        // slower Wikipedia/Wikidata enrichment resolves.
+        if (!term) return [];
+        try {
+            const parsed = parseQuickWikiQuery(term);
+            const searchTerms = _unique([term, parsed.subject]);
+            const groups = await Promise.all(searchTerms.map(searchIndex));
+            return _dedupeAndRank(groups.flat());
+        } catch(_) {
+            return [];
+        }
     }
 
     async function gatewayCrawl(term) {
@@ -1124,6 +1226,7 @@
     }
 
     window.gatewayCrawl = gatewayCrawl;
+    window.gatewaySearchLocal = gatewaySearchLocal;
     window.gatewayQuickWiki = quickWiki;
     window.gatewayParseQuickWiki = parseQuickWikiQuery;
     window.gatewayIndexSize = window.gatewayIndexSize;
