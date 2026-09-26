@@ -1,0 +1,25 @@
+{
+  "version": "gw-CC-MAIN-2026-30-muio4q76",
+  "entries": 20000,
+  "format": {
+    "t": "title",
+    "u": "url",
+    "d": "description",
+    "s": "domain",
+    "n": "site name"
+  },
+  "source": "Common Crawl CC-MAIN-2026-30",
+  "generated": "2026-09-26T17:58:08.752Z",
+  "indexedDocuments": 20268833,
+  "sharded": {
+    "directory": "index/",
+    "manifest": "index/manifest.json",
+    "docs": 20268833,
+    "postings": 222129619,
+    "tokenEntries": null,
+    "bytes": 1126653852,
+    "tierDocs": 60000,
+    "coreDocs": 2500
+  },
+  "note": "Describes the bundled index.json fallback. The full 20,268,833 document index lives in index/ and is described by its own manifest. This is the best 20,000 documents out of it, used only when index/ is not deployed."
+}
