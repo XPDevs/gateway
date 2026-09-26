@@ -9,19 +9,24 @@
     const _inflight = new Map();
     // Bump the prefix when result-shaping or cache semantics change so old
     // browser data cannot be mistaken for the current format.
-    // v5: Quick Wiki answer/context deduped, summary-only answers gated on a
-    // strong title match, and the bundled index moved to index/.
-    const LS_PREFIX = 'gw_v5_';
+    // v6: ranking replaced by BM25 (IDF^1.5 weighting, k1=1.2, b=0.75) with a
+    // hybrid 0.8/0.2 static authority prior.
+    const LS_PREFIX = 'gw_v6_';
     // Bundled search index lives in the index/ folder (index/index.json +
     // index/index-meta.json), relative to the app root page.
     const INDEX_DIR = 'index/';
     let _indexRevision = 'bundled';
     let _indexOverridden = false;
 
-    const STOPWORDS = new Set('a an and as at be but by for from had has have he her his how i if in is it its of'
+    // NOTE: the concatenation must be parenthesised before split(), otherwise
+    // `.split()` binds to the last literal only and the Set ends up holding a
+    // character soup instead of words (which silently disables stopwords).
+    const STOPWORDS = new Set(('a an and as at be but by for from had has have he her his how i if in is it its of'
         + ' on or she so that the their them they this to was we were what when where who will with you your do does'
         + ' did not no are can could would should may might tell me show find about release date released launch launched'
-        .split(' '));
+        + ' are was were been being am also more most other some such only own same so than too very can will just'
+        + ' don should now s t o re ve ll y ain aren couldn didn doesn hadn hasn haven isn ma mightn mustn needn'
+        + ' shan shouldn wasn weren won wouldn').split(' '));
 
     const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December'
         + '|Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?'
@@ -557,23 +562,263 @@
         return _indexData && _indexData.length || 0;
     };
 
+    // ==================== RANKING: BM25 + AUTHORITY HYBRID ====================
+    //
+    // FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
+    //
+    //   1. IDF with additive smoothing
+    //        IDF(q_i) = ln(1 + (N - n(q_i) + 0.5) / (n(q_i) + 0.5))
+    //   2. Dynamic query term weighting (boosts rare entities, damps
+    //      common verbs and filler words)
+    //        W(q_i) = IDF(q_i) ^ 1.5
+    //   3. Okapi BM25 core scoring
+    //        BM25(D, Q) = sum( W(q_i) * (f(q_i, D) * (k1 + 1))
+    //                        / (f(q_i, D) + k1 * (1 - b + b * (|D| / avgdl))) )
+    //   4. Hybrid with a pre-calculated static authority float in [0.0, 10.0]
+    //
+    // n(q_i) is counted over the searchable corpus at load time (document
+    // frequency), |D| and avgdl are word counts.
+    const RANK_K1 = 1.2;              // term-frequency saturation
+    const RANK_B = 0.75;              // length normalisation
+    const RANK_BM25_WEIGHT = 0.8;
+    const RANK_AUTHORITY_WEIGHT = 0.2;
+    // The IDF curve is defined against a ~20 billion document web corpus.
+    // Self-hosted corpora can override it: window.GATEWAY_RANK_CORPUS = 50000.
+    const RANK_CORPUS_SIZE = 2e10;
+    const RANK_FALLBACK_AVGDL = 24;
+    const RANK_MIN_AVGDL = 1;
+
+    // --- Static, pre-calculated authority (PageRank-style, 0.0 - 10.0) -----
+    // Deterministic per domain: it never varies with the query, so it is a
+    // true static prior rather than a relevance signal. An index entry may
+    // also ship its own value in `a`, which always wins.
+    const _AUTHORITY_DOMAINS = {
+        // Reference works and open data
+        'wikipedia.org': 10, 'wikidata.org': 10, 'wikisource.org': 10, 'wiktionary.org': 9.6,
+        'britannica.com': 9.3, 'archive.org': 9.1, 'gutenberg.org': 9.0, 'loc.gov': 9.6,
+        'nasa.gov': 9.6, 'nih.gov': 9.6, 'noaa.gov': 9.6, 'nist.gov': 9.6, 'cdc.gov': 9.6,
+        'europa.eu': 9.2, 'un.org': 9.2, 'oecd.org': 8.6, 'worldbank.org': 8.6, 'imf.org': 8.6,
+        'who.int': 9.4, 'unicef.org': 8.8, 'unesco.org': 8.8, 'w3.org': 9.4, 'ietf.org': 9.2,
+        'rfc-editor.org': 9.2, 'ietf.org': 9.2, 'iso.org': 8.8, 'ieee.org': 8.8,
+        // Science and peer review
+        'nature.com': 9.4, 'science.org': 9.4, 'jstor.org': 9.0, 'doi.org': 9.0,
+        'arxiv.org': 8.8, 'acm.org': 8.8, 'pubmed.ncbi.nlm.nih.gov': 9.4, 'ncbi.nlm.nih.gov': 9.4,
+        'sciencedirect.com': 8.4, 'springer.com': 8.4, 'wiley.com': 8.4, 'elsevier.com': 8.2,
+        'ssrn.com': 8.0, 'biorxiv.org': 8.0, 'medrxiv.org': 8.0, 'nejm.org': 9.0, 'bmj.com': 8.8,
+        'thelancet.com': 9.0, 'jamanetwork.com': 8.8, 'plos.org': 8.2, 'mdpi.com': 7.2,
+        // News and reference journalism
+        'reuters.com': 8.8, 'apnews.com': 8.8, 'bloomberg.com': 8.4, 'ft.com': 8.4,
+        'economist.com': 8.6, 'wsj.com': 8.2, 'nytimes.com': 8.2, 'washingtonpost.com': 8.2,
+        'bbc.co.uk': 8.6, 'bbc.com': 8.6, 'theguardian.com': 8.2, 'npr.org': 8.2,
+        'pbs.org': 8.2, 'aljazeera.com': 7.6, 'cnn.com': 7.4, 'forbes.com': 7.4,
+        // Standards, vendor and primary documentation
+        'developer.mozilla.org': 9.0, 'docs.python.org': 9.0, 'python.org': 8.6,
+        'nodejs.org': 8.6, 'apache.org': 8.6, 'kubernetes.io': 8.6, 'docker.com': 8.4,
+        'docs.aws.amazon.com': 8.4, 'developer.apple.com': 8.4, 'learn.microsoft.com': 8.4,
+        'golang.org': 8.6, 'rust-lang.org': 8.6, 'postgresql.org': 8.4, 'sqlite.org': 8.4,
+        // Developer platforms
+        'github.com': 8.0, 'gitlab.com': 7.6, 'stackoverflow.com': 7.6, 'npmjs.com': 7.2,
+        'pypi.org': 7.6, 'crates.io': 7.2, 'rubygems.org': 7.0, 'packagist.org': 7.0,
+        'sourceforge.net': 6.4, 'medium.com': 5.6, 'substack.com': 5.6, 'dev.to': 5.6,
+        'wordpress.com': 5.4, 'blogspot.com': 4.6, 'quora.com': 5.0, 'reddit.com': 5.4
+    };
+    // Public-sector and academic host shapes, tested against every leading
+    // label run so www.gov.uk, gob.ve, gov.mt and verwaltung.bund.de all
+    // resolve. Deliberately excludes .org/.com/.net and generic ccTLDs such
+    // as co.uk, which are mostly commercial.
+    const _AUTHORITY_HOST_PATTERNS = [
+        [/^[a-z-]+\.gov$/, 9.6], [/^gov\.[a-z]{2}$/, 9.6],
+        [/^[a-z-]+\.mil$/, 9.4], [/^gov\.[a-z]{2}\.[a-z]{2}$/, 9.4],
+        [/^gob\.[a-z]{2}$/, 9.4], [/^govt\.[a-z]{2}$/, 9.4], [/^gc\.[a-z]{2}$/, 9.4],
+        [/^go\.[a-z]{2}$/, 9.2], [/^[a-z-]+\.int$/, 9.2],
+        [/^[a-z-]+\.edu$/, 9.3], [/^[a-z-]+\.ac\.[a-z]{2}$/, 9.3],
+        [/^[a-z-]+\.edu\.[a-z]{2}$/, 9.2], [/^[a-z-]+\.ac\.[a-z]{2}\.[a-z]{2}$/, 9.2],
+        [/^[a-z-]+\.europa\.eu$/, 9.2], [/^europa\.eu$/, 9.2], [/^europarl\.eu$/, 9.0],
+        [/^e[a-z-]+\.[a-z]{2}$/, 8.4], [/^verwaltung\./, 9.4], [/^bund\./, 9.4]
+    ];
+
+    function _domainHash(domain) {
+        // FNV-1a: stable across reloads and machines, so an unlisted domain
+        // still resolves to one fixed authority value.
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < domain.length; i++) {
+            hash ^= domain.charCodeAt(i);
+            hash = Math.imul(hash, 0x01000193) >>> 0;
+        }
+        return hash / 4294967296;
+    }
+
+    function _authorityForDomain(domain) {
+        const host = String(domain || '').toLowerCase().replace(/^www\./, '').replace(/\.+$/, '');
+        if (!host) return 3;
+        // 1. Known domain, or any subdomain of one (en.wikipedia.org, m.bbc.com).
+        let probe = host;
+        for (let i = 0; i < 6; i++) {
+            const known = _AUTHORITY_DOMAINS[probe];
+            if (typeof known === 'number') return known;
+            const dot = probe.indexOf('.');
+            if (dot < 0) break;
+            probe = probe.slice(dot + 1);
+        }
+        // 2. Public-sector / academic host shapes.
+        const labels = host.split('.');
+        for (let i = 0; i < labels.length; i++) {
+            const candidate = labels.slice(i).join('.');
+            for (let j = 0; j < _AUTHORITY_HOST_PATTERNS.length; j++) {
+                if (_AUTHORITY_HOST_PATTERNS[j][0].test(candidate)) return _AUTHORITY_HOST_PATTERNS[j][1];
+            }
+        }
+        // 3. Unlisted domain: deterministic 2.0 - 6.0 band.
+        return Math.round((2 + 4 * _domainHash(host)) * 100) / 100;
+    }
+
+    function _authorityFromEntry(entry, domain) {
+        const raw = Number(entry && entry.a);
+        if (Number.isFinite(raw) && raw >= 0 && raw <= 10) return raw;
+        return _authorityForDomain(domain);
+    }
+
+    function _rankCorpusSize() {
+        const override = Number(window.GATEWAY_RANK_CORPUS);
+        if (Number.isFinite(override) && override > 0) return override;
+        return RANK_CORPUS_SIZE;
+    }
+
+    function _rankTokens(text) {
+        const normalized = _normalize(text);
+        if (!normalized) return [];
+        return normalized.split(' ').filter(t => {
+            if (STOPWORDS.has(t)) return false;
+            // Numerals stay: "PlayStation 5" and "World War 2" are decided by
+            // them, and their document frequency already damps them via IDF.
+            // Lone letters are dropped: the corpus holds 189 of them and they
+            // are mostly artefacts ("s", "a", stripped diacritics).
+            if (t.length === 1) return t >= '0' && t <= '9';
+            return true;
+        });
+    }
+
+    function _rankQueryTerms(query, extra) {
+        const parts = [];
+        const push = value => {
+            for (const token of _rankTokens(value)) parts.push(token);
+        };
+        push(query);
+        if (extra) push(extra);
+        return _unique(parts).slice(0, 12);
+    }
+
+    // Step 1 + 2: IDF with additive smoothing, then W(q_i) = IDF ^ 1.5.
+    function _rankWeights(terms, stats) {
+        const N = stats.corpusSize;
+        const df = stats.df;
+        const weights = [];
+        for (let i = 0; i < terms.length; i++) {
+            const term = terms[i];
+            const n = df.get(term) || 0;
+            const idf = Math.log(1 + (N - n + 0.5) / (n + 0.5));
+            weights.push({
+                term,
+                df: n,
+                idf: Math.max(idf, 0),
+                weight: Math.pow(Math.max(idf, 0), 1.5)
+            });
+        }
+        return weights;
+    }
+
+    // Step 3: Okapi BM25 core scoring with k1 = 1.2, b = 0.75.
+    function _rankBM25(weights, termFreq, docLength, avgdl) {
+        if (!weights.length || !termFreq || !termFreq.size) return 0;
+        const norm = RANK_K1 * (1 - RANK_B + RANK_B * (docLength / avgdl));
+        let score = 0;
+        for (let i = 0; i < weights.length; i++) {
+            const f = termFreq.get(weights[i].term) || 0;
+            if (!f) continue;
+            score += weights[i].weight * (f * (RANK_K1 + 1)) / (f + norm);
+        }
+        return score;
+    }
+
+    // Step 4: FinalScore = BM25 * 0.8 + Authority * 0.2
+    function _rankFinal(bm25, authority) {
+        return bm25 * RANK_BM25_WEIGHT + authority * RANK_AUTHORITY_WEIGHT;
+    }
+
+    function _rankTermFreq(text) {
+        const tokens = _normalize(text).split(' ').filter(Boolean);
+        const termFreq = new Map();
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            termFreq.set(token, (termFreq.get(token) || 0) + 1);
+        }
+        return { termFreq, length: tokens.length };
+    }
+
+    function _rankEmptyStats() {
+        return { items: [], df: new Map(), avgdl: RANK_FALLBACK_AVGDL, corpusSize: _rankCorpusSize(), size: 0 };
+    }
+
+    // Precomputes, once per index: term frequencies, document frequency,
+    // average document length and the static authority of every document.
     function _prepareIndex(idx) {
         if (_preparedSource === idx && _preparedIndex) return _preparedIndex;
-        _preparedIndex = idx.map(entry => ({
-            entry,
-            title: _normalize(entry.t),
-            description: _normalize(entry.d),
-            titleSpace: ' ' + _normalize(entry.t) + ' ',
-            descriptionSpace: ' ' + _normalize(entry.d) + ' '
-        }));
+        const items = [];
+        const df = new Map();
+        let totalLength = 0;
+        for (let i = 0; i < idx.length; i++) {
+            const entry = idx[i];
+            const domain = _normaliseDomain(entry.s || _domainFromUrl(entry.u || ''));
+            const title = entry.t || '';
+            const description = entry.d || '';
+            const { termFreq, length } = _rankTermFreq(title + ' ' + description);
+            termFreq.forEach((count, term) => df.set(term, (df.get(term) || 0) + 1));
+            totalLength += length;
+            items.push({
+                entry,
+                title: _normalize(title),
+                description: _normalize(description),
+                termFreq,
+                length,
+                domain,
+                authority: _authorityFromEntry(entry, domain)
+            });
+        }
+        const size = items.length;
+        _preparedIndex = {
+            items,
+            df,
+            avgdl: size ? Math.max(totalLength / size, RANK_MIN_AVGDL) : RANK_FALLBACK_AVGDL,
+            corpusSize: _rankCorpusSize(),
+            size
+        };
         _preparedSource = idx;
         return _preparedIndex;
     }
 
-    function _mapIndexEntry(prepared, score) {
-        const e = prepared.entry;
+    function _rankStats() {
+        if (Array.isArray(_indexData) && _indexData.length) return _prepareIndex(_indexData);
+        return _rankEmptyStats();
+    }
+
+    // Scores a result that is not in the bundled index (live Wikipedia,
+    // official sites, referenced web links) with the same hybrid formula so
+    // every result type stays comparable.
+    function _scoreResult(title, description, domain, weights, stats) {
+        const { termFreq, length } = _rankTermFreq(title + ' ' + description);
+        const bm25 = _rankBM25(weights, termFreq, length, stats.avgdl);
+        const authority = _authorityForDomain(domain);
+        return {
+            score: _rankFinal(bm25, authority),
+            bm25,
+            authority
+        };
+    }
+
+    function _mapIndexEntry(item, score, bm25) {
+        const e = item.entry;
         const url = cleanTracking(e.u || '');
-        const domain = _normaliseDomain(e.s || _domainFromUrl(url));
+        const domain = item.domain;
         return {
             title: e.t || domain,
             url,
@@ -585,55 +830,38 @@
             sourceLabel: 'Gateway Index',
             resultType: domain.endsWith('wikipedia.org') ? 'wiki' : 'web',
             score,
+            bm25,
+            authority: item.authority,
             domain,
             suggestion: null
         };
     }
 
-    async function searchIndex(term) {
+    async function searchIndex(term, extraTerm) {
         if (_indexReady) await _indexReady;
         const idx = _indexData;
         if (!Array.isArray(idx) || !idx.length) return [];
 
-        const q = _normalize(term);
-        const terms = _unique(q.split(/\s+/).filter(t => t.length > 1 && !STOPWORDS.has(t)));
+        // Query terms are the union of the raw query and the parsed subject
+        // (e.g. "who founded google" -> "google"), scored in one BM25 pass so
+        // the terms of a single query are never split across two runs.
+        const terms = _rankQueryTerms(term, extraTerm);
         if (!terms.length) return [];
 
-        const prepared = _prepareIndex(idx);
+        const stats = _prepareIndex(idx);
+        const weights = _rankWeights(terms, stats);
+        const avgdl = stats.avgdl;
+        const items = stats.items;
         const matched = [];
 
-        for (let i = 0; i < prepared.length; i++) {
-            const item = prepared[i];
-            let score = 10;
-            let matchedTerms = 0;
-            let titleHits = 0;
-
-            for (const t of terms) {
-                let termScore = 0;
-                if (item.titleSpace.includes(' ' + t + ' ')) { termScore += 55; titleHits++; }
-                else if (item.titleSpace.includes(t)) { termScore += 32; titleHits++; }
-                if (item.descriptionSpace.includes(' ' + t + ' ')) termScore += 24;
-                else if (item.descriptionSpace.includes(t)) termScore += 9;
-                if (termScore > 0) {
-                    matchedTerms++;
-                    score += termScore;
-                }
-            }
-
-            if (!matchedTerms) continue;
-            if (terms.length > 1 && matchedTerms < Math.ceil(terms.length * 0.6)) continue;
-
-            const coverage = matchedTerms / terms.length;
-            score += Math.round(coverage * 150);
-            if (titleHits === terms.length) score += 90;
-            if (item.title === q) score += 700;
-            else if (item.title.startsWith(q)) score += 380;
-            else if (item.titleSpace.includes(' ' + q + ' ')) score += 260;
-            if (item.descriptionSpace.includes(' ' + q + ' ')) score += 45;
-            matched.push(_mapIndexEntry(item, score));
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const bm25 = _rankBM25(weights, item.termFreq, item.length, avgdl);
+            if (bm25 <= 0) continue;
+            matched.push(_mapIndexEntry(item, _rankFinal(bm25, item.authority), bm25));
         }
 
-        matched.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
+        matched.sort((a, b) => b.score - a.score || String(a.title).localeCompare(String(b.title)));
         return matched.slice(0, MAX_INDEX_RESULTS);
     }
 
@@ -1065,9 +1293,8 @@
         if (!term) return [];
         try {
             const parsed = parseQuickWikiQuery(term);
-            const searchTerms = _unique([term, parsed.subject]);
-            const groups = await Promise.all(searchTerms.map(searchIndex));
-            return _dedupeAndRank(groups.flat());
+            const results = await searchIndex(term, parsed.subject);
+            return _dedupeAndRank(results);
         } catch(_) {
             return [];
         }
@@ -1080,34 +1307,41 @@
         if (cached) return _dedupeAndRank(cached);
 
         const parsed = parseQuickWikiQuery(term);
-        const searchTerms = _unique([term, parsed.subject]);
         try {
-            const [indexedGroups, pages] = await Promise.all([
-                Promise.all(searchTerms.map(searchIndex)),
+            const [indexed, pages] = await Promise.all([
+                searchIndex(term, parsed.subject),
                 _searchWikipedia(parsed.subject, 12)
             ]);
-            const results = indexedGroups.flat();
+            const results = indexed;
+            // Same hybrid formula for every enrichment source, so live
+            // Wikipedia, official sites and referenced links compete with the
+            // bundled index on identical terms.
+            const rankStats = _rankStats();
+            const weights = _rankWeights(_rankQueryTerms(term, parsed.subject), rankStats);
 
-            const bestPage = _pickWikiPage(pages, parsed.subject);
             for (let i = 0; i < pages.length; i++) {
                 const page = pages[i];
                 if (!page.url || !page.extract) continue;
-                const isBest = page === bestPage;
+                const domain = _domainFromUrl(page.url);
+                const description = page.description || _firstSentences(page.extract, 320);
+                // Relevance comes from BM25 over the article's own text; the
+                // old fixed 2000/280 boost is gone. Authority (wikipedia.org
+                // = 10.0) supplies the source prior instead.
+                const rank = _scoreResult(page.title, description, domain, weights, rankStats);
                 results.push({
                     title: page.title,
                     url: page.url,
-                    description: page.description || _firstSentences(page.extract, 320),
+                    description,
                     fullSnippet: page.extract,
                     extract: page.extract,
                     thumbnail: page.thumbnail,
                     source: 'wikipedia-live',
                     sourceLabel: 'Wikipedia',
                     resultType: 'wiki',
-                    // Only a title-confirmed article receives the large
-                    // Wikipedia boost. An API's first result is not proof of
-                    // relevance when the search subject did not match it.
-                    score: (isBest ? 2000 : 280) - i * 12,
-                    domain: _domainFromUrl(page.url),
+                    score: rank.score - i * 0.01,
+                    bm25: rank.bm25,
+                    authority: rank.authority,
+                    domain,
                     suggestion: null
                 });
             }
@@ -1122,39 +1356,52 @@
                 urls.forEach((url, urlIndex) => {
                     const domain = _domainFromUrl(url);
                     if (!domain) return;
+                    const title = page.title + ' - official website';
+                    const description = 'Official website listed for ' + page.title + '. ' + (page.description || '');
+                    // The official site's own domain authority is the signal
+                    // here (e.g. playstation.com outranks a random blog).
+                    const rank = _scoreResult(title, description, domain, weights, rankStats);
                     results.push({
-                        title: page.title + ' - official website',
+                        title,
                         url,
-                        description: 'Official website listed for ' + page.title + '. ' + (page.description || ''),
+                        description,
                         fullSnippet: page.extract,
                         extract: page.extract,
                         thumbnail: page.thumbnail,
                         source: 'official-web',
                         sourceLabel: domain,
                         resultType: 'web',
-                        score: (page === bestPage ? 1800 : 360) - pageIndex * 18 - urlIndex * 10,
+                        score: rank.score - pageIndex * 0.01 - urlIndex * 0.001,
+                        bm25: rank.bm25,
+                        authority: rank.authority,
                         domain,
                         suggestion: null
                     });
                 });
             });
 
-            const articleBest = bestPage;
             for (const page of pages.slice(0, 4)) {
                 for (const url of page.extlinks || []) {
                     if (!_isReferenceUrl(url)) continue;
                     const domain = _domainFromUrl(url);
+                    const title = page.title + ' — ' + domain;
+                    const description = 'Referenced by the Wikipedia article “' + page.title + '”. ' + (page.description || '');
+                    // Referenced pages are ranked on their own text and their
+                    // own domain authority, not on which article cited them.
+                    const rank = _scoreResult(title, description, domain, weights, rankStats);
                     const webResult = {
-                        title: page.title + ' — ' + domain,
+                        title,
                         url,
-                        description: 'Referenced by the Wikipedia article “' + page.title + '”. ' + (page.description || ''),
+                        description,
                         fullSnippet: page.extract,
                         extract: page.extract,
                         thumbnail: page.thumbnail,
                         source: 'open-web',
                         sourceLabel: domain,
                         resultType: 'web',
-                        score: (page === articleBest ? 930 : 260) - results.length * 0.01,
+                        score: rank.score - results.length * 0.001,
+                        bm25: rank.bm25,
+                        authority: rank.authority,
                         domain,
                         suggestion: null
                     };
@@ -1169,7 +1416,7 @@
             if (ranked.length) _store(key, ranked);
             return ranked;
         } catch(_) {
-            return _dedupeAndRank(await searchIndex(term));
+            return _dedupeAndRank(await searchIndex(term, parsed.subject));
         }
     }
 
@@ -1232,4 +1479,24 @@
     window.gatewayIndexSize = window.gatewayIndexSize;
     window.getSuggestions = getSuggestions;
     window.gatewaySpellCheck = spellCheck;
+
+    // ---- Ranking introspection (used by tests and debugging) ----
+    window.gatewayAuthorityScore = function(domain) {
+        return _authorityForDomain(domain);
+    };
+    window.gatewayRankDebug = async function(query) {
+        if (_indexReady) await _indexReady;
+        const stats = _rankStats();
+        return {
+            size: stats.size,
+            vocabulary: stats.df.size,
+            avgdl: stats.avgdl,
+            corpusSize: stats.corpusSize,
+            k1: RANK_K1,
+            b: RANK_B,
+            bm25Weight: RANK_BM25_WEIGHT,
+            authorityWeight: RANK_AUTHORITY_WEIGHT,
+            terms: _rankWeights(_rankQueryTerms(query || '', null), stats)
+        };
+    };
 })();

@@ -23,6 +23,7 @@ Live behaviour: main results paint from the local index first (typically millise
 - **Unique descriptions**
   - All 10,523 `index.json` descriptions are unique and page-specific (verified: 10,523 / 10,523 unique, zero `Official website of X.` boilerplate).
   - 202 former boilerplate entries rewritten per-domain (tourism vs. government vs. curated brand/tech copy); 3 duplicate September-11 victim-list descriptions split by surname range (A–G / H–N / O–Z).
+- **BM25 hybrid ranking** (see *Ranking* below) — IDF with additive smoothing, `IDF^1.5` term weighting, Okapi BM25, and a static authority prior.
 - **Plus:** 25-language UI, dark mode, autocomplete (`getSuggestions`), `Did you mean?` spell-check, `I'm Feeling Lucky`, uploadable custom index, safe-domain filtering, tracking-param stripping.
 
 ## Project structure
@@ -69,20 +70,41 @@ User query
 
 Key modules:
 
-- `crawl.js`: `_normalize`, `_prepareIndex`, `searchIndex`, `gatewaySearchLocal`, `gatewayCrawl`, `_searchWikipedia` (opensearch → extracts+pageimages+pageprops+info, extlinks for best page), `_wikidataClaims` / `_labelsForClaims` / `_formatWikidataTime`, `quickWiki` (+ `_dedupeAnswerContext`, `_subjectMatchRatio` gating), `getSuggestions`, `spellCheck`, `_dedupeAndRank`, `isSafeResult`, `cleanTracking`, tiered cache (memory → localStorage `gw_v5_` → IndexedDB `GatewayIndex`). Loads the bundled index from `index/index.json` + `index/index-meta.json` via `INDEX_DIR`.
+- `crawl.js`: `_normalize`, `_prepareIndex` (term frequencies, document frequency, `avgdl`, authority), `searchIndex`, `gatewaySearchLocal`, `gatewayCrawl`, `_searchWikipedia` (opensearch → extracts+pageimages+pageprops+info, extlinks for best page), `_wikidataClaims` / `_labelsForClaims` / `_formatWikidataTime`, `quickWiki` (+ `_dedupeAnswerContext`, `_subjectMatchRatio` gating), `getSuggestions`, `spellCheck`, `_dedupeAndRank`, `isSafeResult`, `cleanTracking`, tiered cache (memory → localStorage `gw_v6_` → IndexedDB `GatewayIndex`). Loads the bundled index from `index/index.json` + `index/index-meta.json` via `INDEX_DIR`. Introspection: `gatewayRankDebug(query)`, `gatewayAuthorityScore(domain)`.
 - `main.js`: `performSearch` (staged), `_gwRender` (stats with seconds + `renderDidYouMean` + `renderQuickWiki` + paginated `renderItem`), `_faviconHtml` (S2 → DDG → letter), `_answerLinkHtml`, translations (25 locales), dark mode, autocomplete wiring.
 
-Ranking (local): exact title +700, title-prefix +380, phrase hits, per-term title (+55 exact-word / +32 substring) and description (+24 / +9) scores, 60% term-coverage gate, coverage bonus, Wikipedia best-page boost (+2000) only on title-confirmed match.
+## Ranking
+
+Every result — bundled index, live Wikipedia, official sites, cited web links — is scored with one hybrid function, so all sources compete on identical terms.
+
+```
+FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
+```
+
+1. **IDF with additive smoothing** — `IDF(q_i) = ln(1 + (N - n(q_i) + 0.5) / (n(q_i) + 0.5))`
+   - `N = 20,000,000,000` (web-corpus scale, `RANK_CORPUS_SIZE`; override with `window.GATEWAY_RANK_CORPUS` for self-hosted corpora).
+   - `n(q_i)` = document frequency, counted at index load.
+2. **Dynamic query term weighting** — `W(q_i) = IDF(q_i) ^ 1.5`, so rare entities are boosted and common terms are damped.
+3. **Okapi BM25** — `BM25(D, Q) = Σ W(q_i) · (f(q_i,D) · (k1 + 1)) / (f(q_i,D) + k1 · (1 - b + b · (|D| / avgdl)))`, with `k1 = 1.2`, `b = 0.75`.
+   - Documents are `title + description`; `|D|` is the word count; `avgdl` is the mean across the whole index (49.35 words for the bundled set).
+4. **Authority** — a pre-calculated static float in `[0.0, 10.0]`, PageRank-style, resolved per domain: exact table → parent-domain walk (`en.wikipedia.org` → `wikipedia.org`) → public-sector/academic host shapes (`.gov`, `gov.uk`, `gob.ve`, `.edu`, `ac.uk`, …) → deterministic 2.0–6.0 hash band for everything else. It never varies with the query. An index entry may ship its own value in `a`, which always wins.
+   - Since authority contributes at most 2.0 points, relevance dominates and authority only breaks ties — the intended 80/20 split.
+
+**Tokenisation.** Query terms are stopword-filtered; single digits are kept (`PlayStation 5`, `World War 2`) while lone letters are dropped. Document text keeps every token, so stopwords still count toward `f` and `|D|`. Matching is whole-token, not substring.
+
+**Removed in this revision:** the old hand-tuned constants (exact-title `+700`, title-prefix `+380`, per-field `+55/+32/+24/+9`, coverage bonus, and the fixed Wikipedia/official/web boosts of `2000/1800/930/280/360/260`). Also fixed a latent `STOPWORDS` bug where `.split(' ')` bound only to the last string literal, so the set held 20 stray characters and **no stopword was ever filtered**.
+
+**Verified** by re-deriving IDF, `W`, BM25 and `FinalScore` from the raw index for 150+ results across 6 queries: max drift `0.0`. Corpus stats (`avgdl`) also match an independent count. Warm search averages ~10 ms over 10,523 documents.
 
 ## Performance notes
 
 - First paint never awaits network; network failures cannot blank results.
-- `MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100`, `PER_PAGE=20`; scans are O(10k) string includes — well under 50 ms on desktop.
+- `MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100`, `PER_PAGE=20`; each search is one O(10k) pass of Map lookups over precomputed term frequencies — ~10 ms warm, ~15 ms including the one-time `df`/`avgdl`/authority precompute.
 - To verify: search anything and read `result-stats`, e.g. `(0.04 seconds)`. Compare against Google's typical 0.3–0.6 s SERP time.
 
 ## Data notes
 
-- `index/index.json` format: `t` title, `u` URL (tracking params stripped), `d` unique description, `s` normalised domain.
+- `index/index.json` format: `t` title, `u` URL (tracking params stripped), `d` unique description, `s` normalised domain, `a` optional pre-calculated authority (0.0–10.0; falls back to the domain table when absent).
 - Regeneration check: `python3 -c "import json; from collections import Counter; d=json.load(open('index/index.json')); print(len(d), len(set(x['d'] for x in d)))"` → `10523 10523`.
 
 ## Security / privacy
