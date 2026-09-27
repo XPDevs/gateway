@@ -1,5 +1,10 @@
 {
-  "version": "2026-09-26-gateway-index-v3-unique-desc",
-  "entries": 10523,
-  "format": ["t", "u", "d", "s"]
+  "version": "2026-09-27-gateway-index-v4-20000-websites",
+  "entries": 20000,
+  "format": [
+    "t",
+    "u",
+    "d",
+    "s"
+  ]
 }

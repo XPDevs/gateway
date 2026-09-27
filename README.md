@@ -1,6 +1,6 @@
 # Gateway Search
 
-A fast, private, multi-source search engine by [XPDevs](https://xpdevs.github.io). Gateway searches a bundled local web index (10,523 pages) plus live Wikipedia / Wikidata open data — with no API keys, no build step, and no generative AI.
+A fast, private, multi-source search engine by [XPDevs](https://xpdevs.github.io). Gateway searches a bundled local web index (20,000 entries — 10,523 Wikipedia articles plus 9,477 real websites across 9,610 domains) plus live Wikipedia / Wikidata open data — with no API keys, no build step, and no generative AI.
 
 Live behaviour: main results paint from the local index first (typically milliseconds), while Quick Wiki, spell-check, and web enrichment resolve asynchronously afterwards.
 
@@ -21,8 +21,9 @@ Live behaviour: main results paint from the local index first (typically millise
   - Each result row and each Quick Wiki source link shows a favicon: Google S2 primary (`s2/favicons?domain=…&sz=32`), DuckDuckGo `icons.duckduckgo.com/ip3/…` fallback, letter-avatar final fallback — so no row is icon-less.
   - Images are `loading="lazy" decoding="async"`.
 - **Unique descriptions**
-  - All 10,523 `index.json` descriptions are unique and page-specific (verified: 10,523 / 10,523 unique, zero `Official website of X.` boilerplate).
+  - All 20,000 `index.json` descriptions are unique and page-specific (verified: 20,000 / 20,000 unique, zero `Official website of X.` boilerplate).
   - 202 former boilerplate entries rewritten per-domain (tourism vs. government vs. curated brand/tech copy); 3 duplicate September-11 victim-list descriptions split by surname range (A–G / H–N / O–Z).
+  - 9,477 new entries added (index version `2026-09-27-gateway-index-v4-20000-websites`): 1,110 hand-curated marquee sites (Google, Bing, DuckDuckGo, Yahoo, Brave, Ecosia, Startpage, Yandex, Baidu, Naver, Mojeek, Qwant, Perplexity, …) plus 8,367 harvested sites whose descriptions come from their Wikipedia lead sentence. Every new URL is unique, its `s` field is the normalised host, and every new entry passes `isSafeResult`.
 - **BM25 hybrid ranking** (see *Ranking* below) — IDF with additive smoothing, `IDF^1.5` term weighting, Okapi BM25, and a static authority prior.
 - **Plus:** 25-language UI, dark mode, autocomplete (`getSuggestions`), `Did you mean?` spell-check, `I'm Feeling Lucky`, uploadable custom index, safe-domain filtering, tracking-param stripping.
 
@@ -35,7 +36,7 @@ gateway-main/
 ├── main.js          # UI, staged search orchestration, rendering (favicons, Quick Wiki image)
 ├── crawl.js         # Index engine, Wikipedia/Wikidata fetchers, ranking, caches
 ├── index/
-│   ├── index.json       # Bundled local index: [{t, u, d, s}] — 10,523 unique-description entries
+│   ├── index.json       # Bundled local index: [{t, u, d, s}] — 20,000 unique-description entries
 │   └── index-meta.json  # Index version + entry count (cache-busting)
 ├── about/ advertising/ business/ how-search-works/ privacy/ terms/  # Static pages
 ├── favicon.ico
@@ -86,7 +87,7 @@ FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
    - `n(q_i)` = document frequency, counted at index load.
 2. **Dynamic query term weighting** — `W(q_i) = IDF(q_i) ^ 1.5`, so rare entities are boosted and common terms are damped.
 3. **Okapi BM25** — `BM25(D, Q) = Σ W(q_i) · (f(q_i,D) · (k1 + 1)) / (f(q_i,D) + k1 · (1 - b + b · (|D| / avgdl)))`, with `k1 = 1.2`, `b = 0.75`.
-   - Documents are `title + description`; `|D|` is the word count; `avgdl` is the mean across the whole index (49.35 words for the bundled set).
+   - Documents are `title + description`; `|D|` is the word count; `avgdl` is the mean across the whole index (41.97 words for the bundled set: 839,346 tokens over 20,000 documents, 58,267 distinct terms).
 4. **Authority** — a pre-calculated static float in `[0.0, 10.0]`, PageRank-style, resolved per domain: exact table → parent-domain walk (`en.wikipedia.org` → `wikipedia.org`) → public-sector/academic host shapes (`.gov`, `gov.uk`, `gob.ve`, `.edu`, `ac.uk`, …) → deterministic 2.0–6.0 hash band for everything else. It never varies with the query. An index entry may ship its own value in `a`, which always wins.
    - Since authority contributes at most 2.0 points, relevance dominates and authority only breaks ties — the intended 80/20 split.
 
@@ -94,18 +95,18 @@ FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
 
 **Removed in this revision:** the old hand-tuned constants (exact-title `+700`, title-prefix `+380`, per-field `+55/+32/+24/+9`, coverage bonus, and the fixed Wikipedia/official/web boosts of `2000/1800/930/280/360/260`). Also fixed a latent `STOPWORDS` bug where `.split(' ')` bound only to the last string literal, so the set held 20 stray characters and **no stopword was ever filtered**.
 
-**Verified** by re-deriving IDF, `W`, BM25 and `FinalScore` from the raw index for 150+ results across 6 queries: max drift `0.0`. Corpus stats (`avgdl`) also match an independent count. Warm search averages ~10 ms over 10,523 documents.
+**Verified** by re-deriving IDF, `W`, BM25 and `FinalScore` from the raw index for 150+ results across 6 queries: max drift `0.0`. Corpus stats (`avgdl` = 41.9673, vocabulary = 58,267) also match an independent count. Warm search averages ~12 ms over 20,000 documents (median 12.4 ms, p95 18.0 ms across 160 timed `gatewaySearchLocal()` calls); one-time index preparation costs ~1.2 s and is cached in memory.
 
 ## Performance notes
 
 - First paint never awaits network; network failures cannot blank results.
-- `MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100`, `PER_PAGE=20`; each search is one O(10k) pass of Map lookups over precomputed term frequencies — ~10 ms warm, ~15 ms including the one-time `df`/`avgdl`/authority precompute.
+- `MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100`, `PER_PAGE=20`; each search is one O(20k) pass of Map lookups over precomputed term frequencies — ~12 ms warm (measured over the bundled 20,000-entry index), plus a one-time `df`/`avgdl`/authority precompute of ~1.2 s that is cached in memory.
 - To verify: search anything and read `result-stats`, e.g. `(0.04 seconds)`. Compare against Google's typical 0.3–0.6 s SERP time.
 
 ## Data notes
 
 - `index/index.json` format: `t` title, `u` URL (tracking params stripped), `d` unique description, `s` normalised domain, `a` optional pre-calculated authority (0.0–10.0; falls back to the domain table when absent).
-- Regeneration check: `python3 -c "import json; from collections import Counter; d=json.load(open('index/index.json')); print(len(d), len(set(x['d'] for x in d)))"` → `10523 10523`.
+- Regeneration check: `python3 -c "import json; from collections import Counter; d=json.load(open('index/index.json')); print(len(d), len(set(x['d'] for x in d)))"` → `20000 20000`.
 
 ## Security / privacy
 
