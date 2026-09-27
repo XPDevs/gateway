@@ -17,6 +17,10 @@ Live behaviour: main results paint from the local index first (typically millise
   - Answer/context duplicates eliminated: `_dedupeAnswerContext()` strips any context repeating the answer (plus a render-side guard), so the answer sentence never appears twice.
   - Representative image: `pageimages` `thumbnail|original` at 500px, with sibling-article fallback; floated right so body text wraps around it and continues underneath; `<img loading="lazy" decoding="async" fetchpriority="low">` with caption and `onerror` collapse (stacks full-width on mobile).
   - Header badge `No generative AI`, property chip (e.g. `P577`), source links (official + cited, deduped per-domain).
+- **XPDevs profile (local, deterministic)**
+  - Searching `XPDevs` — or any query containing the token (`xpdevs`, `xp dev`, `xp-dev`, `xpdev`, `gateway search`) — is answered entirely from `XPDEV_PROFILE` in `main.js`, with no network call and no Wikipedia round-trip: Quick Wiki shows the profile answer, the context line, the repository count, source links (website, GitHub, DoorsOS, ExamOS, Genesis-AI) and the project logo `https://xpdevs.github.io/logo/XPDevs.png` with a `XPDevs` source badge (never a false "Wikipedia" badge/caption).
+  - The same query pins 62 rows above every ranked result: the official site, the GitHub organisation, Gateway, and **all 59 public repositories** (`github.com/XPDevs/<name>`, each with language, stars, last update and a `fork of an upstream project` flag where applicable). An XPDevs query renders the whole set in one page instead of 20-row pages, so no repository is hidden behind "Show more results".
+  - Facts are sourced from the official site (`xpdevs.github.io`: operating systems, United Kingdom, Genesis-AI focus) and the GitHub API; every other query path is untouched.
 - **Favicons on every web URL**
   - Each result row and each Quick Wiki source link shows a favicon: Google S2 primary (`s2/favicons?domain=…&sz=32`), DuckDuckGo `icons.duckduckgo.com/ip3/…` fallback, letter-avatar final fallback — so no row is icon-less.
   - Images are `loading="lazy" decoding="async"`.
