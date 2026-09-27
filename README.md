@@ -120,9 +120,9 @@ FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
 ## Screenshots
 
 ### Homepage
-![Gateway Search Homepage](./images/homepage_example.png)
+![Gateway Search Homepage](images/homepage_example.png)
 *Clean, minimal interface with instant local search.*
 
 ### Search Results
-![Gateway Search Results for "Costa Coffee"](./images/search_results_example.png)
+![Gateway Search Results for "Costa Coffee"](images/search_results_example.png)
 *Results for "Costa Coffee", featuring the Quick Wiki box, result stats, and favicons.*
