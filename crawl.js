@@ -442,27 +442,69 @@
     let _preparedIndex = null;
     let _preparedSource = null;
 
+    // One shared connection per page. Reopening the database for every record
+    // added a fresh open/upgrade handshake to each IndexedDB call.
+    let _dbPromise = null;
     function _openDB() {
-        return new Promise(function(resolve, reject) {
+        if (_dbPromise) return _dbPromise;
+        _dbPromise = new Promise(function(resolve, reject) {
             const req = indexedDB.open('GatewayIndex', 1);
             req.onupgradeneeded = function() {
                 if (!req.result.objectStoreNames.contains('index')) req.result.createObjectStore('index', { keyPath: 'id' });
             };
-            req.onsuccess = function() { resolve(req.result); };
-            req.onerror = function() { reject(req.error); };
+            req.onsuccess = function() {
+                const db = req.result;
+                const drop = function() { db.close(); _dbPromise = null; };
+                db.onclose = drop;
+                db.onversionchange = drop;
+                resolve(db);
+            };
+            req.onerror = function() { _dbPromise = null; reject(req.error); };
+            req.onblocked = function() { _dbPromise = null; reject(req.error || new Error('blocked')); };
         });
+        return _dbPromise;
     }
 
-    async function _readDBRecord(id) {
-        try {
-            const db = await _openDB();
-            return await new Promise(function(resolve) {
-                const tx = db.transaction('index', 'readonly');
-                const get = tx.objectStore('index').get(id);
-                get.onsuccess = function() { resolve(get.result || null); };
-                get.onerror = function() { resolve(null); };
+    function _readDBRecords(ids) {
+        return _openDB().then(function(db) {
+            return new Promise(function(resolve) {
+                const out = {};
+                let tx;
+                try { tx = db.transaction('index', 'readonly'); } catch(_) { return resolve(out); }
+                const store = tx.objectStore('index');
+                for (const id of ids) {
+                    const get = store.get(id);
+                    get.onsuccess = function() { out[id] = get.result || null; };
+                    get.onerror = function() { out[id] = null; };
+                }
+                tx.oncomplete = function() { resolve(out); };
+                tx.onerror = function() { resolve(out); };
+                tx.onabort = function() { resolve(out); };
             });
-        } catch(_) { return null; }
+        }).catch(function() { return {}; });
+    }
+
+    function _readDBRecord(id) {
+        return _readDBRecords([id]).then(function(records) { return records[id] || null; });
+    }
+
+    // A 6 MB corpus is far cheaper for IndexedDB to clone as a single string
+    // than as a 20,000-object graph, and parsing it back is one fast pass.
+    // Older array-shaped records keep working through _unpackEntries.
+    function _packEntries(entries) {
+        try { return JSON.stringify(entries); } catch(_) { return entries; }
+    }
+
+    function _unpackEntries(record) {
+        if (!record) return null;
+        const raw = record.entries;
+        if (typeof raw === 'string') {
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : null;
+            } catch(_) { return null; }
+        }
+        return Array.isArray(raw) ? raw : null;
     }
 
     async function _writeDBRecord(record) {
@@ -478,28 +520,43 @@
         } catch(_) {}
     }
 
-    async function _loadBundledIndex() {
-        const savedData = await _readDBRecord('data');
-        const savedMetaRecord = await _readDBRecord('meta');
-        const savedMeta = savedMetaRecord && savedMetaRecord.meta;
-        let remoteMeta = null;
+    function _storeBundledIndex(entries, version) {
+        _writeDBRecord({ id: 'data', entries: _packEntries(entries) })
+            .then(function() { return _writeDBRecord({ id: 'meta', meta: { source: 'bundled', version } }); })
+            .catch(function() {});
+    }
 
-        try {
-            const metaResponse = await fetch(INDEX_DIR + 'index-meta.json', { cache: 'no-cache' });
-            if (metaResponse.ok) remoteMeta = await metaResponse.json();
-        } catch(_) {}
+    async function _loadBundledIndex() {
+        // The stored copy, the freshness probe and the bundled download are
+        // independent, so start them together instead of waiting on each in
+        // turn: the old order cost three serialised round-trips before the
+        // first search could run.
+        const storedPromise = _readDBRecords(['data', 'meta']);
+        const remoteMetaPromise = (async function() {
+            try {
+                const metaResponse = await fetch(INDEX_DIR + 'index-meta.json', { cache: 'no-cache' });
+                if (metaResponse.ok) return await metaResponse.json();
+            } catch(_) {}
+            return null;
+        })();
+
+        const records = await storedPromise;
+        const remoteMeta = await remoteMetaPromise;
+        const savedData = _unpackEntries(records['data']);
+        const savedMetaRecord = records['meta'];
+        const savedMeta = savedMetaRecord && savedMetaRecord.meta;
 
         if (savedData && savedMeta && savedMeta.source === 'upload') {
             _indexRevision = String(savedMeta.version || 'upload-legacy');
-            return Array.isArray(savedData.entries) ? savedData.entries : [];
+            return savedData;
         }
         if (savedData && remoteMeta && savedMeta && savedMeta.version === remoteMeta.version) {
             _indexRevision = String(remoteMeta.version || 'bundled');
-            return Array.isArray(savedData.entries) ? savedData.entries : [];
+            return savedData;
         }
         if (savedData && !remoteMeta && !savedMeta) {
             _indexRevision = 'legacy';
-            return Array.isArray(savedData.entries) ? savedData.entries : [];
+            return savedData;
         }
 
         try {
@@ -508,15 +565,17 @@
             const data = await response.json();
             if (Array.isArray(data) && data.length) {
                 const version = remoteMeta && remoteMeta.version || 'legacy';
-                await _writeDBRecord({ id: 'data', entries: data });
-                await _writeDBRecord({ id: 'meta', meta: { source: 'bundled', version } });
+                // Writing 6 MB back to IndexedDB used to hold up the first
+                // search. Let it settle in the background; the next visit is
+                // the one that benefits from the stored copy.
+                _storeBundledIndex(data, version);
                 _indexRevision = String(version);
                 return data;
             }
         } catch(_) {}
 
         if (savedData && savedMeta && savedMeta.version) _indexRevision = String(savedMeta.version);
-        return savedData && Array.isArray(savedData.entries) ? savedData.entries : [];
+        return savedData || [];
     }
 
     _indexReady = _loadBundledIndex().then(data => {
@@ -552,7 +611,7 @@
         _indexReady = Promise.resolve(safeData);
         _clearSearchCaches();
         await Promise.all([
-            _writeDBRecord({ id: 'data', entries: safeData }),
+            _writeDBRecord({ id: 'data', entries: _packEntries(safeData) }),
             _writeDBRecord({ id: 'meta', meta: { source: 'upload', version } })
         ]);
     };

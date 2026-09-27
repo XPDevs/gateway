@@ -8,7 +8,15 @@
     <link rel="stylesheet" href="ui.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <!-- The freshness probe is 136 bytes and is always needed, so let the
+         browser fetch it while the rest of the document parses. The corpus
+         itself is not preloaded: a visitor with a stored copy never asks
+         for it, and preloading would force 6 MB onto every page view. -->
+    <link rel="preload" as="fetch" href="index/index-meta.json" crossorigin>
     <script>if(localStorage.getItem('gw-dark')==='1')document.documentElement.classList.add('dark')</script>
+    <!-- Download the two scripts alongside the markup instead of after it. -->
+    <script src="crawl.js" defer></script>
+    <script src="main.js" defer></script>
 </head>
 <body>
 
@@ -113,10 +121,13 @@
                 </span>
                 <input type="text" id="mainSearchInput"
                     data-i18n-placeholder="searchPlaceholder"
-                    placeholder="Search Gateway or type a URL"
+                    placeholder="Search or type a URL"
                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <button class="clear-btn" id="homeClearBtn" onclick="clearSearch('mainSearchInput')">
                     <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+                <button class="send-btn" id="homeSendBtn" onclick="submitSearch('mainSearchInput')" aria-label="Search" title="Search" disabled>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
                 </button>
                 <div id="homeAutocomplete" class="autocomplete-dropdown"></div>
             </div>
@@ -175,10 +186,13 @@
                     </span>
                     <input type="text" id="resultsSearchInput"
                         data-i18n-placeholder="searchPlaceholder"
-                        placeholder="Search the Gateway index, ask Quick Wiki, or type a URL"
+                        placeholder="Search or type a URL"
                         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                     <button class="clear-btn" id="resultsClearBtn" onclick="clearSearch('resultsSearchInput')">
                         <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                    <button class="send-btn" id="resultsSendBtn" onclick="submitSearch('resultsSearchInput')" aria-label="Search" title="Search" disabled>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
                     </button>
                     <div id="resultsAutocomplete" class="autocomplete-dropdown"></div>
                 </div>
@@ -243,7 +257,5 @@
     </footer>
 </div>
 
-<script src="crawl.js"></script>
-<script src="main.js"></script>
 </body>
 </html>

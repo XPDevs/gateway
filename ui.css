@@ -191,6 +191,40 @@ a:hover { text-decoration: underline; }
 }
 .search-bar-wrapper .clear-btn.visible { display: flex; }
 .search-bar-wrapper .clear-btn:hover { background: var(--active-item); }
+/* Send button: lives inside the bar on the right, uses the same accent and
+   surface variables as the rest of the UI so it follows light and dark. */
+.search-bar-wrapper .send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin-left: 4px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    cursor: pointer;
+    transition: background .2s, opacity .2s, transform .1s, box-shadow .2s;
+}
+.search-bar-wrapper .send-btn:not(:disabled):hover {
+    box-shadow: 0 1px 4px rgba(26,115,232,.4);
+    filter: brightness(1.07);
+}
+.search-bar-wrapper .send-btn:not(:disabled):active { transform: scale(.92); }
+.search-bar-wrapper .send-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.search-bar-wrapper .send-btn:disabled {
+    background: var(--active-item);
+    color: var(--text-secondary);
+    cursor: default;
+    opacity: .75;
+}
+html.dark .search-bar-wrapper .send-btn { color: #fff; }
 
 /* Autocomplete */
 .search-bar-wrapper.dd-open {
