@@ -116,3 +116,13 @@ FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
 
 - Dangerous domains, private-IP hostnames, non-http(s) URLs, and malware-keyword hits are filtered (`isSafeDomain` / `isSafeResult` / `_safeHref`).
 - Tracking params (`utm_*`, `fbclid`, `gclid`, …) and hashes stripped; no third-party analytics; favicon/image loads are the only external requests besides Wikipedia/Wikidata APIs.
+
+## Screenshots
+
+### Homepage
+![Gateway Search Homepage](./images/homepage_example.png)
+*Clean, minimal interface with instant local search.*
+
+### Search Results
+![Gateway Search Results for "Costa Coffee"](./images/search_results_exmaple.png)
+*Results for "Costa Coffee", featuring the Quick Wiki box, result stats, and favicons.*
