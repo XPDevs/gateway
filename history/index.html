@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your Gateway search history. Every search is stored locally in this browser, can be replayed with one click, and can be deleted at any time. Nothing is uploaded.">
+    <title>Search history | Gateway</title>
+    <link rel="stylesheet" href="../ui.css">
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.ico">
+    <script>if(localStorage.getItem('gw-dark')==='1')document.documentElement.classList.add('dark')</script>
+    <style>
+        .about-page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+            flex: 1;
+        }
+        .about-page h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin: 0 0 8px;
+        }
+        .about-page .subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin: 0 0 28px;
+        }
+
+        /* ---- Toolbar ---- */
+        .hist-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin: 0 0 14px;
+        }
+        .hist-search {
+            flex: 1 1 220px;
+            min-width: 0;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text);
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 12px;
+            outline: none;
+        }
+        .hist-search:focus {
+            border-color: var(--text-secondary);
+        }
+        .hist-btn {
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .hist-btn:hover {
+            color: var(--text);
+            background: var(--input-bg);
+        }
+        .hist-btn[disabled] {
+            opacity: .45;
+            cursor: default;
+        }
+        .hist-btn.danger:hover {
+            color: #b3261e;
+            border-color: #b3261e;
+        }
+        :root.dark .hist-btn.danger:hover,
+        .dark .hist-btn.danger:hover {
+            color: #f2b8b5;
+            border-color: #f2b8b5;
+        }
+
+        .hist-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 0 0 22px;
+        }
+        .hist-optout {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0 0 24px;
+        }
+        .hist-optout input {
+            width: 15px;
+            height: 15px;
+            margin: 0;
+            accent-color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        /* ---- Grouped list ---- */
+        .hist-group {
+            margin: 0 0 26px;
+        }
+        .hist-group h2 {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin: 0 0 8px;
+            padding: 0 0 6px;
+            border-bottom: 1px solid var(--border);
+        }
+        .hist-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .hist-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        .hist-row:last-child {
+            border-bottom: 0;
+        }
+        .hist-time {
+            flex: 0 0 auto;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            width: 46px;
+        }
+        .hist-q {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-size: 14px;
+            color: var(--text);
+            text-decoration: none;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .hist-q:hover {
+            text-decoration: underline;
+        }
+        .hist-stats {
+            flex: 0 0 auto;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .hist-del {
+            flex: 0 0 auto;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            font-size: 16px;
+            line-height: 1;
+            color: var(--text-secondary);
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .hist-del:hover {
+            background: var(--input-bg);
+            border-color: var(--border);
+            color: var(--text);
+        }
+        .hist-del:focus-visible,
+        .hist-q:focus-visible,
+        .hist-btn:focus-visible {
+            outline: 2px solid var(--text-secondary);
+            outline-offset: 1px;
+        }
+
+        /* ---- Empty / notice states ---- */
+        .hist-empty {
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            padding: 28px 20px;
+            text-align: center;
+        }
+        .hist-empty p {
+            font-size: 14px;
+            line-height: 1.65;
+            color: var(--text-secondary);
+            margin: 0 0 14px;
+        }
+        .hist-empty a {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+        }
+        .hist-empty a:hover {
+            background: var(--input-bg);
+        }
+        .hist-note {
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--text-secondary);
+            margin: 0 0 12px;
+        }
+        .hist-note code,
+        .about-page code {
+            font-size: 12px;
+            background: var(--input-bg);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+        .about-page h2 {
+            font-size: 20px;
+            font-weight: 500;
+            margin: 36px 0 12px;
+        }
+        .about-page p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--result-desc);
+            margin: 0 0 16px;
+        }
+        .about-page ul {
+            padding: 0 0 0 20px;
+            margin: 0 0 20px;
+        }
+        .about-page li {
+            font-size: 14px;
+            line-height: 1.65;
+            color: var(--result-desc);
+            margin-bottom: 6px;
+        }
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- ==================== TOP NAV ==================== -->
+<nav class="top-nav">
+    <div class="top-nav-left">
+        <a href="../" class="results-logo" style="font-size:22px;font-weight:700;letter-spacing:-0.03em;text-decoration:none">
+            <span>G</span><span>a</span><span>t</span><span>e</span><span>w</span><span>a</span><span>y</span>
+        </a>
+    </div>
+    <div class="top-nav-right">
+        <button class="icon-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
+            <svg class="sun" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <svg class="moon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+        </button>
+    </div>
+</nav>
+
+<!-- ==================== CONTENT ==================== -->
+<div class="about-page">
+    <h1>Search history</h1>
+    <p class="subtitle">The searches you have run in this browser, newest first. Nothing here leaves your device.</p>
+
+    <div class="hist-toolbar">
+        <input type="text" id="histFilter" class="hist-search" placeholder="Filter searches&hellip;" autocomplete="off" spellcheck="false" aria-label="Filter searches">
+        <button type="button" class="hist-btn" id="histExport">Export</button>
+        <button type="button" class="hist-btn danger" id="histClear">Delete all</button>
+    </div>
+    <p class="hist-meta" id="histMeta">&nbsp;</p>
+
+    <label class="hist-optout" for="histOptOut">
+        <input type="checkbox" id="histOptOut">
+        <span>Stop recording new searches</span>
+    </label>
+
+    <div id="histEmpty" class="hist-empty" hidden>
+        <p>No searches recorded yet. Searches you run on Gateway appear here so you can find and replay them.</p>
+        <a href="../">Start searching</a>
+    </div>
+
+    <div id="histList"></div>
+
+    <h2>How this is stored</h2>
+    <p class="hist-note">Search history is kept in this browser's <code>localStorage</code> under the key <code>gw-history</code>, as a list of query, time, result count and duration. It holds the most recent 200 searches; older ones are dropped automatically. It is never uploaded, never sent with a search, and never included in a shared or custom index.</p>
+    <ul>
+        <li><strong>Delete all</strong> clears the list immediately. Deleting a single row removes just that search.</li>
+        <li>Stopping recording leaves existing entries alone; it only prevents new ones being added.</li>
+        <li>Clearing your browser's site data for Gateway also removes the history, along with preferences and the cached index.</li>
+        <li>Because the list is local, it does not follow you to another browser, device, or profile.</li>
+    </ul>
+    <p>See the <a href="../privacy/">Privacy</a> page for how Gateway handles data in general.</p>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+    <div class="footer-country" data-i18n-country>United Kingdom</div>
+    <div class="footer-links">
+        <div class="links-group">
+            <a href="../about/">About</a>
+            <a href="../advertising/">Advertising</a>
+            <a href="../business/">Business</a>
+            <a href="../how-search-works/">How Search works</a>
+            <a href="../history/">History</a>
+        </div>
+        <div class="links-group">
+            <a href="../privacy/">Privacy</a>
+            <a href="../terms/">Terms</a>
+            <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
+                <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
+                XPDevs
+            </a>
+        </div>
+    </div>
+</footer>
+
+<script>
+(function() {
+    'use strict';
+
+    // Storage contract, shared with main.js (gatewaySearchHistory).
+    var KEY = 'gw-history';
+    var OPT_OUT = 'gw-history-optout';
+    var MAX = 200;
+
+    var filterInput = document.getElementById('histFilter');
+    var exportBtn = document.getElementById('histExport');
+    var clearBtn = document.getElementById('histClear');
+    var optOutBox = document.getElementById('histOptOut');
+    var metaLine = document.getElementById('histMeta');
+    var listWrap = document.getElementById('histList');
+    var emptyWrap = document.getElementById('histEmpty');
+
+    // ---- storage helpers (all failures are non-fatal: private mode, quota) ----
+    function load() {
+        try {
+            var parsed = JSON.parse(localStorage.getItem(KEY) || '[]');
+            if (!Array.isArray(parsed)) return [];
+            return parsed.filter(function(e) {
+                return e && typeof e === 'object' && typeof e.q === 'string' && e.q.length > 0;
+            }).map(function(e) {
+                return {
+                    q: String(e.q).slice(0, 500),
+                    t: Number(e.t) || 0,
+                    n: Number(e.n) || 0,
+                    ms: Number(e.ms) || 0
+                };
+            });
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function save(list) {
+        try {
+            localStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX)));
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function isOptedOut() {
+        try { return localStorage.getItem(OPT_OUT) === '1'; } catch (_) { return false; }
+    }
+
+    // ---- formatting ----
+    // Every value below is written with textContent, never innerHTML, so query
+    // strings are rendered as text and cannot inject markup.
+    function clockTime(ms) {
+        var d = new Date(ms);
+        if (isNaN(d.getTime())) return '--:--';
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function dayKey(ms) {
+        var d = new Date(ms);
+        if (isNaN(d.getTime())) return '';
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function dayLabel(ms) {
+        var now = new Date();
+        var d = new Date(ms);
+        if (isNaN(d.getTime())) return 'Unknown date';
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        var that = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        var dayMs = 86400000;
+        if (that === today) return 'Today';
+        if (that === today - dayMs) return 'Yesterday';
+        var opts = { weekday: 'short', day: 'numeric', month: 'short' };
+        if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+        return d.toLocaleDateString(undefined, opts);
+    }
+
+    function statsLabel(entry) {
+        var parts = [];
+        if (entry.n > 0) parts.push(entry.n + (entry.n === 1 ? ' result' : ' results'));
+        if (entry.ms > 0) parts.push((entry.ms / 1000).toFixed(2) + 's');
+        return parts.join(' · ');
+    }
+
+    // ---- rendering ----
+    function render() {
+        var all = load();
+        var term = (filterInput.value || '').trim().toLowerCase();
+        var shown = term ? all.filter(function(e) { return e.q.toLowerCase().indexOf(term) !== -1; }) : all;
+
+        listWrap.innerHTML = '';
+        emptyWrap.hidden = true;
+
+        if (!all.length) {
+            emptyWrap.hidden = false;
+            metaLine.textContent = 'No searches recorded yet.';
+            exportBtn.disabled = true;
+            clearBtn.disabled = true;
+            return;
+        }
+
+        var groups = [];
+        var byKey = {};
+        shown.forEach(function(entry) {
+            var key = dayKey(entry.t);
+            if (!byKey[key]) { byKey[key] = { key: key, t: entry.t, items: [] }; groups.push(byKey[key]); }
+            byKey[key].items.push(entry);
+        });
+
+        groups.forEach(function(group) {
+            var section = document.createElement('section');
+            section.className = 'hist-group';
+
+            var heading = document.createElement('h2');
+            heading.textContent = dayLabel(group.t) + ' · ' + group.items.length;
+            section.appendChild(heading);
+
+            var ul = document.createElement('ul');
+            ul.className = 'hist-list';
+
+            group.items.forEach(function(entry) {
+                var li = document.createElement('li');
+                li.className = 'hist-row';
+
+                var time = document.createElement('span');
+                time.className = 'hist-time';
+                time.textContent = clockTime(entry.t);
+                li.appendChild(time);
+
+                var link = document.createElement('a');
+                link.className = 'hist-q';
+                link.href = '../?query=' + encodeURIComponent(entry.q);
+                link.title = entry.q;
+                link.textContent = entry.q;
+                li.appendChild(link);
+
+                var stats = statsLabel(entry);
+                if (stats) {
+                    var stat = document.createElement('span');
+                    stat.className = 'hist-stats';
+                    stat.textContent = stats;
+                    li.appendChild(stat);
+                }
+
+                var del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'hist-del';
+                del.title = 'Delete this search';
+                del.setAttribute('aria-label', 'Delete search: ' + entry.q);
+                del.textContent = '×';
+                del.addEventListener('click', function() {
+                    var current = load().filter(function(e) {
+                        return !(e.q === entry.q && e.t === entry.t);
+                    });
+                    if (save(current)) render();
+                });
+                li.appendChild(del);
+
+                ul.appendChild(li);
+            });
+
+            section.appendChild(ul);
+            listWrap.appendChild(section);
+        });
+
+        if (!shown.length) {
+            var none = document.createElement('p');
+            none.className = 'hist-note';
+            none.textContent = 'No searches match "' + filterInput.value.trim() + '".';
+            listWrap.appendChild(none);
+        }
+
+        metaLine.textContent = shown.length === all.length
+            ? all.length + (all.length === 1 ? ' search' : ' searches') + ' stored'
+            : shown.length + ' of ' + all.length + ' searches shown';
+        exportBtn.disabled = false;
+        clearBtn.disabled = false;
+    }
+
+    // ---- actions ----
+    clearBtn.addEventListener('click', function() {
+        if (!confirm('Delete all ' + load().length + ' saved searches? This cannot be undone.')) return;
+        if (save([])) render();
+    });
+
+    exportBtn.addEventListener('click', function() {
+        var list = load();
+        if (!list.length) return;
+        var payload = JSON.stringify({ exported: new Date().toISOString(), count: list.length, searches: list }, null, 2);
+        var blob = new Blob([payload], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'gateway-search-history-' + dayKey(Date.now()) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    });
+
+    optOutBox.checked = isOptedOut();
+    optOutBox.addEventListener('change', function() {
+        try {
+            if (optOutBox.checked) localStorage.setItem(OPT_OUT, '1');
+            else localStorage.removeItem(OPT_OUT);
+        } catch (_) {}
+        render();
+    });
+
+    var filterTimer = null;
+    filterInput.addEventListener('input', function() {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(render, 120);
+    });
+
+    // Re-render when returning to the tab, so searches run in another tab show up.
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) render();
+    });
+
+    render();
+})();
+</script>
+</body>
+</html>

@@ -66,7 +66,11 @@ a:hover { text-decoration: underline; }
 .top-nav-left, .top-nav-right {
     display: flex;
     align-items: center;
-    gap: 20px;
+    /* Controls supply their own padding instead of relying on a flex gap. A
+       gap is a dead zone: the cursor stops being a pointer over it, which
+       made the nav links feel broken. Padding keeps the same visual
+       spacing while the entire pill is clickable. */
+    gap: 0;
 }
 .top-nav a {
     color: var(--text);
@@ -76,6 +80,36 @@ a:hover { text-decoration: underline; }
 .top-nav a:hover {
     opacity: 1;
     text-decoration: underline;
+}
+/* Nav links only — the logo carries its own inline sizing and must not shift. */
+.top-nav a:not(.results-logo) {
+    display: inline-flex;
+    align-items: center;
+    padding: 9px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s ease, opacity .15s ease;
+}
+.top-nav a:not(.results-logo):hover {
+    opacity: 1;
+    text-decoration: none;
+    background: var(--input-bg);
+}
+.top-nav a:not(.results-logo):focus-visible,
+.icon-btn:focus-visible {
+    outline: 2px solid var(--text-secondary);
+    outline-offset: 1px;
+}
+.top-nav-right {
+    gap: 4px;
+}
+/* 40px minimum touch target for the header buttons. Scoped to the nav so the
+   smaller settings-modal close button is unaffected. */
+.top-nav .icon-btn {
+    min-width: 40px;
+    min-height: 40px;
+    flex-shrink: 0;
 }
 
 .icon-btn {
@@ -89,6 +123,11 @@ a:hover { text-decoration: underline; }
     display: flex;
     align-items: center;
     justify-content: center;
+    /* An inline SVG leaves a descender gap in the line box, which pushed the
+       50% border-radius circle out of line with the icon drawn inside it. */
+    line-height: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition: background .2s ease, opacity .2s;
 }
 .icon-btn:hover {
@@ -825,7 +864,9 @@ html.dark .no-ai-badge {
     .search-buttons { gap: 4px; }
     .search-btn { font-size: 13px; padding: 0 12px; }
     .top-nav { padding: 6px 12px; gap: 8px; font-size: 12px; }
-    .top-nav-left, .top-nav-right { gap: 12px; }
+    .top-nav-left, .top-nav-right { gap: 0; }
+    .top-nav a:not(.results-logo) { padding: 10px 8px; }
+    .top-nav-right { gap: 2px; }
 
     .results-top-bar { padding: 8px 12px; gap: 10px; }
     .results-logo { font-size: 22px; }

@@ -37,7 +37,10 @@
     <h2>What Gateway collects</h2>
     <p>Gateway has no accounts, backend database, advertising profile, or analytics script. Search terms are processed in your browser against the local index. When live discovery is enabled by a search, the relevant subject is sent to the public Wikipedia or Wikidata API so Gateway can return current article context, structured facts, and cited links. Those requests are subject to the providers' own policies.</p>
     <h2>Local storage</h2>
-    <p>Gateway uses your browser's <code>localStorage</code> and <code>IndexedDB</code> to remember language and dark-mode preferences, cache recent searches for up to ten minutes, and store the bundled or uploaded index. This data stays in your browser unless you clear site data.</p>
+    <p>Gateway uses your browser's <code>localStorage</code> and <code>IndexedDB</code> to remember language and dark-mode preferences, record your <a href="../history/">search history</a>, cache recent searches for up to ten minutes, and store the bundled or uploaded index. This data stays in your browser unless you clear site data.</p>
+    <h2>Search history</h2>
+    <p>Each search you run is saved locally as the query, the time, the number of results and how long the search took. The <a href="../history/">history page</a> lists them so you can replay or delete them. Your history is never uploaded, never attached to a search, and never included in an exported or custom index. It is not used to build a profile, rank content, or improve results &mdash; deleting it changes nothing about how Gateway ranks.</p>
+    <p>Recording is on by default and keeps the most recent 200 searches. You can turn off new recordings with the switch on the history page, delete a single search or the whole list at any time, and clearing your browser's site data removes it entirely. Because the list is stored only in this browser, it does not follow you to another browser, device, or profile.</p>
     <h2>Third-party sources</h2>
     <p>Search results can include official websites and external links cited by Wikipedia. Gateway does not crawl or submit data to those destination sites when it displays a result. If you follow a result, the destination may have its own cookies, privacy policy, and tracking practices.</p>
     <h2>No cookies</h2>
@@ -51,6 +54,7 @@
             <a href="../advertising/">Advertising</a>
             <a href="../business/">Business</a>
             <a href="../how-search-works/">How Search works</a>
+            <a href="../history/">History</a>
         </div>
         <div class="links-group">
             <a href="../privacy/">Privacy</a>

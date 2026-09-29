@@ -1,8 +1,10 @@
 # Gateway Search
 
-A fast, private, multi-source search engine by [XPDevs](https://xpdevs.github.io). Gateway searches a bundled local web index (20,000 entries — 10,523 Wikipedia articles plus 9,477 real websites across 9,610 domains) plus live Wikipedia / Wikidata open data — with no API keys, no build step, and no generative AI.
+A fast, private, multi-source search engine by [XPDevs](https://xpdevs.github.io). Gateway searches a bundled local web index (20,000 entries — 10,321 Wikipedia articles plus 9,679 real websites across 9,609 domains) plus live Wikipedia / Wikidata open data — with no API keys, no build step, and no generative AI.
 
 Live behaviour: main results paint from the local index first (typically milliseconds), while Quick Wiki, spell-check, and web enrichment resolve asynchronously afterwards.
+
+Your searches are recorded to a local-only [search history](history/) you can replay, filter, switch off, or delete. It never leaves the browser and never affects ranking.
 
 ## Features
 
@@ -28,6 +30,12 @@ Live behaviour: main results paint from the local index first (typically millise
   - All 20,000 `index.json` descriptions are unique and page-specific (verified: 20,000 / 20,000 unique, zero `Official website of X.` boilerplate).
   - 202 former boilerplate entries rewritten per-domain (tourism vs. government vs. curated brand/tech copy); 3 duplicate September-11 victim-list descriptions split by surname range (A–G / H–N / O–Z).
   - 9,477 new entries added (index version `2026-09-27-gateway-index-v4-20000-websites`): 1,110 hand-curated marquee sites (Google, Bing, DuckDuckGo, Yahoo, Brave, Ecosia, Startpage, Yandex, Baidu, Naver, Mojeek, Qwant, Perplexity, …) plus 8,367 harvested sites whose descriptions come from their Wikipedia lead sentence. Every new URL is unique, its `s` field is the normalised host, and every new entry passes `isSafeResult`.
+- **Search history (local, reversible)**
+  - Every search is recorded to `localStorage` under `gw-history` as `{q, t, n, ms}` — query, time, result count, duration — newest first, capped at 200 entries. Recorded once in `performSearch()` (`main.js`) after the fast local stage paints, so the stored count and duration match what the user actually saw; the Stage 2 enrichment pass corrects the count in place rather than logging a second entry.
+  - `/history/` (`history/index.html`) is a standalone static page — it cannot load `main.js`, so it implements the same reader against the same key. Entries are grouped by day, filterable, and each row replays the search via `../?query=…` (already honoured on load by `main.js:1108`).
+  - Controls: delete a single search, delete all, export the list as JSON, and a switch to stop recording new searches (`gw-history-optout`). Recording is on by default.
+  - Nothing is uploaded, never attached to a search, never included in a custom or exported index, and never used for ranking or profiling. Storage failures (quota, private mode) degrade silently and never break a search.
+  - ⚠️ Deliberately **not** named `history`: `performSearch()` uses `window.history.replaceState` (History API), and a global of that name would clobber it. The API surface is `window.gatewaySearchHistory`.
 - **BM25 hybrid ranking** (see *Ranking* below) — IDF with additive smoothing, `IDF^1.5` term weighting, Okapi BM25, and a static authority prior.
 - **Plus:** 25-language UI, dark mode, autocomplete (`getSuggestions`), `Did you mean?` spell-check, `I'm Feeling Lucky`, uploadable custom index, safe-domain filtering, tracking-param stripping.
 
@@ -42,7 +50,7 @@ gateway-main/
 ├── index/
 │   ├── index.json       # Bundled local index: [{t, u, d, s}] — 20,000 unique-description entries
 │   └── index-meta.json  # Index version + entry count (cache-busting)
-├── about/ advertising/ business/ how-search-works/ privacy/ terms/  # Static pages
+├── about/ advertising/ business/ how-search-works/ history/ privacy/ terms/  # Static pages
 ├── favicon.ico
 └── 404.html
 ```
@@ -111,6 +119,7 @@ FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
 
 - `index/index.json` format: `t` title, `u` URL (tracking params stripped), `d` unique description, `s` normalised domain, `a` optional pre-calculated authority (0.0–10.0; falls back to the domain table when absent).
 - Regeneration check: `python3 -c "import json; from collections import Counter; d=json.load(open('index/index.json')); print(len(d), len(set(x['d'] for x in d)))"` → `20000 20000`.
+- **Local keys written by the browser** (all removable via site data): `gw-lang`, `gw-dark`, `gw-quickwiki` (preferences); `gw_v6_*` (10-minute search cache, max 30 keys); `gw-history` + `gw-history-optout` (search history, max 200 entries). Nothing else is persisted, and none of it is ever transmitted.
 
 ## Security / privacy
 
