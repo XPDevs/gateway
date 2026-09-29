@@ -109,7 +109,7 @@
     <p class="subtitle">Gateway combines a bundled local index with optional, sourced open-data discovery. It runs without a Gateway backend and does not use generative AI.</p>
 
     <h2>Local index</h2>
-    <p>Gateway ships with a local index of thousands of Wikipedia articles and selected open-web entries. It is loaded directly into your browser and stored in IndexedDB. Local matching and ranking do not require a request; the current bundled index contains 10,523 entries.</p>
+    <p>Gateway ships with a local index of real, verified websites. It is loaded directly into your browser and stored in IndexedDB. Local matching and ranking do not require a request; the current bundled index contains 50,000 entries, each on its own domain, and every one was contacted over HTTP when the index was built to confirm the site answers.</p>
 
     <h2>Live discovery</h2>
     <p>For a search, Gateway can ask Wikipedia's public API for matching article extracts and current external links. Wikidata provides structured claims such as release dates, founders, headquarters, and official websites. These requests disclose the searched subject to the public API provider; no full history is sent.</p>
@@ -122,6 +122,7 @@
     <p><code>FinalScore = (BM25_Score &times; 0.8) + (Authority_Score &times; 0.2)</code></p>
     <ul>
         <li><strong>Inverse document frequency</strong>: <code>IDF(q) = ln(1 + (N - n(q) + 0.5) / (n(q) + 0.5))</code>, with <code>N</code> = 20 billion and <code>n(q)</code> the number of indexed documents containing the term</li>
+        <li><strong>A known mismatch</strong>: <code>N</code> is fixed at 20 billion to model the wider web, but the bundled index holds 50,000 documents. A term present in every document therefore still scores a high <code>IDF</code>, which flattens the difference between a strong and a weak match. Setting <code>window.GATEWAY_RANK_CORPUS</code> to the real document count is the supported fix and measurably improves result quality on the bundled index.</li>
         <li><strong>Dynamic term weighting</strong>: <code>W(q) = IDF(q) ^ 1.5</code> boosts rare entities and damps common words</li>
         <li><strong>Okapi BM25</strong>: term-frequency saturation with <code>k1 = 1.2</code> and length normalisation with <code>b = 0.75</code>, so a long page cannot win by repeating a keyword</li>
         <li><strong>Authority</strong>: a pre-calculated static score from 0.0 to 10.0 per domain (reference works, government and academic sites, primary documentation). It never changes with the query and contributes at most 2.0 points, so relevance always decides the ranking</li>

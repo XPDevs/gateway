@@ -1,10 +1,10 @@
 {
-  "version": "2026-09-27-gateway-index-v4-20000-websites",
-  "entries": 20000,
+  "entries": 50000,
   "format": [
     "t",
     "u",
     "d",
     "s"
-  ]
+  ],
+  "version": "2026-09-29-gateway-index-v6-50000-verified"
 }
