@@ -72,48 +72,89 @@ a:hover { text-decoration: underline; }
        spacing while the entire pill is clickable. */
     gap: 0;
 }
+.top-nav-right {
+    gap: 4px;
+}
+/* Shared paint for every nav link, including the sub-page logo. This rule
+   declares NO geometry on purpose: when two rules set `padding` on the same
+   element, the hit box is decided by a specificity tie rather than by
+   intent, and the box can end up smaller than the pill that is painted on
+   it. */
 .top-nav a {
     color: var(--text);
     opacity: 0.85;
-    padding: 6px 0;
+    flex-shrink: 0;
+    text-decoration: none;
+    /* Layout-neutral (no offsets), so the link always hit-tests above any
+       later sibling layer and nothing invisible can steal the pointer. */
+    position: relative;
+    z-index: 1;
 }
+/* Opacity only, and deliberately not transitioned (see below). Replaces the
+   old `.top-nav a:hover` rule, which also carried a `text-decoration:
+   underline` that lost a specificity tie and was therefore never rendered. */
 .top-nav a:hover {
     opacity: 1;
-    text-decoration: underline;
 }
 /* Nav links only — the logo carries its own inline sizing and must not shift. */
 .top-nav a:not(.results-logo) {
     display: inline-flex;
     align-items: center;
-    padding: 9px 10px;
+    box-sizing: border-box;
+    /* Fixed box, declared once. The hover state only swaps a colour, so it
+       can never resize, re-position or re-flow the link or its sibling. */
+    height: 36px;
+    padding: 0 10px;
+    margin: 0;
+    border: 0;
     border-radius: 8px;
-    text-decoration: none;
+    background-color: transparent;
+    font: inherit;
+    line-height: normal;
     white-space: nowrap;
-    transition: background .15s ease, opacity .15s ease;
+    cursor: pointer;
+    /* Paint-only. `opacity` is deliberately NOT transitioned: animating it
+       promotes the link to its own composited layer, and two adjacent links
+       whose layers share a subpixel edge make the browser's hit test
+       alternate between them frame to frame. That is what made the cursor
+       blink while the pointer sat still. */
+    transition: background-color .15s ease;
 }
 .top-nav a:not(.results-logo):hover {
-    opacity: 1;
-    text-decoration: none;
-    background: var(--input-bg);
+    background-color: var(--input-bg);
+}
+/* The sub-page logo keeps its own plain box and never gets the pill. */
+.top-nav a.results-logo {
+    display: inline-block;
+    padding: 6px 0;
 }
 .top-nav a:not(.results-logo):focus-visible,
 .icon-btn:focus-visible {
     outline: 2px solid var(--text-secondary);
     outline-offset: 1px;
 }
-.top-nav-right {
-    gap: 4px;
-}
-/* 40px minimum touch target for the header buttons. Scoped to the nav so the
-   smaller settings-modal close button is unaffected. */
+/* Fixed 40x40 box for the header buttons. The previous `min-width`/
+   `min-height` let the box follow its content, and the theme button's only
+   child is swapped (sun <-> moon) on every click, so its hit area was never
+   guaranteed to stay put. Fixed sizing makes that swap a pure paint change.
+   Scoped to the nav so the smaller settings-modal close button is
+   unaffected. */
 .top-nav .icon-btn {
-    min-width: 40px;
-    min-height: 40px;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
+}
+/* Both icons are taken out of flow, so toggling the theme never reflows the
+   button or nudges its neighbour. Scoped to the nav: the settings-modal
+   close button sizes itself from its in-flow icon, so it must keep this. */
+.top-nav .icon-btn > svg {
+    position: absolute;
+    inset: 0;
+    margin: auto;
 }
 
 .icon-btn {
-    background: transparent;
+    background-color: transparent;
     border: none;
     cursor: pointer;
     padding: 10px;
@@ -128,10 +169,19 @@ a:hover { text-decoration: underline; }
     line-height: 0;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: background .2s ease, opacity .2s;
+    /* Layout-neutral (no offsets), so the button always hit-tests above any
+       later sibling layer and nothing invisible can steal the pointer. */
+    position: relative;
+    z-index: 1;
+    /* Paint-only. `opacity` is deliberately NOT transitioned: animating it
+       promotes the button to its own composited layer, and two adjacent
+       buttons whose layers share a subpixel edge make the browser's hit test
+       alternate between them frame to frame. That is what made the cursor
+       blink. */
+    transition: background-color .2s ease;
 }
 .icon-btn:hover {
-    background: rgba(128,128,128,0.1);
+    background-color: rgba(128,128,128,0.1);
     opacity: 1;
 }
 
@@ -864,8 +914,7 @@ html.dark .no-ai-badge {
     .search-buttons { gap: 4px; }
     .search-btn { font-size: 13px; padding: 0 12px; }
     .top-nav { padding: 6px 12px; gap: 8px; font-size: 12px; }
-    .top-nav-left, .top-nav-right { gap: 0; }
-    .top-nav a:not(.results-logo) { padding: 10px 8px; }
+    .top-nav a:not(.results-logo) { padding: 0 8px; }
     .top-nav-right { gap: 2px; }
 
     .results-top-bar { padding: 8px 12px; gap: 10px; }
