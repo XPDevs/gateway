@@ -10,31 +10,31 @@
     // ======================== TRANSLATIONS ========================
 
     const LANG = {
-        en: { about:'About', images:'Images', searchPlaceholder:'Search or type a URL', gatewaySearch:'Gateway Search', feelingLucky:"I'm Feeling Lucky", unitedKingdom:'United Kingdom', advertising:'Advertising', business:'Business', howSearchWorks:'How Search works', history:'History', privacy:'Privacy', terms:'Terms', settings:'Settings', all:'All', showMoreResults:'Show more results', noResultsFound:'No results found', tryDifferentKeywords:'Try different keywords or check your spelling', didYouMean:'Did you mean:', quickAnswer:'Quick Answer', quickWiki:'Quick Wiki', quickWikiExample:'Try "release date of PlayStation 5"', quickWikiHint:'Ask a question for a sourced, deterministic answer', indexLoading:'Loading the local web index…', indexPages:'{count} pages in the local index', searchingMultipleSources:'Searching the Gateway index and open sources…', connectionError:'Connection error. Please check your internet and try again.', tagline:'Your own index of the web.', resultsStats:'{count} ranked results', settingsTitle:'Settings', language:'Language', darkMode:'Dark mode', close:'Close', wikipedia:'Wikipedia', openData:'Open data', noGenerativeAi:'No generative AI' },
-        es: { about:'Acerca de', images:'Imágenes', searchPlaceholder:'Busca o escribe una URL', gatewaySearch:'Buscar con Gateway', feelingLucky:'Voy a tener suerte', unitedKingdom:'Reino Unido', advertising:'Publicidad', business:'Negocios', howSearchWorks:'Cómo funciona la Búsqueda', history:'Historial', privacy:'Privacidad', terms:'Términos', settings:'Configuración', all:'Todo', showMoreResults:'Mostrar más resultados', noResultsFound:'No se encontraron resultados', tryDifferentKeywords:'Prueba con otras palabras o revisa la ortografía', didYouMean:'Quizás quisiste decir:', quickAnswer:'Respuesta rápida', searchingMultipleSources:'Buscando en múltiples fuentes...', connectionError:'Error de conexión. Verifica tu internet e inténtalo de nuevo.', tagline:'Más rápido que Google. Mismos resultados.', resultsStats:'Aprox. {count} resultados', settingsTitle:'Configuración', language:'Idioma', darkMode:'Modo oscuro', close:'Cerrar', wikipedia:'Wikipedia' },
-        fr: { about:'À propos', images:'Images', searchPlaceholder:'Rechercher ou saisir l’URL', gatewaySearch:'Recherche Gateway', feelingLucky:'J\'ai de la chance', unitedKingdom:'Royaume-Uni', advertising:'Publicité', business:'Entreprises', howSearchWorks:'Fonctionnement de la Recherche', history:'Historique', privacy:'Confidentialité', terms:'Conditions', settings:'Paramètres', all:'Tout', showMoreResults:'Plus de résultats', noResultsFound:'Aucun résultat trouvé', tryDifferentKeywords:'Essayez différents mots-clés ou vérifiez l\'orthographe', didYouMean:'Vouliez-vous dire :', quickAnswer:'Réponse rapide', searchingMultipleSources:'Recherche multi-sources...', connectionError:'Erreur de connexion. Vérifiez votre connexion et réessayez.', tagline:'Plus rapide que Google. Mêmes résultats.', resultsStats:'Environ {count} résultats', settingsTitle:'Paramètres', language:'Langue', darkMode:'Mode sombre', close:'Fermer', wikipedia:'Wikipédia' },
-        de: { about:'Über uns', images:'Bilder', searchPlaceholder:'Suchen oder URL eingeben', gatewaySearch:'Gateway-Suche', feelingLucky:'Auf gut Glück', unitedKingdom:'Vereinigtes Königreich', advertising:'Werbung', business:'Unternehmen', howSearchWorks:'So funktioniert die Suche', history:'Verlauf', privacy:'Datenschutz', terms:'AGB', settings:'Einstellungen', all:'Alle', showMoreResults:'Weitere Ergebnisse', noResultsFound:'Keine Ergebnisse gefunden', tryDifferentKeywords:'Versuchen Sie andere Suchbegriffe oder überprüfen Sie die Rechtschreibung', didYouMean:'Meinten Sie:', quickAnswer:'Kurze Antwort', searchingMultipleSources:'Durchsuche mehrere Quellen...', connectionError:'Verbindungsfehler. Bitte Internet prüfen und erneut versuchen.', tagline:'Schneller als Google. Gleiche Ergebnisse.', resultsStats:'Ca. {count} Ergebnisse', settingsTitle:'Einstellungen', language:'Sprache', darkMode:'Dunkelmodus', close:'Schließen', wikipedia:'Wikipedia' },
-        it: { about:'Informazioni', images:'Immagini', searchPlaceholder:'Cerca o digita un URL', gatewaySearch:'Cerca con Gateway', feelingLucky:'Mi sento fortunato', unitedKingdom:'Regno Unito', advertising:'Pubblicità', business:'Business', howSearchWorks:'Come funziona la Ricerca', history:'Cronologia', privacy:'Privacy', terms:'Termini', settings:'Impostazioni', all:'Tutto', showMoreResults:'Mostra altri risultati', noResultsFound:'Nessun risultato trovato', tryDifferentKeywords:'Prova con parole diverse o controlla l\'ortografia', didYouMean:'Forse cercavi:', quickAnswer:'Risposta rapida', searchingMultipleSources:'Ricerca in più fonti...', connectionError:'Errore di connessione. Controlla la connessione e riprova.', tagline:'Più veloce di Google. Stessi risultati.', resultsStats:'Circa {count} risultati', settingsTitle:'Impostazioni', language:'Lingua', darkMode:'Modalità scura', close:'Chiudi', wikipedia:'Wikipedia' },
-        pt: { about:'Sobre', images:'Imagens', searchPlaceholder:'Pesquisar ou digitar URL', gatewaySearch:'Pesquisa Gateway', feelingLucky:'Estou com sorte', unitedKingdom:'Reino Unido', advertising:'Publicidade', business:'Negócios', howSearchWorks:'Como funciona a Pesquisa', history:'Histórico', privacy:'Privacidade', terms:'Termos', settings:'Configurações', all:'Tudo', showMoreResults:'Mostrar mais resultados', noResultsFound:'Nenhum resultado encontrado', tryDifferentKeywords:'Tente palavras-chave diferentes ou verifique a ortografia', didYouMean:'Você quis dizer:', quickAnswer:'Resposta rápida', searchingMultipleSources:'Pesquisando em múltiplas fontes...', connectionError:'Erro de conexão. Verifique sua internet e tente novamente.', tagline:'Mais rápido que o Google. Mesmos resultados.', resultsStats:'Aprox. {count} resultados', settingsTitle:'Configurações', language:'Idioma', darkMode:'Modo escuro', close:'Fechar', wikipedia:'Wikipédia' },
-        ru: { about:'О нас', images:'Картинки', searchPlaceholder:'Поиск или введите URL', gatewaySearch:'Поиск Gateway', feelingLucky:'Мне повезёт', unitedKingdom:'Великобритания', advertising:'Реклама', business:'Бизнес', howSearchWorks:'Как работает поиск', history:'История', privacy:'Конфиденциальность', terms:'Условия', settings:'Настройки', all:'Все', showMoreResults:'Показать больше', noResultsFound:'Ничего не найдено', tryDifferentKeywords:'Попробуйте другие слова или проверьте орфографию', didYouMean:'Возможно, вы имели в виду:', quickAnswer:'Быстрый ответ', searchingMultipleSources:'Поиск по нескольким источникам...', connectionError:'Ошибка подключения. Проверьте интернет и повторите попытку.', tagline:'Быстрее Google. Те же результаты.', resultsStats:'Примерно {count} результатов', settingsTitle:'Настройки', language:'Язык', darkMode:'Тёмная тема', close:'Закрыть', wikipedia:'Википедия' },
-        ja: { about:'概要', images:'画像', searchPlaceholder:'検索またはURLを入力', gatewaySearch:'Gateway検索', feelingLucky:'I\'m Feeling Lucky', unitedKingdom:'イギリス', advertising:'広告', business:'ビジネス', howSearchWorks:'検索の仕組み', history:'履歴', privacy:'プライバシー', terms:'利用規約', settings:'設定', all:'すべて', showMoreResults:'さらに表示', noResultsFound:'結果が見つかりませんでした', tryDifferentKeywords:'別のキーワードを試すか、スペルを確認してください', didYouMean:'もしかして:', quickAnswer:'クイックアンサー', searchingMultipleSources:'複数のソースを検索中...', connectionError:'接続エラーです。インターネット接続を確認してもう一度お試しください。', tagline:'Googleより高速。同じ結果。', resultsStats:'約{count}件', settingsTitle:'設定', language:'言語', darkMode:'ダークモード', close:'閉じる', wikipedia:'ウィキペディア' },
-        'zh-CN': { about:'关于', images:'图片', searchPlaceholder:'搜索或输入网址', gatewaySearch:'Gateway 搜索', feelingLucky:'手气不错', unitedKingdom:'英国', advertising:'广告', business:'商务', howSearchWorks:'搜索工作原理', history:'歴史記録', privacy:'隐私', terms:'条款', settings:'设置', all:'全部', showMoreResults:'显示更多结果', noResultsFound:'未找到结果', tryDifferentKeywords:'尝试不同的关键词或检查拼写', didYouMean:'您是不是要找：', quickAnswer:'快速解答', searchingMultipleSources:'正在搜索多个来源...', connectionError:'连接错误。请检查网络后重试。', tagline:'比谷歌更快。相同结果。', resultsStats:'约{count}条结果', settingsTitle:'设置', language:'语言', darkMode:'深色模式', close:'关闭', wikipedia:'维基百科' },
-        'zh-TW': { about:'關於', images:'圖片', searchPlaceholder:'搜尋或輸入網址', gatewaySearch:'Gateway 搜尋', feelingLucky:'好手氣', unitedKingdom:'英國', advertising:'廣告', business:'商務', howSearchWorks:'搜尋運作方式', history:'歷史記錄', privacy:'隱私權', terms:'條款', settings:'設定', all:'全部', showMoreResults:'顯示更多結果', noResultsFound:'找不到結果', tryDifferentKeywords:'請嘗試不同的關鍵字或檢查拼寫', didYouMean:'您是不是要找：', quickAnswer:'快速解答', searchingMultipleSources:'正在搜尋多個來源...', connectionError:'連線錯誤。請檢查網路後重試。', tagline:'比 Google 更快。相同結果。', resultsStats:'約{count}項結果', settingsTitle:'設定', language:'語言', darkMode:'深色模式', close:'關閉', wikipedia:'維基百科' },
-        ko: { about:'정보', images:'이미지', searchPlaceholder:'검색 또는 URL 입력', gatewaySearch:'Gateway 검색', feelingLucky:'행운을 빌어요', unitedKingdom:'영국', advertising:'광고', business:'비즈니스', howSearchWorks:'검색 작동 방식', history:'기록', privacy:'개인정보', terms:'약관', settings:'설정', all:'전체', showMoreResults:'더 많은 결과 보기', noResultsFound:'검색 결과가 없습니다', tryDifferentKeywords:'다른 키워드를 시도하거나 철자를 확인하세요', didYouMean:'혹시 찾으시는 것이:', quickAnswer:'빠른 답변', searchingMultipleSources:'여러 소스 검색 중...', connectionError:'연결 오류입니다. 인터넷을 확인하고 다시 시도하세요.', tagline:'Google보다 빠름. 동일한 결과.', resultsStats:'약 {count}개 결과', settingsTitle:'설정', language:'언어', darkMode:'다크 모드', close:'닫기', wikipedia:'위키백과' },
-        ar: { about:'حول', images:'صور', searchPlaceholder:'ابحث أو أدخل رابطاً', gatewaySearch:'بحث Gateway', feelingLucky:'أنا محظوظ', unitedKingdom:'المملكة المتحدة', advertising:'إعلانات', business:'أعمال', howSearchWorks:'كيف يعمل البحث', history:'السجل', privacy:'خصوصية', terms:'الشروط', settings:'إعدادات', all:'الكل', showMoreResults:'عرض المزيد من النتائج', noResultsFound:'لم يتم العثور على نتائج', tryDifferentKeywords:'جرّب كلمات مختلفة أو تحقق من الإملاء', didYouMean:'هل تقصد:', quickAnswer:'إجابة سريعة', searchingMultipleSources:'جاري البحث في مصادر متعددة...', connectionError:'خطأ في الاتصال. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.', tagline:'أسرع من Google. نفس النتائج.', resultsStats:'حوالي {count} نتيجة', settingsTitle:'الإعدادات', language:'اللغة', darkMode:'الوضع الداكن', close:'إغلاق', wikipedia:'ويكيبيديا' },
-        hi: { about:'बारे में', images:'चित्र', searchPlaceholder:'खोजें या URL टाइप करें', gatewaySearch:'Gateway खोज', feelingLucky:'मैं भाग्यशाली हूँ', unitedKingdom:'यूनाइटेड किंगडम', advertising:'विज्ञापन', business:'व्यवसाय', howSearchWorks:'खोज कैसे काम करती है', history:'इतिहास', privacy:'गोपनीयता', terms:'शर्तें', settings:'सेटिंग्स', all:'सभी', showMoreResults:'और परिणाम दिखाएँ', noResultsFound:'कोई परिणाम नहीं मिला', tryDifferentKeywords:'अलग कीवर्ड आज़माएँ या वर्तनी जाँचें', didYouMean:'क्या आप यह कहना चाह रहे थे:', quickAnswer:'त्वरित उत्तर', searchingMultipleSources:'कई स्रोतों में खोज रहे हैं...', connectionError:'कनेक्शन त्रुटि। कृपया अपना इंटरनेट जाँचें और पुनः प्रयास करें।', tagline:'Google से तेज़। वही परिणाम।', resultsStats:'लगभग {count} परिणाम', settingsTitle:'सेटिंग्स', language:'भाषा', darkMode:'डार्क मोड', close:'बंद करें', wikipedia:'विकिपीडिया' },
-        bn: { about:'সম্পর্কে', images:'ছবি', searchPlaceholder:'অনুসন্ধান বা URL লিখুন', gatewaySearch:'Gateway অনুসন্ধান', feelingLucky:'আমি ভাগ্যবান', unitedKingdom:'যুক্তরাজ্য', advertising:'বিজ্ঞাপন', business:'ব্যবসা', howSearchWorks:'কিভাবে অনুসন্ধান কাজ করে', history:'ইতিহাস', privacy:'গোপনীয়তা', terms:'শর্তাবলী', settings:'সেটিংস', all:'সব', showMoreResults:'আরও ফলাফল দেখান', noResultsFound:'কোনো ফলাফল পাওয়া যায়নি', tryDifferentKeywords:'ভিন্ন শব্দ ব্যবহার করুন বা বানান পরীক্ষা করুন', didYouMean:'আপনি কি বোঝাতে চেয়েছেন:', quickAnswer:'দ্রুত উত্তর', searchingMultipleSources:'একাধিক উৎসে অনুসন্ধান করা হচ্ছে...', connectionError:'সংযোগ ত্রুটি। আপনার ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।', tagline:'Google-এর চেয়ে দ্রুত। একই ফলাফল।', resultsStats:'প্রায় {count}টি ফলাফল', settingsTitle:'সেটিংস', language:'ভাষা', darkMode:'ডার্ক মোড', close:'বন্ধ করুন', wikipedia:'উইকিপিডিয়া' },
-        tr: { about:'Hakkında', images:'Görseller', searchPlaceholder:'Ara veya bir URL girin', gatewaySearch:'Gateway Arama', feelingLucky:'Şanslıyım', unitedKingdom:'Birleşik Krallık', advertising:'Reklam', business:'İşletme', howSearchWorks:'Arama nasıl çalışır', history:'Geçmiş', privacy:'Gizlilik', terms:'Şartlar', settings:'Ayarlar', all:'Tümü', showMoreResults:'Daha fazla sonuç göster', noResultsFound:'Sonuç bulunamadı', tryDifferentKeywords:'Farklı anahtar kelimeler deneyin veya yazımı kontrol edin', didYouMean:'Bunu mu demek istediniz:', quickAnswer:'Hızlı Cevap', searchingMultipleSources:'Birden çok kaynak taranıyor...', connectionError:'Bağlantı hatası. Lütfen internetinizi kontrol edip tekrar deneyin.', tagline:'Google\'dan daha hızlı. Aynı sonuçlar.', resultsStats:'Yaklaşık {count} sonuç', settingsTitle:'Ayarlar', language:'Dil', darkMode:'Karanlık mod', close:'Kapat', wikipedia:'Vikipedi' },
-        nl: { about:'Over ons', images:'Afbeeldingen', searchPlaceholder:'Zoek of typ een URL', gatewaySearch:'Gateway Zoeken', feelingLucky:'Gelukzoeker', unitedKingdom:'Verenigd Koninkrijk', advertising:'Adverteren', business:'Zakelijk', howSearchWorks:'Hoe zoeken werkt', history:'Geschiedenis', privacy:'Privacy', terms:'Voorwaarden', settings:'Instellingen', all:'Alles', showMoreResults:'Meer resultaten', noResultsFound:'Geen resultaten gevonden', tryDifferentKeywords:'Probeer andere zoekwoorden of controleer de spelling', didYouMean:'Bedoelde u:', quickAnswer:'Snel antwoord', searchingMultipleSources:'Meerdere bronnen doorzoeken...', connectionError:'Verbindingsfout. Controleer uw internet en probeer het opnieuw.', tagline:'Sneller dan Google. Zelfde resultaten.', resultsStats:'Ongeveer {count} resultaten', settingsTitle:'Instellingen', language:'Taal', darkMode:'Donkere modus', close:'Sluiten', wikipedia:'Wikipedia' },
-        pl: { about:'O nas', images:'Obrazy', searchPlaceholder:'Szukaj lub wpisz URL', gatewaySearch:'Szukaj w Gateway', feelingLucky:'Szczęściarz', unitedKingdom:'Wielka Brytania', advertising:'Reklama', business:'Firmy', howSearchWorks:'Jak działa wyszukiwanie', history:'Historia', privacy:'Prywatność', terms:'Warunki', settings:'Ustawienia', all:'Wszystkie', showMoreResults:'Pokaż więcej wyników', noResultsFound:'Brak wyników', tryDifferentKeywords:'Spróbuj innych słów kluczowych lub sprawdź pisownię', didYouMean:'Czy chodziło Ci o:', quickAnswer:'Szybka odpowiedź', searchingMultipleSources:'Przeszukiwanie wielu źródeł...', connectionError:'Błąd połączenia. Sprawdź internet i spróbuj ponownie.', tagline:'Szybsze niż Google. Te same wyniki.', resultsStats:'Około {count} wyników', settingsTitle:'Ustawienia', language:'Język', darkMode:'Tryb ciemny', close:'Zamknij', wikipedia:'Wikipedia' },
-        sv: { about:'Om', images:'Bilder', searchPlaceholder:'Sök eller skriv en URL', gatewaySearch:'Gateway-sökning', feelingLucky:'Jag känner mig turlig', unitedKingdom:'Storbritannien', advertising:'Annonsering', business:'Företag', howSearchWorks:'Så fungerar sökning', history:'Historik', privacy:'Integritet', terms:'Villkor', settings:'Inställningar', all:'Alla', showMoreResults:'Visa fler resultat', noResultsFound:'Inga resultat hittades', tryDifferentKeywords:'Prova andra sökord eller kontrollera stavningen', didYouMean:'Menade du:', quickAnswer:'Snabbt svar', searchingMultipleSources:'Söker i flera källor...', connectionError:'Anslutningsfel. Kontrollera din internetanslutning och försök igen.', tagline:'Snabbare än Google. Samma resultat.', resultsStats:'Ungefär {count} resultat', settingsTitle:'Inställningar', language:'Språk', darkMode:'Mörkt läge', close:'Stäng', wikipedia:'Wikipedia' },
-        da: { about:'Om', images:'Billeder', searchPlaceholder:'Søg eller indtast en URL', gatewaySearch:'Gateway-søgning', feelingLucky:'Jeg er heldig', unitedKingdom:'Storbritannien', advertising:'Annoncering', business:'Virksomhed', howSearchWorks:'Sådan fungerer søgning', history:'Historik', privacy:'Privatliv', terms:'Vilkår', settings:'Indstillinger', all:'Alle', showMoreResults:'Vis flere resultater', noResultsFound:'Ingen resultater fundet', tryDifferentKeywords:'Prøv andre søgeord eller tjek stavningen', didYouMean:'Mente du:', quickAnswer:'Hurtigt svar', searchingMultipleSources:'Søger i flere kilder...', connectionError:'Forbindelsesfejl. Tjek din internetforbindelse og prøv igen.', tagline:'Hurtigere end Google. Samme resultater.', resultsStats:'Ca. {count} resultater', settingsTitle:'Indstillinger', language:'Sprog', darkMode:'Mørk tilstand', close:'Luk', wikipedia:'Wikipedia' },
-        fi: { about:'Tietoja', images:'Kuvat', searchPlaceholder:'Hae tai kirjoita URL', gatewaySearch:'Gateway-haku', feelingLucky:'Minulla on tuuria', unitedKingdom:'Yhdistynyt kuningaskunta', advertising:'Mainonta', business:'Yritykset', howSearchWorks:'Näin haku toimii', history:'Historia', privacy:'Yksityisyys', terms:'Ehdot', settings:'Asetukset', all:'Kaikki', showMoreResults:'Näytä lisää tuloksia', noResultsFound:'Ei tuloksia', tryDifferentKeywords:'Kokeile eri hakusanoja tai tarkista oikeinkirjoitus', didYouMean:'Tarkoititko:', quickAnswer:'Pikavastaus', searchingMultipleSources:'Haetaan useista lähteistä...', connectionError:'Yhteysvirhe. Tarkista internetyhteys ja yritä uudelleen.', tagline:'Nopeampi kuin Google. Samat tulokset.', resultsStats:'Noin {count} tulosta', settingsTitle:'Asetukset', language:'Kieli', darkMode:'Tumma tila', close:'Sulje', wikipedia:'Wikipedia' },
-        no: { about:'Om', images:'Bilder', searchPlaceholder:'Søk eller skriv inn URL', gatewaySearch:'Gateway-søk', feelingLucky:'Jeg er heldig', unitedKingdom:'Storbritannia', advertising:'Annonsering', business:'Bedrifter', howSearchWorks:'Slik fungerer søk', history:'Historikk', privacy:'Personvern', terms:'Vilkår', settings:'Innstillinger', all:'Alle', showMoreResults:'Vis flere resultater', noResultsFound:'Ingen resultater funnet', tryDifferentKeywords:'Prøv andre søkeord eller sjekk stavemåten', didYouMean:'Mente du:', quickAnswer:'Hurtig svar', searchingMultipleSources:'Søker i flere kilder...', connectionError:'Tilkoblingsfeil. Sjekk internettilkoblingen og prøv igjen.', tagline:'Raskere enn Google. Samme resultater.', resultsStats:'Omtrent {count} resultater', settingsTitle:'Innstillinger', language:'Språk', darkMode:'Mørk modus', close:'Lukk', wikipedia:'Wikipedia' },
-        cs: { about:'O nás', images:'Obrázky', searchPlaceholder:'Hledat nebo zadat URL', gatewaySearch:'Hledat Gateway', feelingLucky:'Chci mít štěstí', unitedKingdom:'Spojené království', advertising:'Reklama', business:'Firmy', howSearchWorks:'Jak vyhledávání funguje', history:'Historie', privacy:'Soukromí', terms:'Smluvní podmínky', settings:'Nastavení', all:'Vše', showMoreResults:'Zobrazit více výsledků', noResultsFound:'Nebyly nalezeny žádné výsledky', tryDifferentKeywords:'Zkuste jiná klíčová slova nebo zkontrolujte pravopis', didYouMean:'Mysleli jste:', quickAnswer:'Rychlá odpověď', searchingMultipleSources:'Vyhledávání ve více zdrojích...', connectionError:'Chyba připojení. Zkontrolujte připojení k internetu a zkuste to znovu.', tagline:'Rychlejší než Google. Stejné výsledky.', resultsStats:'Přibližně {count} výsledků', settingsTitle:'Nastavení', language:'Jazyk', darkMode:'Tmavý režim', close:'Zavřít', wikipedia:'Wikipedie' },
-        ro: { about:'Despre', images:'Imagini', searchPlaceholder:'Caută sau introdu un URL', gatewaySearch:'Căutare Gateway', feelingLucky:'Norocos', unitedKingdom:'Regatul Unit', advertising:'Publicitate', business:'Afaceri', howSearchWorks:'Cum funcționează Căutarea', history:'Istoric', privacy:'Confidențialitate', terms:'Termeni', settings:'Setări', all:'Toate', showMoreResults:'Arată mai multe rezultate', noResultsFound:'Nu s-au găsit rezultate', tryDifferentKeywords:'Încercați alte cuvinte cheie sau verificați ortografia', didYouMean:'Poate ați vrut să spuneți:', quickAnswer:'Răspuns rapid', searchingMultipleSources:'Se caută în mai multe surse...', connectionError:'Eroare de conexiune. Verificați internetul și încercați din nou.', tagline:'Mai rapid decât Google. Aceleași rezultate.', resultsStats:'Aproximativ {count} rezultate', settingsTitle:'Setări', language:'Limbă', darkMode:'Mod întunecat', close:'Închide', wikipedia:'Wikipedia' },
-        hu: { about:'Névjegy', images:'Képek', searchPlaceholder:'Keresés vagy URL megadása', gatewaySearch:'Gateway-keresés', feelingLucky:'Szerencsém van', unitedKingdom:'Egyesült Királyság', advertising:'Hirdetés', business:'Vállalkozások', howSearchWorks:'Hogyan működik a keresés', history:'Előzmények', privacy:'Adatvédelem', terms:'Feltételek', settings:'Beállítások', all:'Összes', showMoreResults:'Több találat mutatása', noResultsFound:'Nincs találat', tryDifferentKeywords:'Próbáljon más kulcsszavakat vagy ellenőrizze a helyesírást', didYouMean:'Esetleg erre gondolt:', quickAnswer:'Gyors válasz', searchingMultipleSources:'Keresés több forrásban...', connectionError:'Kapcsolódási hiba. Ellenőrizze az internetkapcsolatot és próbálja újra.', tagline:'Gyorsabb, mint a Google. Ugyanazok az eredmények.', resultsStats:'Kb. {count} találat', settingsTitle:'Beállítások', language:'Nyelv', darkMode:'Sötét mód', close:'Bezár', wikipedia:'Wikipédia' },
-        el: { about:'Σχετικά', images:'Εικόνες', searchPlaceholder:'Αναζήτηση ή εισαγωγή URL', gatewaySearch:'Αναζήτηση Gateway', feelingLucky:'Τυχερός', unitedKingdom:'Ηνωμένο Βασίλειο', advertising:'Διαφήμιση', business:'Επιχειρήσεις', howSearchWorks:'Πώς λειτουργεί η Αναζήτηση', history:'Ιστορικό', privacy:'Απόρρητο', terms:'Όροι', settings:'Ρυθμίσεις', all:'Όλα', showMoreResults:'Εμφάνιση περισσότερων αποτελεσμάτων', noResultsFound:'Δεν βρέθηκαν αποτελέσματα', tryDifferentKeywords:'Δοκιμάστε διαφορετικές λέξεις-κλειδιά ή ελέγξτε την ορθογραφία', didYouMean:'Μήπως εννοείτε:', quickAnswer:'Γρήγορη απάντηση', searchingMultipleSources:'Αναζήτηση σε πολλαπλές πηγές...', connectionError:'Σφάλμα σύνδεσης. Ελέγξτε το διαδίκτυο και δοκιμάστε ξανά.', tagline:'Ταχύτερο από το Google. Ίδια αποτελέσματα.', resultsStats:'Περίπου {count} αποτελέσματα', settingsTitle:'Ρυθμίσεις', language:'Γλώσσα', darkMode:'Σκοτεινή λειτουργία', close:'Κλείσιμο', wikipedia:'Βικιπαίδεια' }
+        en: { about:'About', images:'Images', imageStats:'{count} images', searchingImages:'Searching free image sources…', noImagesFound:'No images found', viewSourcePage:'View source page', searchPlaceholder:'Search or type a URL', gatewaySearch:'Gateway Search', feelingLucky:"I'm Feeling Lucky", unitedKingdom:'United Kingdom', advertising:'Advertising', business:'Business', howSearchWorks:'How Search works', history:'History', privacy:'Privacy', terms:'Terms', settings:'Settings', all:'All', showMoreResults:'Show more results', noResultsFound:'No results found', tryDifferentKeywords:'Try different keywords or check your spelling', didYouMean:'Did you mean:', quickAnswer:'Quick Answer', quickWiki:'Quick Wiki', quickWikiExample:'Try "release date of PlayStation 5"', quickWikiHint:'Ask a question for a sourced, deterministic answer', indexLoading:'Loading the local web index…', indexPages:'{count} pages in the local index', searchingMultipleSources:'Searching the Gateway index and open sources…', connectionError:'Connection error. Please check your internet and try again.', tagline:'Your own index of the web.', resultsStats:'{count} ranked results', settingsTitle:'Settings', language:'Language', darkMode:'Dark mode', close:'Close', wikipedia:'Wikipedia', openData:'Open data', noGenerativeAi:'No generative AI' },
+        es: { about:'Acerca de', images:'Imágenes', imageStats:'{count} imágenes', searchingImages:'Buscando en fuentes de imágenes libres…', noImagesFound:'No se encontraron imágenes', viewSourcePage:'Ver página de origen', searchPlaceholder:'Busca o escribe una URL', gatewaySearch:'Buscar con Gateway', feelingLucky:'Voy a tener suerte', unitedKingdom:'Reino Unido', advertising:'Publicidad', business:'Negocios', howSearchWorks:'Cómo funciona la Búsqueda', history:'Historial', privacy:'Privacidad', terms:'Términos', settings:'Configuración', all:'Todo', showMoreResults:'Mostrar más resultados', noResultsFound:'No se encontraron resultados', tryDifferentKeywords:'Prueba con otras palabras o revisa la ortografía', didYouMean:'Quizás quisiste decir:', quickAnswer:'Respuesta rápida', searchingMultipleSources:'Buscando en múltiples fuentes...', connectionError:'Error de conexión. Verifica tu internet e inténtalo de nuevo.', tagline:'Más rápido que Google. Mismos resultados.', resultsStats:'Aprox. {count} resultados', settingsTitle:'Configuración', language:'Idioma', darkMode:'Modo oscuro', close:'Cerrar', wikipedia:'Wikipedia' },
+        fr: { about:'À propos', images:'Images', imageStats:'{count} images', searchingImages:'Recherche dans des sources d’images libres…', noImagesFound:'Aucune image trouvée', viewSourcePage:'Voir la page source', searchPlaceholder:'Rechercher ou saisir l’URL', gatewaySearch:'Recherche Gateway', feelingLucky:'J\'ai de la chance', unitedKingdom:'Royaume-Uni', advertising:'Publicité', business:'Entreprises', howSearchWorks:'Fonctionnement de la Recherche', history:'Historique', privacy:'Confidentialité', terms:'Conditions', settings:'Paramètres', all:'Tout', showMoreResults:'Plus de résultats', noResultsFound:'Aucun résultat trouvé', tryDifferentKeywords:'Essayez différents mots-clés ou vérifiez l\'orthographe', didYouMean:'Vouliez-vous dire :', quickAnswer:'Réponse rapide', searchingMultipleSources:'Recherche multi-sources...', connectionError:'Erreur de connexion. Vérifiez votre connexion et réessayez.', tagline:'Plus rapide que Google. Mêmes résultats.', resultsStats:'Environ {count} résultats', settingsTitle:'Paramètres', language:'Langue', darkMode:'Mode sombre', close:'Fermer', wikipedia:'Wikipédia' },
+        de: { about:'Über uns', images:'Bilder', imageStats:'{count} Bilder', searchingImages:'Suche in kostenlosen Bildquellen…', noImagesFound:'Keine Bilder gefunden', viewSourcePage:'Quellseite ansehen', searchPlaceholder:'Suchen oder URL eingeben', gatewaySearch:'Gateway-Suche', feelingLucky:'Auf gut Glück', unitedKingdom:'Vereinigtes Königreich', advertising:'Werbung', business:'Unternehmen', howSearchWorks:'So funktioniert die Suche', history:'Verlauf', privacy:'Datenschutz', terms:'AGB', settings:'Einstellungen', all:'Alle', showMoreResults:'Weitere Ergebnisse', noResultsFound:'Keine Ergebnisse gefunden', tryDifferentKeywords:'Versuchen Sie andere Suchbegriffe oder überprüfen Sie die Rechtschreibung', didYouMean:'Meinten Sie:', quickAnswer:'Kurze Antwort', searchingMultipleSources:'Durchsuche mehrere Quellen...', connectionError:'Verbindungsfehler. Bitte Internet prüfen und erneut versuchen.', tagline:'Schneller als Google. Gleiche Ergebnisse.', resultsStats:'Ca. {count} Ergebnisse', settingsTitle:'Einstellungen', language:'Sprache', darkMode:'Dunkelmodus', close:'Schließen', wikipedia:'Wikipedia' },
+        it: { about:'Informazioni', images:'Immagini', imageStats:'{count} immagini', searchingImages:'Ricerca nelle fonti di immagini libere…', noImagesFound:'Nessuna immagine trovata', viewSourcePage:'Vedi pagina di origine', searchPlaceholder:'Cerca o digita un URL', gatewaySearch:'Cerca con Gateway', feelingLucky:'Mi sento fortunato', unitedKingdom:'Regno Unito', advertising:'Pubblicità', business:'Business', howSearchWorks:'Come funziona la Ricerca', history:'Cronologia', privacy:'Privacy', terms:'Termini', settings:'Impostazioni', all:'Tutto', showMoreResults:'Mostra altri risultati', noResultsFound:'Nessun risultato trovato', tryDifferentKeywords:'Prova con parole diverse o controlla l\'ortografia', didYouMean:'Forse cercavi:', quickAnswer:'Risposta rapida', searchingMultipleSources:'Ricerca in più fonti...', connectionError:'Errore di connessione. Controlla la connessione e riprova.', tagline:'Più veloce di Google. Stessi risultati.', resultsStats:'Circa {count} risultati', settingsTitle:'Impostazioni', language:'Lingua', darkMode:'Modalità scura', close:'Chiudi', wikipedia:'Wikipedia' },
+        pt: { about:'Sobre', images:'Imagens', imageStats:'{count} imagens', searchingImages:'A pesquisar em fontes de imagens livres…', noImagesFound:'Nenhuma imagem encontrada', viewSourcePage:'Ver página de origem', searchPlaceholder:'Pesquisar ou digitar URL', gatewaySearch:'Pesquisa Gateway', feelingLucky:'Estou com sorte', unitedKingdom:'Reino Unido', advertising:'Publicidade', business:'Negócios', howSearchWorks:'Como funciona a Pesquisa', history:'Histórico', privacy:'Privacidade', terms:'Termos', settings:'Configurações', all:'Tudo', showMoreResults:'Mostrar mais resultados', noResultsFound:'Nenhum resultado encontrado', tryDifferentKeywords:'Tente palavras-chave diferentes ou verifique a ortografia', didYouMean:'Você quis dizer:', quickAnswer:'Resposta rápida', searchingMultipleSources:'Pesquisando em múltiplas fontes...', connectionError:'Erro de conexão. Verifique sua internet e tente novamente.', tagline:'Mais rápido que o Google. Mesmos resultados.', resultsStats:'Aprox. {count} resultados', settingsTitle:'Configurações', language:'Idioma', darkMode:'Modo escuro', close:'Fechar', wikipedia:'Wikipédia' },
+        ru: { about:'О нас', images:'Картинки', imageStats:'{count} изображений', searchingImages:'Поиск в бесплатных источниках изображений…', noImagesFound:'Изображения не найдены', viewSourcePage:'Открыть страницу источника', searchPlaceholder:'Поиск или введите URL', gatewaySearch:'Поиск Gateway', feelingLucky:'Мне повезёт', unitedKingdom:'Великобритания', advertising:'Реклама', business:'Бизнес', howSearchWorks:'Как работает поиск', history:'История', privacy:'Конфиденциальность', terms:'Условия', settings:'Настройки', all:'Все', showMoreResults:'Показать больше', noResultsFound:'Ничего не найдено', tryDifferentKeywords:'Попробуйте другие слова или проверьте орфографию', didYouMean:'Возможно, вы имели в виду:', quickAnswer:'Быстрый ответ', searchingMultipleSources:'Поиск по нескольким источникам...', connectionError:'Ошибка подключения. Проверьте интернет и повторите попытку.', tagline:'Быстрее Google. Те же результаты.', resultsStats:'Примерно {count} результатов', settingsTitle:'Настройки', language:'Язык', darkMode:'Тёмная тема', close:'Закрыть', wikipedia:'Википедия' },
+        ja: { about:'概要', images:'画像', imageStats:'{count}件の画像', searchingImages:'無料の画像ソースを検索中…', noImagesFound:'画像が見つかりませんでした', viewSourcePage:'元ページを見る', searchPlaceholder:'検索またはURLを入力', gatewaySearch:'Gateway検索', feelingLucky:'I\'m Feeling Lucky', unitedKingdom:'イギリス', advertising:'広告', business:'ビジネス', howSearchWorks:'検索の仕組み', history:'履歴', privacy:'プライバシー', terms:'利用規約', settings:'設定', all:'すべて', showMoreResults:'さらに表示', noResultsFound:'結果が見つかりませんでした', tryDifferentKeywords:'別のキーワードを試すか、スペルを確認してください', didYouMean:'もしかして:', quickAnswer:'クイックアンサー', searchingMultipleSources:'複数のソースを検索中...', connectionError:'接続エラーです。インターネット接続を確認してもう一度お試しください。', tagline:'Googleより高速。同じ結果。', resultsStats:'約{count}件', settingsTitle:'設定', language:'言語', darkMode:'ダークモード', close:'閉じる', wikipedia:'ウィキペディア' },
+        'zh-CN': { about:'关于', images:'图片', imageStats:'{count} 张图片', searchingImages:'正在搜索免费图片来源…', noImagesFound:'未找到图片', viewSourcePage:'查看来源页面', searchPlaceholder:'搜索或输入网址', gatewaySearch:'Gateway 搜索', feelingLucky:'手气不错', unitedKingdom:'英国', advertising:'广告', business:'商务', howSearchWorks:'搜索工作原理', history:'歴史記録', privacy:'隐私', terms:'条款', settings:'设置', all:'全部', showMoreResults:'显示更多结果', noResultsFound:'未找到结果', tryDifferentKeywords:'尝试不同的关键词或检查拼写', didYouMean:'您是不是要找：', quickAnswer:'快速解答', searchingMultipleSources:'正在搜索多个来源...', connectionError:'连接错误。请检查网络后重试。', tagline:'比谷歌更快。相同结果。', resultsStats:'约{count}条结果', settingsTitle:'设置', language:'语言', darkMode:'深色模式', close:'关闭', wikipedia:'维基百科' },
+        'zh-TW': { about:'關於', images:'圖片', imageStats:'{count} 張圖片', searchingImages:'正在搜尋免費圖片來源…', noImagesFound:'找不到圖片', viewSourcePage:'查看來源頁面', searchPlaceholder:'搜尋或輸入網址', gatewaySearch:'Gateway 搜尋', feelingLucky:'好手氣', unitedKingdom:'英國', advertising:'廣告', business:'商務', howSearchWorks:'搜尋運作方式', history:'歷史記錄', privacy:'隱私權', terms:'條款', settings:'設定', all:'全部', showMoreResults:'顯示更多結果', noResultsFound:'找不到結果', tryDifferentKeywords:'請嘗試不同的關鍵字或檢查拼寫', didYouMean:'您是不是要找：', quickAnswer:'快速解答', searchingMultipleSources:'正在搜尋多個來源...', connectionError:'連線錯誤。請檢查網路後重試。', tagline:'比 Google 更快。相同結果。', resultsStats:'約{count}項結果', settingsTitle:'設定', language:'語言', darkMode:'深色模式', close:'關閉', wikipedia:'維基百科' },
+        ko: { about:'정보', images:'이미지', imageStats:'{count}개의 이미지', searchingImages:'무료 이미지 소스 검색 중…', noImagesFound:'이미지를 찾을 수 없습니다', viewSourcePage:'원본 페이지 보기', searchPlaceholder:'검색 또는 URL 입력', gatewaySearch:'Gateway 검색', feelingLucky:'행운을 빌어요', unitedKingdom:'영국', advertising:'광고', business:'비즈니스', howSearchWorks:'검색 작동 방식', history:'기록', privacy:'개인정보', terms:'약관', settings:'설정', all:'전체', showMoreResults:'더 많은 결과 보기', noResultsFound:'검색 결과가 없습니다', tryDifferentKeywords:'다른 키워드를 시도하거나 철자를 확인하세요', didYouMean:'혹시 찾으시는 것이:', quickAnswer:'빠른 답변', searchingMultipleSources:'여러 소스 검색 중...', connectionError:'연결 오류입니다. 인터넷을 확인하고 다시 시도하세요.', tagline:'Google보다 빠름. 동일한 결과.', resultsStats:'약 {count}개 결과', settingsTitle:'설정', language:'언어', darkMode:'다크 모드', close:'닫기', wikipedia:'위키백과' },
+        ar: { about:'حول', images:'صور', imageStats:'{count} صورة', searchingImages:'جارٍ البحث في مصادر صور مجانية…', noImagesFound:'لم يتم العثور على صور', viewSourcePage:'عرض صفحة المصدر', searchPlaceholder:'ابحث أو أدخل رابطاً', gatewaySearch:'بحث Gateway', feelingLucky:'أنا محظوظ', unitedKingdom:'المملكة المتحدة', advertising:'إعلانات', business:'أعمال', howSearchWorks:'كيف يعمل البحث', history:'السجل', privacy:'خصوصية', terms:'الشروط', settings:'إعدادات', all:'الكل', showMoreResults:'عرض المزيد من النتائج', noResultsFound:'لم يتم العثور على نتائج', tryDifferentKeywords:'جرّب كلمات مختلفة أو تحقق من الإملاء', didYouMean:'هل تقصد:', quickAnswer:'إجابة سريعة', searchingMultipleSources:'جاري البحث في مصادر متعددة...', connectionError:'خطأ في الاتصال. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.', tagline:'أسرع من Google. نفس النتائج.', resultsStats:'حوالي {count} نتيجة', settingsTitle:'الإعدادات', language:'اللغة', darkMode:'الوضع الداكن', close:'إغلاق', wikipedia:'ويكيبيديا' },
+        hi: { about:'बारे में', images:'चित्र', imageStats:'{count} चित्र', searchingImages:'मुफ़्त चित्र स्रोतों में खोज रहे हैं…', noImagesFound:'कोई चित्र नहीं मिला', viewSourcePage:'स्रोत पृष्ठ देखें', searchPlaceholder:'खोजें या URL टाइप करें', gatewaySearch:'Gateway खोज', feelingLucky:'मैं भाग्यशाली हूँ', unitedKingdom:'यूनाइटेड किंगडम', advertising:'विज्ञापन', business:'व्यवसाय', howSearchWorks:'खोज कैसे काम करती है', history:'इतिहास', privacy:'गोपनीयता', terms:'शर्तें', settings:'सेटिंग्स', all:'सभी', showMoreResults:'और परिणाम दिखाएँ', noResultsFound:'कोई परिणाम नहीं मिला', tryDifferentKeywords:'अलग कीवर्ड आज़माएँ या वर्तनी जाँचें', didYouMean:'क्या आप यह कहना चाह रहे थे:', quickAnswer:'त्वरित उत्तर', searchingMultipleSources:'कई स्रोतों में खोज रहे हैं...', connectionError:'कनेक्शन त्रुटि। कृपया अपना इंटरनेट जाँचें और पुनः प्रयास करें।', tagline:'Google से तेज़। वही परिणाम।', resultsStats:'लगभग {count} परिणाम', settingsTitle:'सेटिंग्स', language:'भाषा', darkMode:'डार्क मोड', close:'बंद करें', wikipedia:'विकिपीडिया' },
+        bn: { about:'সম্পর্কে', images:'ছবি', imageStats:'{count}টি ছবি', searchingImages:'বিনামূল্যের ছবির উৎসে খোঁজা হচ্ছে…', noImagesFound:'কোনো ছবি পাওয়া যায়নি', viewSourcePage:'উৎস পাতা দেখুন', searchPlaceholder:'অনুসন্ধান বা URL লিখুন', gatewaySearch:'Gateway অনুসন্ধান', feelingLucky:'আমি ভাগ্যবান', unitedKingdom:'যুক্তরাজ্য', advertising:'বিজ্ঞাপন', business:'ব্যবসা', howSearchWorks:'কিভাবে অনুসন্ধান কাজ করে', history:'ইতিহাস', privacy:'গোপনীয়তা', terms:'শর্তাবলী', settings:'সেটিংস', all:'সব', showMoreResults:'আরও ফলাফল দেখান', noResultsFound:'কোনো ফলাফল পাওয়া যায়নি', tryDifferentKeywords:'ভিন্ন শব্দ ব্যবহার করুন বা বানান পরীক্ষা করুন', didYouMean:'আপনি কি বোঝাতে চেয়েছেন:', quickAnswer:'দ্রুত উত্তর', searchingMultipleSources:'একাধিক উৎসে অনুসন্ধান করা হচ্ছে...', connectionError:'সংযোগ ত্রুটি। আপনার ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।', tagline:'Google-এর চেয়ে দ্রুত। একই ফলাফল।', resultsStats:'প্রায় {count}টি ফলাফল', settingsTitle:'সেটিংস', language:'ভাষা', darkMode:'ডার্ক মোড', close:'বন্ধ করুন', wikipedia:'উইকিপিডিয়া' },
+        tr: { about:'Hakkında', images:'Görseller', imageStats:'{count} görsel', searchingImages:'Ücretsiz görsel kaynaklarında aranıyor…', noImagesFound:'Görsel bulunamadı', viewSourcePage:'Kaynak sayfayı görüntüle', searchPlaceholder:'Ara veya bir URL girin', gatewaySearch:'Gateway Arama', feelingLucky:'Şanslıyım', unitedKingdom:'Birleşik Krallık', advertising:'Reklam', business:'İşletme', howSearchWorks:'Arama nasıl çalışır', history:'Geçmiş', privacy:'Gizlilik', terms:'Şartlar', settings:'Ayarlar', all:'Tümü', showMoreResults:'Daha fazla sonuç göster', noResultsFound:'Sonuç bulunamadı', tryDifferentKeywords:'Farklı anahtar kelimeler deneyin veya yazımı kontrol edin', didYouMean:'Bunu mu demek istediniz:', quickAnswer:'Hızlı Cevap', searchingMultipleSources:'Birden çok kaynak taranıyor...', connectionError:'Bağlantı hatası. Lütfen internetinizi kontrol edip tekrar deneyin.', tagline:'Google\'dan daha hızlı. Aynı sonuçlar.', resultsStats:'Yaklaşık {count} sonuç', settingsTitle:'Ayarlar', language:'Dil', darkMode:'Karanlık mod', close:'Kapat', wikipedia:'Vikipedi' },
+        nl: { about:'Over ons', images:'Afbeeldingen', imageStats:'{count} afbeeldingen', searchingImages:'Zoeken in gratis afbeeldingsbronnen…', noImagesFound:'Geen afbeeldingen gevonden', viewSourcePage:'Bronpagina bekijken', searchPlaceholder:'Zoek of typ een URL', gatewaySearch:'Gateway Zoeken', feelingLucky:'Gelukzoeker', unitedKingdom:'Verenigd Koninkrijk', advertising:'Adverteren', business:'Zakelijk', howSearchWorks:'Hoe zoeken werkt', history:'Geschiedenis', privacy:'Privacy', terms:'Voorwaarden', settings:'Instellingen', all:'Alles', showMoreResults:'Meer resultaten', noResultsFound:'Geen resultaten gevonden', tryDifferentKeywords:'Probeer andere zoekwoorden of controleer de spelling', didYouMean:'Bedoelde u:', quickAnswer:'Snel antwoord', searchingMultipleSources:'Meerdere bronnen doorzoeken...', connectionError:'Verbindingsfout. Controleer uw internet en probeer het opnieuw.', tagline:'Sneller dan Google. Zelfde resultaten.', resultsStats:'Ongeveer {count} resultaten', settingsTitle:'Instellingen', language:'Taal', darkMode:'Donkere modus', close:'Sluiten', wikipedia:'Wikipedia' },
+        pl: { about:'O nas', images:'Obrazy', imageStats:'{count} obrazów', searchingImages:'Przeszukiwanie darmowych źródeł obrazów…', noImagesFound:'Nie znaleziono obrazów', viewSourcePage:'Zobacz stronę źródłową', searchPlaceholder:'Szukaj lub wpisz URL', gatewaySearch:'Szukaj w Gateway', feelingLucky:'Szczęściarz', unitedKingdom:'Wielka Brytania', advertising:'Reklama', business:'Firmy', howSearchWorks:'Jak działa wyszukiwanie', history:'Historia', privacy:'Prywatność', terms:'Warunki', settings:'Ustawienia', all:'Wszystkie', showMoreResults:'Pokaż więcej wyników', noResultsFound:'Brak wyników', tryDifferentKeywords:'Spróbuj innych słów kluczowych lub sprawdź pisownię', didYouMean:'Czy chodziło Ci o:', quickAnswer:'Szybka odpowiedź', searchingMultipleSources:'Przeszukiwanie wielu źródeł...', connectionError:'Błąd połączenia. Sprawdź internet i spróbuj ponownie.', tagline:'Szybsze niż Google. Te same wyniki.', resultsStats:'Około {count} wyników', settingsTitle:'Ustawienia', language:'Język', darkMode:'Tryb ciemny', close:'Zamknij', wikipedia:'Wikipedia' },
+        sv: { about:'Om', images:'Bilder', imageStats:'{count} bilder', searchingImages:'Söker i fria bildkällor…', noImagesFound:'Inga bilder hittades', viewSourcePage:'Visa källsidan', searchPlaceholder:'Sök eller skriv en URL', gatewaySearch:'Gateway-sökning', feelingLucky:'Jag känner mig turlig', unitedKingdom:'Storbritannien', advertising:'Annonsering', business:'Företag', howSearchWorks:'Så fungerar sökning', history:'Historik', privacy:'Integritet', terms:'Villkor', settings:'Inställningar', all:'Alla', showMoreResults:'Visa fler resultat', noResultsFound:'Inga resultat hittades', tryDifferentKeywords:'Prova andra sökord eller kontrollera stavningen', didYouMean:'Menade du:', quickAnswer:'Snabbt svar', searchingMultipleSources:'Söker i flera källor...', connectionError:'Anslutningsfel. Kontrollera din internetanslutning och försök igen.', tagline:'Snabbare än Google. Samma resultat.', resultsStats:'Ungefär {count} resultat', settingsTitle:'Inställningar', language:'Språk', darkMode:'Mörkt läge', close:'Stäng', wikipedia:'Wikipedia' },
+        da: { about:'Om', images:'Billeder', imageStats:'{count} billeder', searchingImages:'Søger i gratis billedkilder…', noImagesFound:'Ingen billeder fundet', viewSourcePage:'Se kildesiden', searchPlaceholder:'Søg eller indtast en URL', gatewaySearch:'Gateway-søgning', feelingLucky:'Jeg er heldig', unitedKingdom:'Storbritannien', advertising:'Annoncering', business:'Virksomhed', howSearchWorks:'Sådan fungerer søgning', history:'Historik', privacy:'Privatliv', terms:'Vilkår', settings:'Indstillinger', all:'Alle', showMoreResults:'Vis flere resultater', noResultsFound:'Ingen resultater fundet', tryDifferentKeywords:'Prøv andre søgeord eller tjek stavningen', didYouMean:'Mente du:', quickAnswer:'Hurtigt svar', searchingMultipleSources:'Søger i flere kilder...', connectionError:'Forbindelsesfejl. Tjek din internetforbindelse og prøv igen.', tagline:'Hurtigere end Google. Samme resultater.', resultsStats:'Ca. {count} resultater', settingsTitle:'Indstillinger', language:'Sprog', darkMode:'Mørk tilstand', close:'Luk', wikipedia:'Wikipedia' },
+        fi: { about:'Tietoja', images:'Kuvat', imageStats:'{count} kuvaa', searchingImages:'Haetaan vapaista kuvilähteistä…', noImagesFound:'Kuvia ei löytynyt', viewSourcePage:'Näytä lähdesivu', searchPlaceholder:'Hae tai kirjoita URL', gatewaySearch:'Gateway-haku', feelingLucky:'Minulla on tuuria', unitedKingdom:'Yhdistynyt kuningaskunta', advertising:'Mainonta', business:'Yritykset', howSearchWorks:'Näin haku toimii', history:'Historia', privacy:'Yksityisyys', terms:'Ehdot', settings:'Asetukset', all:'Kaikki', showMoreResults:'Näytä lisää tuloksia', noResultsFound:'Ei tuloksia', tryDifferentKeywords:'Kokeile eri hakusanoja tai tarkista oikeinkirjoitus', didYouMean:'Tarkoititko:', quickAnswer:'Pikavastaus', searchingMultipleSources:'Haetaan useista lähteistä...', connectionError:'Yhteysvirhe. Tarkista internetyhteys ja yritä uudelleen.', tagline:'Nopeampi kuin Google. Samat tulokset.', resultsStats:'Noin {count} tulosta', settingsTitle:'Asetukset', language:'Kieli', darkMode:'Tumma tila', close:'Sulje', wikipedia:'Wikipedia' },
+        no: { about:'Om', images:'Bilder', imageStats:'{count} bilder', searchingImages:'Søker i gratis bildekilder…', noImagesFound:'Ingen bilder funnet', viewSourcePage:'Vis kildesiden', searchPlaceholder:'Søk eller skriv inn URL', gatewaySearch:'Gateway-søk', feelingLucky:'Jeg er heldig', unitedKingdom:'Storbritannia', advertising:'Annonsering', business:'Bedrifter', howSearchWorks:'Slik fungerer søk', history:'Historikk', privacy:'Personvern', terms:'Vilkår', settings:'Innstillinger', all:'Alle', showMoreResults:'Vis flere resultater', noResultsFound:'Ingen resultater funnet', tryDifferentKeywords:'Prøv andre søkeord eller sjekk stavemåten', didYouMean:'Mente du:', quickAnswer:'Hurtig svar', searchingMultipleSources:'Søker i flere kilder...', connectionError:'Tilkoblingsfeil. Sjekk internettilkoblingen og prøv igjen.', tagline:'Raskere enn Google. Samme resultater.', resultsStats:'Omtrent {count} resultater', settingsTitle:'Innstillinger', language:'Språk', darkMode:'Mørk modus', close:'Lukk', wikipedia:'Wikipedia' },
+        cs: { about:'O nás', images:'Obrázky', imageStats:'{count} obrázků', searchingImages:'Hledáme ve volných zdrojích obrázků…', noImagesFound:'Nebyly nalezeny žádné obrázky', viewSourcePage:'Zobrazit zdrojovou stránku', searchPlaceholder:'Hledat nebo zadat URL', gatewaySearch:'Hledat Gateway', feelingLucky:'Chci mít štěstí', unitedKingdom:'Spojené království', advertising:'Reklama', business:'Firmy', howSearchWorks:'Jak vyhledávání funguje', history:'Historie', privacy:'Soukromí', terms:'Smluvní podmínky', settings:'Nastavení', all:'Vše', showMoreResults:'Zobrazit více výsledků', noResultsFound:'Nebyly nalezeny žádné výsledky', tryDifferentKeywords:'Zkuste jiná klíčová slova nebo zkontrolujte pravopis', didYouMean:'Mysleli jste:', quickAnswer:'Rychlá odpověď', searchingMultipleSources:'Vyhledávání ve více zdrojích...', connectionError:'Chyba připojení. Zkontrolujte připojení k internetu a zkuste to znovu.', tagline:'Rychlejší než Google. Stejné výsledky.', resultsStats:'Přibližně {count} výsledků', settingsTitle:'Nastavení', language:'Jazyk', darkMode:'Tmavý režim', close:'Zavřít', wikipedia:'Wikipedie' },
+        ro: { about:'Despre', images:'Imagini', imageStats:'{count} imagini', searchingImages:'Se caută în surse gratuite de imagini…', noImagesFound:'Nu s-au găsit imagini', viewSourcePage:'Vezi pagina sursă', searchPlaceholder:'Caută sau introdu un URL', gatewaySearch:'Căutare Gateway', feelingLucky:'Norocos', unitedKingdom:'Regatul Unit', advertising:'Publicitate', business:'Afaceri', howSearchWorks:'Cum funcționează Căutarea', history:'Istoric', privacy:'Confidențialitate', terms:'Termeni', settings:'Setări', all:'Toate', showMoreResults:'Arată mai multe rezultate', noResultsFound:'Nu s-au găsit rezultate', tryDifferentKeywords:'Încercați alte cuvinte cheie sau verificați ortografia', didYouMean:'Poate ați vrut să spuneți:', quickAnswer:'Răspuns rapid', searchingMultipleSources:'Se caută în mai multe surse...', connectionError:'Eroare de conexiune. Verificați internetul și încercați din nou.', tagline:'Mai rapid decât Google. Aceleași rezultate.', resultsStats:'Aproximativ {count} rezultate', settingsTitle:'Setări', language:'Limbă', darkMode:'Mod întunecat', close:'Închide', wikipedia:'Wikipedia' },
+        hu: { about:'Névjegy', images:'Képek', imageStats:'{count} kép', searchingImages:'Kép keresése ingyenes forrásokban…', noImagesFound:'Nem található kép', viewSourcePage:'Forrásoldal megtekintése', searchPlaceholder:'Keresés vagy URL megadása', gatewaySearch:'Gateway-keresés', feelingLucky:'Szerencsém van', unitedKingdom:'Egyesült Királyság', advertising:'Hirdetés', business:'Vállalkozások', howSearchWorks:'Hogyan működik a keresés', history:'Előzmények', privacy:'Adatvédelem', terms:'Feltételek', settings:'Beállítások', all:'Összes', showMoreResults:'Több találat mutatása', noResultsFound:'Nincs találat', tryDifferentKeywords:'Próbáljon más kulcsszavakat vagy ellenőrizze a helyesírást', didYouMean:'Esetleg erre gondolt:', quickAnswer:'Gyors válasz', searchingMultipleSources:'Keresés több forrásban...', connectionError:'Kapcsolódási hiba. Ellenőrizze az internetkapcsolatot és próbálja újra.', tagline:'Gyorsabb, mint a Google. Ugyanazok az eredmények.', resultsStats:'Kb. {count} találat', settingsTitle:'Beállítások', language:'Nyelv', darkMode:'Sötét mód', close:'Bezár', wikipedia:'Wikipédia' },
+        el: { about:'Σχετικά', images:'Εικόνες', imageStats:'{count} εικόνες', searchingImages:'Αναζήτηση σε δωρεάν πηγές εικόνων…', noImagesFound:'Δεν βρέθηκαν εικόνες', viewSourcePage:'Προβολή σελίδας προέλευσης', searchPlaceholder:'Αναζήτηση ή εισαγωγή URL', gatewaySearch:'Αναζήτηση Gateway', feelingLucky:'Τυχερός', unitedKingdom:'Ηνωμένο Βασίλειο', advertising:'Διαφήμιση', business:'Επιχειρήσεις', howSearchWorks:'Πώς λειτουργεί η Αναζήτηση', history:'Ιστορικό', privacy:'Απόρρητο', terms:'Όροι', settings:'Ρυθμίσεις', all:'Όλα', showMoreResults:'Εμφάνιση περισσότερων αποτελεσμάτων', noResultsFound:'Δεν βρέθηκαν αποτελέσματα', tryDifferentKeywords:'Δοκιμάστε διαφορετικές λέξεις-κλειδιά ή ελέγξτε την ορθογραφία', didYouMean:'Μήπως εννοείτε:', quickAnswer:'Γρήγορη απάντηση', searchingMultipleSources:'Αναζήτηση σε πολλαπλές πηγές...', connectionError:'Σφάλμα σύνδεσης. Ελέγξτε το διαδίκτυο και δοκιμάστε ξανά.', tagline:'Ταχύτερο από το Google. Ίδια αποτελέσματα.', resultsStats:'Περίπου {count} αποτελέσματα', settingsTitle:'Ρυθμίσεις', language:'Γλώσσα', darkMode:'Σκοτεινή λειτουργία', close:'Κλείσιμο', wikipedia:'Βικιπαίδεια' }
     };
 
     // These labels are shared by the search UI and were added after the
@@ -736,6 +736,7 @@
         spellSuggestion = null;
         quickWikiResult = null;
         window._gwSearchMs = null;
+        activeTab = 'all';
 
         if ($('mainSearchInput')) $('mainSearchInput').value = q;
         if ($('resultsSearchInput')) $('resultsSearchInput').value = q;
@@ -747,6 +748,11 @@
 
         if ($('homeUI')) $('homeUI').style.display = 'none';
         if ($('resultsUI')) $('resultsUI').classList.add('visible');
+
+        // A new query invalidates any images already on screen, and the tab
+        // returns to All exactly as it did before the Images tab existed.
+        _resetImages();
+        _applyTabState();
 
         if ($('didYouMean')) $('didYouMean').innerHTML = '';
         if ($('emptyState')) $('emptyState').style.display = 'none';
@@ -821,14 +827,24 @@
                     // Keep the stored history count in step with what the user
                     // is now looking at (same entry, not a new one).
                     _updateSearchHistoryCount(q, allResults.length);
-                    // Preserve already-rendered items; only extend on "show more".
-                    if ($('resultStats')) {
-                        const secs = window._gwSearchMs != null ? (window._gwSearchMs / 1000).toFixed(2) : null;
-                        $('resultStats').textContent = _t('resultsStats', { count: allResults.length })
-                            + (secs != null ? ` (${secs} seconds)` : '');
+                    // Nothing has been painted yet when the local index was cold
+                    // or slow: the first paint ran against an empty list, so the
+                    // crawled hits are all the user has. Render the first page
+                    // now instead of leaving a counter, a "Show more results"
+                    // button and an empty page until they click it.
+                    if (window._gwLoaded === 0) {
+                        window._gwLoaded = 0;
+                        window._gwRender();
+                    } else {
+                        // Preserve already-rendered items; only extend on "show more".
+                        if ($('resultStats')) {
+                            const secs = window._gwSearchMs != null ? (window._gwSearchMs / 1000).toFixed(2) : null;
+                            $('resultStats').textContent = _t('resultsStats', { count: allResults.length })
+                                + (secs != null ? ` (${secs} seconds)` : '');
+                        }
+                        // Reveal "Show more results" now that there is more to show.
+                        _updateLoadMoreButton();
                     }
-                    // Reveal "Show more results" now that there is more to show.
-                    _updateLoadMoreButton();
                 }
             }).catch(() => {});
         }
@@ -877,6 +893,244 @@
         return true;
     }
     window.performSearch = performSearch;
+
+    // ======================== IMAGES TAB ========================
+    // Tab switching never re-runs the query. Images for the current query are
+    // fetched at most once (crawl.js caches per language + query) and the
+    // rendered tiles are kept, so returning to the Images tab is instant and
+    // switching back to All costs nothing.
+
+    const IMAGE_PAGE = 24;                 // tiles appended per "show more"
+    let activeTab = 'all';
+    let imageResults = null;               // null = not fetched yet
+    let imageLoaded = 0;
+    let imageRequestId = 0;
+    let lightboxIndex = -1;
+
+    window.selectSearchTab = function(tab) {
+        const next = tab === 'images' ? 'images' : 'all';
+        if (next === activeTab) return;
+        activeTab = next;
+        _applyTabState();
+        if (activeTab === 'images') loadImages();
+        else window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    function _applyTabState() {
+        const isImages = activeTab === 'images';
+        const all = $('tabPanelAll');
+        const images = $('tabPanelImages');
+        const tabAll = $('tabAll');
+        const tabImages = $('tabImages');
+        if (all) all.hidden = isImages;
+        if (images) images.hidden = !isImages;
+        if (tabAll) {
+            tabAll.classList.toggle('is-active', !isImages);
+            tabAll.setAttribute('aria-selected', String(!isImages));
+        }
+        if (tabImages) {
+            tabImages.classList.toggle('is-active', isImages);
+            tabImages.setAttribute('aria-selected', String(isImages));
+        }
+    }
+
+    // Reset per-query image state. Called from performSearch so a new query
+    // never shows the previous query's images.
+    function _resetImages() {
+        imageResults = null;
+        imageLoaded = 0;
+        imageRequestId++;
+        lightboxIndex = -1;
+        _closeLightbox();
+        const grid = $('imageGrid');
+        if (grid) grid.innerHTML = '';
+        const empty = $('imageEmpty');
+        if (empty) empty.style.display = 'none';
+        const stats = $('imageStats');
+        if (stats) stats.textContent = '';
+        const more = $('imageLoadMoreArea');
+        if (more) more.style.display = 'none';
+    }
+
+    function _imageTileHtml(item, index) {
+        const thumb = _escapeHtml(item.thumbUrl || item.imageUrl);
+        const full = _escapeHtml(item.imageUrl || item.thumbUrl);
+        const title = _escapeHtml(item.title || '');
+        // Sources that report a true aspect ratio get a pre-sized box, which
+        // keeps the grid stable while the thumbnails stream in. Wikipedia
+        // page images report no height, so those tiles start transparent and
+        // are revealed once the real image has loaded.
+        const ratio = item.hasRatio && item.width && item.height
+            ? ' style="aspect-ratio:' + (item.width / item.height).toFixed(4) + ';height:auto"'
+            : '';
+        const pending = ratio ? '' : ' ratio-pending';
+        return '<button class="image-tile" type="button" data-index="' + index + '"'
+            + ' onclick="openLightbox(' + index + ')" title="' + title + '"' + ratio + '>'
+            + '<span class="image-tile-media"><img class="img-tile-img' + pending + '"'
+            + ' src="' + thumb + '" alt="' + title + '" loading="lazy" decoding="async"'
+            + ' onload="this.classList.remove(\'ratio-pending\')"'
+            + ' onerror="var p=this.closest(\'.image-tile\');if(p)p.remove();" />'
+            + '<span class="image-tile-caption">'
+            + '<span class="image-tile-title">' + title + '</span>'
+            + '<span class="image-tile-source">' + _escapeHtml(item.sourceLabel || '') + '</span>'
+            + '</span></span></button>';
+    }
+
+    function _updateImageLoadMore() {
+        const more = $('imageLoadMoreArea');
+        if (!more) return;
+        more.style.display = (imageResults && imageLoaded < imageResults.length) ? 'flex' : 'none';
+    }
+
+    function _renderImageStats() {
+        const stats = $('imageStats');
+        if (!stats) return;
+        if (!imageResults || !imageResults.length) { stats.textContent = ''; return; }
+        stats.textContent = _t('imageStats', { count: imageResults.length });
+    }
+
+    function _appendImages(from, to) {
+        const grid = $('imageGrid');
+        if (!grid || !imageResults) return;
+        const slice = imageResults.slice(from, to);
+        if (!slice.length) return;
+        grid.insertAdjacentHTML('beforeend',
+            slice.map((item, i) => _imageTileHtml(item, from + i)).join(''));
+    }
+
+    async function loadImages() {
+        if (typeof window.gatewayImages !== 'function' || !lastQuery) return;
+        const requestId = ++imageRequestId;
+
+        if (imageResults) { _updateImageLoadMore(); return; }   // already fetched
+
+        const grid = $('imageGrid');
+        const empty = $('imageEmpty');
+        if (empty) empty.style.display = 'none';
+        if (grid) {
+            grid.innerHTML = '<div class="loading-state">'
+                + '<div class="spinner"></div>'
+                + '<p>' + _escapeHtml(_t('searchingImages')) + '</p></div>';
+        }
+        const stats = $('imageStats');
+        if (stats) stats.textContent = '';
+
+        try {
+            const results = await window.gatewayImages(lastQuery, { target: 96 });
+            // Guard against a stale response (new query, closed tab, language
+            // switch) landing in the grid.
+            if (requestId !== imageRequestId || activeTab !== 'images') return;
+            imageResults = Array.isArray(results) ? results : [];
+            imageLoaded = 0;
+            if (grid) grid.innerHTML = '';
+            if (!imageResults.length) {
+                if (empty) empty.style.display = '';
+                if (grid) grid.innerHTML = '';
+                _renderImageStats();
+                _updateImageLoadMore();
+                return;
+            }
+            const end = Math.min(IMAGE_PAGE, imageResults.length);
+            _appendImages(0, end);
+            imageLoaded = end;
+            _renderImageStats();
+            _updateImageLoadMore();
+        } catch(_) {
+            if (requestId !== imageRequestId) return;
+            if (grid) grid.innerHTML = '';
+            if (empty) empty.style.display = '';
+        }
+    }
+    window.loadMoreImages = function() {
+        if (!imageResults) return;
+        const end = Math.min(imageLoaded + IMAGE_PAGE, imageResults.length);
+        _appendImages(imageLoaded, end);
+        imageLoaded = end;
+        _updateImageLoadMore();
+    };
+
+    // ---- Lightbox ----
+
+    function openLightbox(index) {
+        if (!imageResults || !imageResults[index]) return;
+        lightboxIndex = index;
+        _paintLightbox();
+        const box = $('imageLightbox');
+        if (box) {
+            // Reserve the right half before unhiding, so the results reflow out
+            // from under the pane instead of being covered by it.
+            document.body.classList.add('preview-open');
+            box.hidden = false;
+            const close = box.querySelector('.lightbox-close');
+            if (close) close.focus();
+            // The grid narrows when the pane opens, so the selected tile can move
+            // out of view; bring it back after the reflow settles.
+            const tile = document.querySelector('.image-tile[data-index="' + index + '"]');
+            if (tile && tile.scrollIntoView) {
+                tile.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+        document.addEventListener('keydown', _lightboxKeydown, true);
+    }
+    window.openLightbox = openLightbox;
+
+    function _paintLightbox() {
+        const item = imageResults[lightboxIndex];
+        if (!item) return;
+        const img = $('lightboxImage');
+        const title = $('lightboxTitle');
+        const open = $('lightboxOpen');
+        const source = $('lightboxSource');
+        const licence = $('lightboxLicense');
+        const pageUrl = _safeHref(item.pageUrl) || '#';
+        if (img) {
+            img.src = item.imageUrl || item.thumbUrl || '';
+            img.alt = item.title || '';
+        }
+        if (title) { title.textContent = item.title || ''; title.href = pageUrl; }
+        if (open) open.href = pageUrl;
+        if (source) source.textContent = item.sourceLabel || '';
+        // Attribution matters here: these are openly-licensed images, so the
+        // licence and author are shown rather than buried.
+        const parts = [];
+        if (item.license) parts.push(item.license);
+        if (item.author) parts.push(item.author);
+        if (licence) licence.textContent = parts.join(' · ');
+    }
+
+    function stepLightbox(delta) {
+        if (!imageResults || !imageResults.length) return;
+        const next = (lightboxIndex + delta + imageResults.length) % imageResults.length;
+        lightboxIndex = next;
+        _paintLightbox();
+    }
+    window.stepLightbox = stepLightbox;
+
+    function _closeLightbox() {
+        const box = $('imageLightbox');
+        if (box) box.hidden = true;
+        // Hand the reserved right half back to the results column.
+        document.body.classList.remove('preview-open');
+        const img = $('lightboxImage');
+        // Release the decoded full-size bitmap rather than leaving the last
+        // large image resident in memory while the grid is scrolled.
+        if (img) img.removeAttribute('src');
+        lightboxIndex = -1;
+        document.removeEventListener('keydown', _lightboxKeydown, true);
+    }
+    window.closeLightbox = function(e) {
+        // The preview is a docked pane, not a modal overlay, so clicking it does
+        // not dismiss it: only the close button and Escape do. Without this a
+        // click on the image itself would close the pane it was just opened in.
+        if (e && e.target && e.target.closest
+            && e.target.closest('.lightbox-close, .lightbox-nav')) return;
+        _closeLightbox();
+    };
+    function _lightboxKeydown(e) {
+        if (e.key === 'Escape') { _closeLightbox(); return; }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); stepLightbox(-1); return; }
+        if (e.key === 'ArrowRight') { e.preventDefault(); stepLightbox(1); }
+    }
 
     // ======================== RENDER ========================
 
@@ -1160,6 +1414,9 @@
             if ($('settingsOverlay') && $('settingsOverlay').classList.contains('show')) {
                 closeSettings(); return;
             }
+            // The lightbox owns Escape while it is open; its own listener has
+            // already closed it, so do not also blur the search field.
+            if ($('imageLightbox') && !$('imageLightbox').hidden) return;
             if ($('resultsUI') && $('resultsUI').classList.contains('visible')) {
                 if ($('resultsSearchInput')) $('resultsSearchInput').focus();
             } else {

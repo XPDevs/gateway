@@ -1,6 +1,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
+    /* Width of the docked image preview. Both the pane and the space the
+       results column gives up read this, so they stay in lockstep. */
+    --preview-width: 50%;
     --bg: #ffffff;
     --text: #1f1f1f;
     --text-secondary: #70757a;
@@ -495,6 +498,18 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
 }
 #resultsUI.visible { display: flex; }
 
+/* When the preview pane is open it reserves the right half of the viewport.
+   The results column shrinks by the same amount instead of sliding underneath
+   the pane, so no image or result is ever covered. Both sides read the same
+   custom property so the pane edge and the reflow line cannot drift apart. */
+body.preview-open #resultsUI {
+    padding-right: var(--preview-width, 50%);
+    transition: padding-right 180ms ease;
+}
+#resultsUI {
+    transition: padding-right 180ms ease;
+}
+
 .results-header {
     position: sticky;
     top: 0;
@@ -550,10 +565,317 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
     flex-shrink: 0;
 }
 
+/* ---- Search Tabs ---- */
+/* Fixed, pre-sized pill. The hover state changes colour only, so moving the
+   pointer across a tab never resizes or re-positions it. */
+.search-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+    /* Long translations must be able to scroll rather than squash the tabs or
+       push the border wider than the page. */
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.search-tabs::-webkit-scrollbar { display: none; }
+.search-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    height: 36px;
+    padding: 0 16px;
+    margin-bottom: -1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 8px 8px 0 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    /* `border-bottom-color` is included so the active underline can fade
+       without the element's box ever changing height. */
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.search-tab-icon { font-size: 11px; line-height: 1; }
+.search-tab:hover {
+    background-color: var(--input-bg);
+    color: var(--text);
+}
+.search-tab.is-active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+.search-tab:focus-visible {
+    outline: 2px solid var(--text-secondary);
+    outline-offset: -2px;
+}
+.tab-panel[hidden] { display: none; }
+
+/* ---- Images Tab ---- */
+/* Justified rows via flex: each tile is sized by its own aspect ratio, so the
+   grid is as dense as Google Images without a fixed column count. */
+.image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    /* No negative side margin here: the results column already has padding, and
+       pulling the grid past it made the document wider than the viewport, which
+       showed up as a stray horizontal scrollbar on every screen size. */
+    margin: 0;
+    /* Tiles carry their own inline aspect-ratio, which would otherwise let a
+       tall portrait image push the row taller than the results column allows. */
+    align-items: flex-start;
+}
+.image-tile {
+    position: relative;
+    display: block;
+    flex: 1 1 200px;
+    min-width: 0;
+    max-width: 240px;
+    height: 170px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--input-bg);
+    cursor: pointer;
+    /* No transition at all on the tile: the caption is a child that is always
+       present, and only its opacity animates on hover. */
+}
+.image-tile-media {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+.image-tile-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.image-tile-media img.ratio-pending { opacity: 0; }
+.image-tile-caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 20px 8px 7px;
+    text-align: left;
+    color: #ffffff;
+    background: linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0));
+    /* Opacity only: the caption is always laid out, so revealing it cannot
+       move the image or reflow the grid. */
+    opacity: 0;
+    transition: opacity .15s ease;
+    pointer-events: none;
+}
+.image-tile:hover .image-tile-caption,
+.image-tile:focus-visible .image-tile-caption { opacity: 1; }
+.image-tile:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.image-tile-title {
+    font-size: 12px;
+    line-height: 1.3;
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.image-tile-source {
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.image-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 16px;
+    color: var(--text-secondary);
+}
+.image-empty svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    opacity: 0.4;
+}
+.image-empty p { margin: 4px 0; }
+.image-empty .title { font-size: 16px; }
+.image-empty .sub { font-size: 13px; }
+
+/* ---- Touch devices ----
+   A tile caption is revealed on hover, which never happens on touch, so it has
+   to be visible by default or the source and licence are unreachable there. */
+@media (hover: none) {
+    .image-tile-caption { opacity: 1; }
+}
+/* Respect the OS "reduce motion" setting for the two animated surfaces: the
+   preview slide-in and the results reflow. */
+@media (prefers-reduced-motion: reduce) {
+    .lightbox { animation: none; }
+    body.preview-open #resultsUI,
+    #resultsUI { transition: none; }
+    .image-tile-caption,
+    .search-tab { transition: none; }
+}
+
+/* ---- Image Preview Pane ----
+   The preview docks to the right half of the viewport and the results keep
+   scrolling on the left, so choosing an image never hides the list it came
+   from. The left half is not covered by a scrim, so the page underneath
+   stays visible and interactive. */
+.lightbox {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--preview-width, 50%);
+    min-width: 320px;
+    max-width: 100%;
+    z-index: 20000;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg);
+    border-left: 1px solid var(--border, rgba(0,0,0,0.12));
+    box-shadow: -8px 0 28px rgba(0,0,0,0.18);
+    animation: previewIn 160ms ease-out;
+}
+.lightbox[hidden] { display: none; }
+@keyframes previewIn {
+    from { transform: translateX(24px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+/* The figure owns the flexible space; the image shrinks to fit inside it
+   rather than the pane growing past the viewport. */
+.lightbox-figure {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 12px;
+    margin: 0;
+    padding: 52px 20px 12px;
+}
+.lightbox-image {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+    background: var(--input-bg);
+}
+.lightbox-caption {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px 20px 20px;
+    border-top: 1px solid var(--border, rgba(0,0,0,0.12));
+    color: var(--text, #202124);
+    text-align: left;
+}
+.lightbox-title {
+    color: var(--text, #202124);
+    font-size: 15px;
+    text-decoration: none;
+}
+.lightbox-title:hover { text-decoration: underline; }
+.lightbox-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary, #5f6368);
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+.lightbox-source, .lightbox-license { white-space: nowrap; }
+.lightbox-open {
+    font-size: 12px;
+    color: var(--link, #1a0dab);
+    text-decoration: none;
+}
+.lightbox-open:hover { text-decoration: underline; }
+.lightbox-close,
+.lightbox-nav {
+    position: absolute;
+    z-index: 1;
+    color: inherit;
+    background: transparent;
+}
+.lightbox-close:hover,
+.lightbox-nav:hover { background: rgba(127,127,127,0.16); }
+.lightbox-close {
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+}
+.lightbox-close > svg,
+.lightbox-nav > svg {
+    position: static;
+    inset: auto;
+    margin: auto;
+}
+.lightbox-nav {
+    top: 50%;
+    margin-top: -22px;
+    width: 44px;
+    height: 44px;
+    color: var(--text, #202124);
+}
+.lightbox-prev { left: 12px; }
+.lightbox-next { right: 12px; }
+
+/* Below this width a 50/50 split leaves the image too small to judge, so the
+   preview takes the whole screen and behaves like a normal overlay again. */
+/* A tablet held upright cannot spare half its width for the preview and still
+   show the grid the image was picked from, so below 1024px the preview goes
+   full-screen and overlays instead of splitting. The results keep the whole
+   viewport rather than being squeezed to nothing. */
+@media (max-width: 1024px) {
+    :root { --preview-width: 100%; }
+    .lightbox {
+        /* Left-anchored and full-bleed rather than right-anchored at 100%: a
+           vertical scrollbar makes a 100%-wide right-anchored box overhang the
+           viewport and produce a horizontal scrollbar. */
+        left: 0;
+        right: 0;
+        width: auto;
+        max-width: none;
+        min-width: 0;
+        border-left: 0;
+        box-shadow: none;
+    }
+    body.preview-open #resultsUI { padding-right: 0; }
+}
+
 /* ---- Results Content ---- */
+/* Both tabs share one measure, so the header above them never appears to
+   change width or position when the active tab changes. */
 .results-content {
     flex: 1;
-    max-width: 652px;
+    max-width: 1100px;
     width: 100%;
     margin: 0 auto;
     padding: 12px 20px 60px;
@@ -919,9 +1241,14 @@ html.dark .no-ai-badge {
 
     .results-top-bar { padding: 8px 12px; gap: 10px; }
     .results-logo { font-size: 22px; }
-    .results-search-area { width: auto; max-width: none; flex: 1; }
+    .results-search-area { width: auto; max-width: none; flex: 1; min-width: 0; }
     .results-search-area .search-bar-wrapper input { font-size: 16px; }
     .results-content { padding: 8px 12px 40px; }
+    .image-grid { gap: 8px; }
+    .image-tile { flex-basis: 150px; max-width: 100%; height: 130px; }
+    /* The docked pane keeps its own internal padding, so only the arrows move. */
+    .lightbox-prev { left: 4px; }
+    .lightbox-next { right: 4px; }
     .result-item-title { font-size: 18px; }
     .result-item-thumb { width: 80px; height: 56px; }
     .footer-country { padding: 10px 16px; font-size: 13px; }
@@ -935,6 +1262,14 @@ html.dark .no-ai-badge {
     #indexUpload { width: 100%; max-width: 100%; }
     .home-logo { font-size: 40px; }
     .search-bar-wrapper input { font-size: 16px; padding: 10px 0; }
+    .search-tab { padding: 0 12px; }
+    .image-grid { gap: 6px; }
+    .image-tile { flex-basis: 130px; height: 112px; border-radius: 8px; }
+    /* Full-screen preview on a phone: the figure owns the space, so the image
+       needs no extra max-height and is free to use all of it. */
+    .lightbox-figure { padding: 48px 8px 8px; }
+    .lightbox-caption { padding: 10px 12px 14px; }
+    .lightbox-image { border-radius: 4px; }
     .quick-wiki-teaser {
         grid-template-columns: auto 1fr;
         padding: 12px;

@@ -1512,6 +1512,292 @@
         return suggestions;
     }
 
+    // ======================== IMAGES TAB ========================
+    // Sourced from three free, openly-licensed APIs that all send
+    // `Access-Control-Allow-Origin: *` and can therefore be called straight
+    // from the browser with no key and no proxy:
+    //   1. Wikipedia page images  (the article's own lead image — the most
+    //      relevant hit for a named subject)
+    //   2. Wikimedia Commons     (freely-licensed media repository)
+    //   3. Openverse             (aggregates CC-licensed images, mostly Flickr)
+    // Every candidate is scored against the query and low scores are dropped,
+    // so the grid shows images of what was asked for rather than whatever the
+    // upstream search happened to rank first.
+
+    const IMAGE_TUNING = {
+        wikipedia: 10,   // how many lead images to request
+        commons: 40,     // Commons search cap (MediaWiki allows 500)
+        openverse: 24,   // Openverse page size (max 20 for anonymous clients)
+        target: 48,      // results we try to fill the first page with
+        minRelevance: 0.34
+    };
+
+    // Non-photographic Commons media that is technically a "bitmap" but is
+    // never what someone means by an image search: maps, diagrams, logos,
+    // audio/video, scanned documents, coats of arms.
+    const NON_PHOTO_COMMONS = [
+        /\b(?:map|maps)\s+of\b/i, /\b(?:locator|topographic|topographical)\b/i,
+        /\b(?:diagram|schematic|chart|graph|plot|blueprint)\b/i,
+        /\b(?:logo|coat\s+of\s+arms|flag|banner|emblem|heraldic|heraldry)\b/i,
+        /\b(?:icon|icons|symbol|symbols|glyph|glyphs|pictogram)\b/i,
+        /\b(?:screenshot|screen\s*shot|scan|scanned|manuscript|folio|plate)\b/i,
+        /\b(?:audio|sound|video|film|animation|animated|album\s+cover|poster|cover|stamp|banknote|coin|medal)\b/i
+    ];
+    // Wikimedia file extensions that are vector or document formats, not photos.
+    const NON_RASTER_EXT = /\.(?:svg|pdf|tif|tiff|ogg|ogv|webm|mid|djvu|xcf|indd|eps|psd|wmf|ogm|odg|xcf)\b/i;
+
+    // A human-readable label for a Commons filename:
+    // "File:Grumman_E-2C_over_Mount_Fuji_(070215).jpg" -> "Grumman E-2C over Mount Fuji".
+    function _commonsLabel(fileTitle) {
+        return String(fileTitle || '')
+            .replace(/^File:/i, '')
+            .replace(/\.[a-z0-9]{2,5}$/i, '')
+            .replace(/_/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    // Relevance of one candidate to the query, 0..1.
+    // A candidate must mention every meaningful query word before it can score
+    // highly, which is what keeps "Red Fuji" out of a "mount fuji" grid unless
+    // the word sequence is genuinely present. Word matching (not substring)
+    // avoids the "cat" vs "education" class of false positive.
+    function _imageRelevance(query, ...texts) {
+        const wanted = _unique(_normalize(query).split(/\s+/).filter(w => w.length > 1 && !STOPWORDS.has(w)));
+        if (!wanted.length) return 0;
+        const haystack = _unique(
+            _normalize(texts.filter(Boolean).join(' ')).split(/\s+/).filter(Boolean)
+        );
+        if (!haystack.length) return 0;
+        const hits = wanted.filter(w => haystack.includes(w)).length;
+        let score = hits / wanted.length;
+        // A contiguous run of the full query is a strong signal.
+        if (haystack.length >= wanted.length) {
+            const joined = haystack.join(' ');
+            if (joined.includes(wanted.join(' '))) score = Math.max(score, 0.95);
+        }
+        return score;
+    }
+
+    function _isReasonablePhoto(width, height) {
+        // Reject thumbnails, icons and extreme panoramas: they make poor tiles.
+        if (!width || !height) return true;   // unknown dimensions: allow
+        if (width < 120 || height < 90) return false;
+        const ratio = width / height;
+        return ratio > 0.25 && ratio < 4;
+    }
+
+    function _commonsIsPhoto(fileTitle) {
+        const label = _commonsLabel(fileTitle);
+        if (NON_RASTER_EXT.test(fileTitle)) return false;
+        return !NON_PHOTO_COMMONS.some(re => re.test(label));
+    }
+
+    // ---- Source 1: Wikipedia lead images (most relevant for a named subject) ----
+    async function _imageCandidatesWikipedia(query, limit) {
+        let pages = [];
+        try { pages = await _searchWikipedia(query, 12); }
+        catch(_) { return []; }
+
+        return pages.map(page => {
+            const image = page.originalImage || page.thumbnail || null;
+            if (!image) return null;
+            const title = page.title || '';
+            // Only keep an article whose title genuinely covers the subject.
+            const relevance = _imageRelevance(query, title, page.description || '');
+            // pageimages reports a thumbnail width but no height, so the grid
+            // would lay every Wikipedia tile out from a guessed 4:3 box. A
+            // 4:3 placeholder is wrong often enough to shift the masonry, so
+            // let CSS size these from the real intrinsic ratio instead.
+            const width = page.thumbnailWidth || 0;
+            return {
+                kind: 'wikipedia',
+                sourceLabel: 'Wikipedia',
+                title: title,
+                pageUrl: page.url,
+                imageUrl: image,
+                thumbUrl: image,
+                width: width,
+                height: 0,
+                hasRatio: false,
+                license: _t_license('wikipedia'),
+                author: '',
+                detail: page.description || '',
+                relevance: relevance
+            };
+        }).filter(item => item && item.relevance >= IMAGE_TUNING.minRelevance);
+    }
+
+    // ---- Source 2: Wikimedia Commons ----
+    async function _imageCandidatesCommons(query, limit) {
+        const term = String(query || '').trim();
+        if (!term) return [];
+        // `filetype:bitmap` keeps the generator in the raster media namespace
+        // and avoids pulling in PDFs, audio and video.
+        const search = 'filetype:bitmap ' + term;
+        let data = null;
+        try {
+            data = await _fetch(_mediaWikiUrl('commons.wikimedia.org', {
+                action: 'query', generator: 'search', gsrsearch: search,
+                gsrnamespace: 6, gsrlimit: IMAGE_TUNING.commons,
+                prop: 'imageinfo', iiprop: 'url|size|extmetadata', iiurlwidth: 600
+            }), 6000);
+        } catch(_) { return []; }
+
+        return _pageList(data).map(page => {
+            const info = page.imageinfo && page.imageinfo[0];
+            if (!info || !info.thumburl) return null;
+            if (!_commonsIsPhoto(page.title)) return null;
+            if (!_isReasonablePhoto(info.width, info.height)) return null;
+
+            const label = _commonsLabel(page.title);
+            const meta = info.extmetadata || {};
+            const attribution = _stripHtml(meta.Artist && meta.Artist.value || '');
+            const licence = _stripHtml(meta.LicenseShortName && meta.LicenseShortName.value || '');
+            const description = _firstSentences(
+                _stripHtml(meta.ImageDescription && meta.ImageDescription.value || ''), 200
+            );
+
+            return {
+                kind: 'commons',
+                sourceLabel: 'Wikimedia Commons',
+                title: label,
+                pageUrl: cleanTracking(info.descriptionurl || page.title),
+                imageUrl: cleanTracking(info.url || info.thumburl),
+                thumbUrl: cleanTracking(info.thumburl),
+                width: info.width || 0,
+                height: info.height || 0,
+                hasRatio: !!(info.width && info.height),
+                license: licence,
+                author: attribution.slice(0, 120),
+                detail: description,
+                relevance: _imageRelevance(query, label, description)
+            };
+        }).filter(item => item && item.relevance >= IMAGE_TUNING.minRelevance);
+    }
+
+    // ---- Source 3: Openverse (CC-licensed, mostly Flickr) ----
+    async function _imageCandidatesOpenverse(query, limit) {
+        const term = String(query || '').trim();
+        if (!term) return [];
+        const url = new URL('https://api.openverse.org/v1/images/');
+        url.searchParams.set('q', term);
+        url.searchParams.set('page_size', String(Math.min(limit || IMAGE_TUNING.openverse, 20)));
+        // `commercial` + `modification` resolves to CC-BY / CC-BY-SA / CC0 /
+        // public domain: free to display and to reuse with attribution.
+        url.searchParams.set('license_type', 'commercial');
+        url.searchParams.set('extension', 'jpg');
+
+        let data = null;
+        try { data = await _fetch(url.toString(), 6000); }
+        catch(_) { return []; }
+
+        return (data && data.results || []).map(item => {
+            if (!item || !item.url) return null;
+            if (!_isReasonablePhoto(item.width, item.height)) return null;
+            const licence = String(item.license || '').toUpperCase();
+            const licenceVersion = item.license_version ? ' ' + item.license_version : '';
+            return {
+                kind: 'openverse',
+                sourceLabel: 'Openverse',
+                title: String(item.title || '').trim() || _t_license('openverse'),
+                pageUrl: cleanTracking(item.foreign_landing_url || item.url),
+                imageUrl: cleanTracking(item.url),
+                thumbUrl: cleanTracking(item.thumbnail || item.url),
+                width: item.width || 0,
+                height: item.height || 0,
+                hasRatio: !!(item.width && item.height),
+                license: (licence + licenceVersion).trim(),
+                author: String(item.creator || '').slice(0, 80),
+                detail: '',
+                relevance: _imageRelevance(query, item.title, (item.tags || []).map(t => t.name || t).join(' '))
+            };
+        }).filter(item => item && item.relevance >= IMAGE_TUNING.minRelevance);
+    }
+
+    // Commons and Openverse return HTML in extmetadata; strip it before it is
+    // ever handed to the DOM.
+    function _stripHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#0?39;|&apos;/gi, "'")
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function _t_license(kind) {
+        return kind === 'wikipedia' ? 'CC BY-SA' : 'CC';
+    }
+
+    // Stable identity for an image, so the same photo found by two sources
+    // (a Commons file that Openverse also indexes) is not shown twice.
+    function _imageKey(item) {
+        const url = String(item.imageUrl || '').split('?')[0].replace(/^https?:\/\//, '').toLowerCase();
+        return url || _normalize(item.title);
+    }
+
+    // Fill the grid from the ranked candidate pool, alternating sources so one
+    // provider cannot crowd out the others, and keeping each image only once.
+    function _interleaveImageCandidates(groups, target) {
+        const out = [];
+        const seen = new Set();
+        let round = 0;
+        while (out.length < target) {
+            let progressed = false;
+            for (const group of groups) {
+                const item = group[round];
+                if (!item) continue;
+                const key = _imageKey(item);
+                if (seen.has(key)) continue;
+                seen.add(key);
+                // Wikipedia leads are exact-subject images; give them a small
+                // edge so they are not buried at the bottom of the grid.
+                out.push(item);
+                progressed = true;
+                if (out.length >= target) break;
+            }
+            if (!progressed) break;
+            round++;
+        }
+        return out;
+    }
+
+    async function gatewayImages(query, options) {
+        const term = String(query || '').trim();
+        if (!term) return [];
+        const opts = options || {};
+        const target = opts.target || IMAGE_TUNING.target;
+        const language = _wikiLanguage();
+        const key = 'images:' + language + ':' + _normalize(term);
+        const cached = _cached(key);
+        if (Array.isArray(cached)) return cached.slice(0, target);
+
+        return _once(key, async () => {
+            // Run every source concurrently and tolerate individual failures:
+            // one provider being down or rate-limited must not empty the grid.
+            const settled = await Promise.all([
+                _imageCandidatesWikipedia(term).catch(() => []),
+                _imageCandidatesCommons(term).catch(() => []),
+                _imageCandidatesOpenverse(term).catch(() => [])
+            ]);
+            const [wiki, commons, openverse] = settled;
+            const groups = [
+                wiki.sort((a, b) => b.relevance - a.relevance),
+                commons.sort((a, b) => b.relevance - a.relevance),
+                openverse.sort((a, b) => b.relevance - a.relevance)
+            ];
+            const results = _interleaveImageCandidates(groups, target);
+            _store(key, results);
+            return results;
+        });
+    }
+    window.gatewayImages = gatewayImages;
+
     async function spellCheck(term) {
         if (!term) return null;
         const key = 'spell:' + _wikiLanguage() + ':' + _normalize(term);
