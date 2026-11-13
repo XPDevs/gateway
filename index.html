@@ -77,6 +77,16 @@
                 <label>Upload Index</label>
                 <input type="file" id="indexUpload" accept=".json" onchange="handleIndexUpload(event)" style="font-size:12px">
             </div>
+            <!-- A custom corpus has to be removable again: without this a bad
+                 or outdated upload stays live for good. The button is enabled
+                 only while an uploaded index is actually in use. -->
+            <div class="settings-row">
+                <label>Clear Index</label>
+                <button type="button" class="settings-clear-btn" id="clearIndexBtn"
+                    onclick="clearUploadedIndex()" disabled
+                    title="No uploaded index to clear">Clear uploaded index</button>
+            </div>
+            <div class="settings-index-status" id="indexUploadStatus">Built-in index in use</div>
 
         </div>
     </div>
@@ -291,21 +301,26 @@
      the left keep their own scroll position and are never covered. Opening and
      closing it is a single hidden/class toggle and reflows nothing. -->
 <div class="lightbox" id="imageLightbox" role="dialog" aria-modal="false" aria-label="Image preview" onclick="closeLightbox(event)" hidden>
-    <button class="lightbox-close icon-btn" onclick="closeLightbox()" aria-label="Close" title="Close">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/>
-        </svg>
-    </button>
-    <button class="lightbox-nav lightbox-prev" onclick="stepLightbox(-1)" aria-label="Previous image">
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6"/>
-        </svg>
-    </button>
-    <button class="lightbox-nav lightbox-next" onclick="stepLightbox(1)" aria-label="Next image">
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/>
-        </svg>
-    </button>
+    <!-- Previous / next / close all sit in one row along the top of the pane,
+         so the arrows never cover the picture and the three controls are
+         reachable without crossing the image. -->
+    <div class="lightbox-toolbar">
+        <button class="lightbox-nav lightbox-prev icon-btn" onclick="stepLightbox(-1)" aria-label="Previous image" title="Previous image">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6"/>
+            </svg>
+        </button>
+        <button class="lightbox-nav lightbox-next icon-btn" onclick="stepLightbox(1)" aria-label="Next image" title="Next image">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/>
+            </svg>
+        </button>
+        <button class="lightbox-close icon-btn" onclick="closeLightbox()" aria-label="Close" title="Close">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+        </button>
+    </div>
     <figure class="lightbox-figure">
         <img class="lightbox-image" id="lightboxImage" alt="">
         <figcaption class="lightbox-caption">
@@ -314,7 +329,17 @@
                 <span class="lightbox-source" id="lightboxSource"></span>
                 <span class="lightbox-license" id="lightboxLicense"></span>
             </div>
-            <a class="lightbox-open" id="lightboxOpen" href="#" target="_self" data-i18n="viewSourcePage">View source page</a>
+            <!-- Three destinations: the bitmap itself, the page that embeds it,
+                 and a strip of related images from the same query. -->
+            <div class="lightbox-actions">
+                <a class="lightbox-open" id="lightboxRaw" href="#" target="_self" data-i18n="openImage">Open image file</a>
+                <span class="lightbox-dot">·</span>
+                <a class="lightbox-open" id="lightboxOpen" href="#" target="_self" data-i18n="viewSourcePage">View source page</a>
+            </div>
+            <div class="lightbox-related" id="lightboxRelated" hidden>
+                <div class="lightbox-related-head" data-i18n="related">Related images</div>
+                <div class="lightbox-related-strip" id="lightboxRelatedStrip"></div>
+            </div>
         </figcaption>
     </figure>
 </div>

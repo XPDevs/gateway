@@ -520,6 +520,21 @@
         } catch(_) {}
     }
 
+    // Deletes a stored record. Used by gatewayClearIndex to drop the uploaded
+    // corpus, mirroring _writeDBRecord's tolerance of an unavailable DB.
+    async function _deleteDBRecord(id) {
+        try {
+            const db = await _openDB();
+            await new Promise(function(resolve) {
+                const tx = db.transaction('index', 'readwrite');
+                tx.objectStore('index').delete(id);
+                tx.oncomplete = function() { resolve(); };
+                tx.onerror = function() { resolve(); };
+                tx.onabort = function() { resolve(); };
+            });
+        } catch(_) {}
+    }
+
     function _storeBundledIndex(entries, version) {
         _writeDBRecord({ id: 'data', entries: _packEntries(entries) })
             .then(function() { return _writeDBRecord({ id: 'meta', meta: { source: 'bundled', version } }); })
@@ -614,6 +629,32 @@
             _writeDBRecord({ id: 'data', entries: _packEntries(safeData) }),
             _writeDBRecord({ id: 'meta', meta: { source: 'upload', version } })
         ]);
+    };
+
+    // Drops the uploaded corpus and returns to the bundled index in place.
+    // Order matters: the stored record has to disappear first, otherwise a
+    // reload would read it straight back out of IndexedDB. Ranking and cached
+    // search results were all built against the old corpus, so both are
+    // thrown away before the fresh load starts.
+    window.gatewayClearIndex = async function() {
+        await Promise.all([
+            _deleteDBRecord('data'),
+            _deleteDBRecord('meta')
+        ]);
+        _preparedIndex = null;
+        _preparedSource = null;
+        _clearSearchCaches();
+        _indexOverridden = false;
+        _indexData = null;
+        _indexReady = _loadBundledIndex().then(data => {
+            if (!_indexOverridden) {
+                _indexData = data;
+                return data;
+            }
+            return _indexData;
+        });
+        await _indexReady;
+        return (_indexData && _indexData.length) || 0;
     };
 
     window.gatewayIndexSize = async function() {

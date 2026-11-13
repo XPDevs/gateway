@@ -74,6 +74,43 @@
         }
     }
 
+    // Labels for the docked image preview, added with its toolbar and related
+    // strip. Same merge pattern as QUICK_COPY: keep every locale complete
+    // rather than silently falling back to English for two visible controls.
+    const LIGHTBOX_COPY = {
+        en: { openImage:'Open image file', related:'Related images' },
+        es: { openImage:'Abrir archivo de imagen', related:'Imágenes relacionadas' },
+        fr: { openImage:'Ouvrir le fichier image', related:'Images similaires' },
+        de: { openImage:'Bilddatei öffnen', related:'Ähnliche Bilder' },
+        it: { openImage:'Apri file immagine', related:'Immagini correlate' },
+        pt: { openImage:'Abrir ficheiro de imagem', related:'Imagens relacionadas' },
+        ru: { openImage:'Открыть файл изображения', related:'Похожие изображения' },
+        ja: { openImage:'画像ファイルを開く', related:'関連画像' },
+        'zh-CN': { openImage:'打开图片文件', related:'相关图片' },
+        'zh-TW': { openImage:'開啟圖片檔案', related:'相關圖片' },
+        ko: { openImage:'이미지 파일 열기', related:'관련 이미지' },
+        ar: { openImage:'فتح ملف الصورة', related:'صور ذات صلة' },
+        hi: { openImage:'छवि फ़ाइल खोलें', related:'संबंधित चित्र' },
+        bn: { openImage:'ছবির ফাইল খুলুন', related:'সম্পর্কিত ছবি' },
+        tr: { openImage:'Görsel dosyasını aç', related:'İlgili görseller' },
+        nl: { openImage:'Afbeeldingsbestand openen', related:'Gerelateerde afbeeldingen' },
+        pl: { openImage:'Otwórz plik obrazu', related:'Powiązane obrazy' },
+        sv: { openImage:'Öppna bildfil', related:'Relaterade bilder' },
+        da: { openImage:'Åbn billedfil', related:'Relaterede billeder' },
+        fi: { openImage:'Avaa kuvatiedosto', related:'Samankaltaiset kuvat' },
+        no: { openImage:'Åpne bildefil', related:'Relaterte bilder' },
+        cs: { openImage:'Otevřít soubor obrázku', related:'Související obrázky' },
+        ro: { openImage:'Deschide fișierul imagine', related:'Imagini similare' },
+        hu: { openImage:'Képfájl megnyitása', related:'Kapcsolódó képek' },
+        el: { openImage:'Άνοιγμα αρχείου εικόνας', related:'Σχετικές εικόνες' }
+    };
+    for (const code of Object.keys(LANG)) {
+        const copy = LIGHTBOX_COPY[code] || LIGHTBOX_COPY.en;
+        for (const key of Object.keys(LIGHTBOX_COPY.en)) {
+            if (!LANG[code][key]) LANG[code][key] = copy[key];
+        }
+    }
+
     const LANG_LIST = [
         { code:'en', name:'English' }, { code:'es', name:'Español' }, { code:'fr', name:'Français' },
         { code:'de', name:'Deutsch' }, { code:'it', name:'Italiano' }, { code:'pt', name:'Português' },
@@ -196,6 +233,50 @@
     };
     window.gatewayLang = _lang;
 
+    // ======================== INDEX UPLOAD / CLEAR ========================
+
+    // A corpus uploaded from Settings has to be removable again: otherwise a
+    // bad or outdated file is sticky for the rest of time. The marker records
+    // that a custom index is live (and survives a reload), while the key list
+    // is what a clear wipes before the crawler is asked to forget the data.
+    const INDEX_MARKER = 'gw-index-uploaded';
+    const INDEX_STORAGE_KEYS = [
+        'gw-index', 'gw-custom-index', 'gw-uploaded-index',
+        'gateway-index', 'gateway-custom-index'
+    ];
+
+    let _uploadedIndexActive = false;
+    try { _uploadedIndexActive = localStorage.getItem(INDEX_MARKER) === '1'; } catch(_) { _uploadedIndexActive = false; }
+
+    function _syncIndexClearButton() {
+        const btn = $('clearIndexBtn');
+        const status = $('indexUploadStatus');
+        if (btn) {
+            btn.disabled = !_uploadedIndexActive;
+            btn.title = _uploadedIndexActive
+                ? 'Remove the uploaded index and go back to the built-in one'
+                : 'No uploaded index to clear';
+        }
+        if (status) {
+            status.textContent = _uploadedIndexActive
+                ? 'Custom index loaded'
+                : 'Built-in index in use';
+        }
+    }
+
+    // Reads the live page count back from the crawler and repaints the home
+    // page stat line. Shared by init and by the clear button.
+    function _refreshIndexStats() {
+        if (!$('indexStats') || typeof window.gatewayIndexSize !== 'function') return;
+        window.gatewayIndexSize().then(count => {
+            localIndexCount = count || 0;
+            const stats = $('indexStats');
+            if (stats) stats.textContent = localIndexCount
+                ? _t('indexPages', { count: localIndexCount.toLocaleString(_lang) })
+                : _t('indexLoading');
+        }).catch(() => {});
+    }
+
     // ======================== SETTINGS ========================
 
     window.openSettings = function(e) {
@@ -204,6 +285,7 @@
         const dt = $('settingsDarkToggle');
         if (dt) dt.checked = document.body.classList.contains('dark');
         _syncQuickWikiToggle();
+        _syncIndexClearButton();
         const sel = $('langSelect');
         if (sel) sel.value = _langPreference;
     };
@@ -215,19 +297,59 @@
     };
 
     window.handleIndexUpload = function(e) {
-        const file = e.target.files[0];
+        const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function(ev) {
+            let data = null;
             try {
-                const data = JSON.parse(ev.target.result);
-                if (Array.isArray(data) && data.length) {
-                    window.gatewaySetIndex(data);
-                    closeSettings();
-                }
-            } catch(_) {}
+                data = JSON.parse(ev.target.result);
+            } catch(_) {
+                _setIndexStatus('That file is not valid JSON.');
+                return;
+            }
+            if (!Array.isArray(data) || !data.length) {
+                _setIndexStatus('That file is not a Gateway index.');
+                return;
+            }
+            if (typeof window.gatewaySetIndex !== 'function') {
+                _setIndexStatus('The index engine is not ready yet.');
+                return;
+            }
+            window.gatewaySetIndex(data);
+            try { localStorage.setItem(INDEX_MARKER, '1'); } catch(_) {}
+            _uploadedIndexActive = true;
+            _syncIndexClearButton();
+            _refreshIndexStats();
+            closeSettings();
         };
         reader.readAsText(file);
+        // Reset the input so the same file can be chosen again after a clear.
+        e.target.value = '';
+    };
+
+    function _setIndexStatus(message) {
+        const status = $('indexUploadStatus');
+        if (status) status.textContent = message;
+    }
+
+    // Drops a custom corpus and returns to the built-in one. If crawl.js
+    // exposes an explicit reset hook it is used; otherwise the page reloads so
+    // the stored copy is gone and the built-in corpus is fetched again.
+    window.clearUploadedIndex = function() {
+        try {
+            for (const key of INDEX_STORAGE_KEYS) localStorage.removeItem(key);
+            localStorage.removeItem(INDEX_MARKER);
+        } catch(_) {}
+        _uploadedIndexActive = false;
+        _syncIndexClearButton();
+        if (typeof window.gatewayClearIndex === 'function') {
+            try { window.gatewayClearIndex(); } catch(_) {}
+            _refreshIndexStats();
+            return;
+        }
+        // The query lives in the URL, so a reload also re-runs the search.
+        window.location.reload();
     };
 
     // ======================== STATE ========================
@@ -724,11 +846,16 @@
         max: HIST_MAX
     };
 
-    async function performSearch(inputId) {
+    async function performSearch(inputId, options) {
         const input = $(inputId);
         if (!input) return false;
         const q = input.value.trim();
         if (!q) return false;
+
+        // "I'm Feeling Lucky" needs the enriched list, not just the fast local
+        // pass: with a cold local index the first stage can legitimately return
+        // nothing, and jumping on that would look like a dead button.
+        const waitForEnrichment = !!(options && options.waitForEnrichment);
 
         const requestId = ++searchRequestId;
         const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
@@ -814,8 +941,9 @@
         // Each resolves independently and re-renders only its own section,
         // so a slow network never blocks or replaces the fast main list
         // with a spinner.
+        let enrichment = null;
         if (typeof window.gatewayCrawl === 'function') {
-            window.gatewayCrawl(q).then(full => {
+            enrichment = window.gatewayCrawl(q).then(full => {
                 if (requestId !== searchRequestId || !Array.isArray(full) || !full.length) return;
                 const seen = new Set(allResults.map(r => r.url));
                 let added = 0;
@@ -888,6 +1016,17 @@
                     renderDidYouMean();
                 }
             }).catch(() => {});
+        }
+
+        // Callers that need the finished list (I'm Feeling Lucky) can ask to
+        // wait here. A slow source must not hang them forever, so the wait is
+        // capped; whatever has landed by then is what they get.
+        if (waitForEnrichment && enrichment) {
+            await Promise.race([
+                enrichment,
+                new Promise(resolve => setTimeout(resolve, 5000))
+            ]);
+            if (requestId !== searchRequestId) return false;
         }
 
         return true;
@@ -1080,15 +1219,24 @@
         const img = $('lightboxImage');
         const title = $('lightboxTitle');
         const open = $('lightboxOpen');
+        const raw = $('lightboxRaw');
         const source = $('lightboxSource');
         const licence = $('lightboxLicense');
-        const pageUrl = _safeHref(item.pageUrl) || '#';
+        const pageUrl = _safeHref(item.pageUrl);
+        const rawUrl = _safeHref(item.imageUrl || item.thumbUrl);
         if (img) {
             img.src = item.imageUrl || item.thumbUrl || '';
             img.alt = item.title || '';
         }
-        if (title) { title.textContent = item.title || ''; title.href = pageUrl; }
-        if (open) open.href = pageUrl;
+        if (title) { title.textContent = item.title || ''; title.href = pageUrl || '#'; }
+        if (open) open.href = pageUrl || '#';
+        if (raw) {
+            // "Open image file" points at the bitmap itself, not the page that
+            // embeds it, so the full-resolution file can be viewed or saved
+            // without the surrounding article.
+            raw.href = rawUrl || '#';
+            raw.hidden = !rawUrl;
+        }
         if (source) source.textContent = item.sourceLabel || '';
         // Attribution matters here: these are openly-licensed images, so the
         // licence and author are shown rather than buried.
@@ -1096,7 +1244,67 @@
         if (item.license) parts.push(item.license);
         if (item.author) parts.push(item.author);
         if (licence) licence.textContent = parts.join(' · ');
+        _renderRelatedImages(item);
     }
+
+    // "Related" is derived from the images already fetched for this query, so
+    // it never fires another network request: same source first, then shared
+    // title words, topped up with the neighbouring tiles.
+    function _relatedImageIndices(item, index) {
+        if (!Array.isArray(imageResults) || imageResults.length < 2) return [];
+        const wordsOf = s => String(s || '').toLowerCase().match(/[a-z0-9]{4,}/g) || [];
+        const own = new Set(wordsOf(item.title));
+        const source = String(item.sourceLabel || '').toLowerCase();
+        const ranked = [];
+        for (let i = 0; i < imageResults.length; i++) {
+            if (i === index) continue;
+            const other = imageResults[i];
+            if (!other) continue;
+            let score = 0;
+            if (source && String(other.sourceLabel || '').toLowerCase() === source) score += 2;
+            for (const word of new Set(wordsOf(other.title))) if (own.has(word)) score += 1;
+            ranked.push({ i, score });
+        }
+        ranked.sort((a, b) => b.score - a.score);
+        const picked = [];
+        for (const row of ranked) {
+            if (picked.length >= 8) break;
+            if (row.score > 0) picked.push(row.i);
+        }
+        // Never leave the strip empty just because the titles share no words:
+        // top up with the next tiles from the same query.
+        for (let step = 1; picked.length < 4 && step <= 8; step++) {
+            const next = index + step;
+            if (next < imageResults.length && !picked.includes(next)) picked.push(next);
+        }
+        return picked;
+    }
+
+    function _renderRelatedImages(item) {
+        const strip = $('lightboxRelatedStrip');
+        const block = $('lightboxRelated');
+        if (!strip || !block) return;
+        const indices = _relatedImageIndices(item, lightboxIndex);
+        if (!indices.length) { strip.innerHTML = ''; block.hidden = true; return; }
+        block.hidden = false;
+        strip.innerHTML = indices.map(i => {
+            const other = imageResults[i] || {};
+            const thumb = _escapeHtml(other.thumbUrl || other.imageUrl || '');
+            const label = _escapeHtml(other.title || '');
+            return '<button type="button" class="lightbox-related-thumb" data-index="' + i + '"'
+                + ' onclick="jumpToLightbox(' + i + ')" title="' + label + '">'
+                + '<img src="' + thumb + '" alt="' + label + '" loading="lazy" decoding="async"'
+                + ' onerror="var t=this.closest(\'.lightbox-related-thumb\');if(t)t.remove();" />'
+                + '</button>';
+        }).join('');
+    }
+
+    // Jump the pane straight to one of the related thumbnails.
+    window.jumpToLightbox = function(index) {
+        if (!imageResults || !imageResults[index]) return;
+        lightboxIndex = index;
+        _paintLightbox();
+    };
 
     function stepLightbox(delta) {
         if (!imageResults || !imageResults.length) return;
@@ -1119,11 +1327,12 @@
         document.removeEventListener('keydown', _lightboxKeydown, true);
     }
     window.closeLightbox = function(e) {
-        // The preview is a docked pane, not a modal overlay, so clicking it does
-        // not dismiss it: only the close button and Escape do. Without this a
-        // click on the image itself would close the pane it was just opened in.
-        if (e && e.target && e.target.closest
-            && e.target.closest('.lightbox-close, .lightbox-nav')) return;
+        // The preview is a docked pane, not a modal overlay, so only the
+        // toolbar's close button (and Escape) dismisses it. Clicks on the
+        // image, the links, the related strip or the arrows must stay inside
+        // the pane, otherwise using any of them would close the pane it
+        // belongs to.
+        if (e && e.target && e.target.closest && !e.target.closest('.lightbox-close')) return;
         _closeLightbox();
     };
     function _lightboxKeydown(e) {
@@ -1378,16 +1587,23 @@
 
     // ======================== LUCKY SEARCH ========================
 
-    window.luckySearch = function() {
+    window.luckySearch = async function() {
         const input = $('mainSearchInput');
         if (!input) return;
         const val = input.value.trim();
-        if (!val) return;
-        performSearch('mainSearchInput').then(completed => {
-            if (!completed || lastQuery !== val || !allResults.length) return;
-            const target = _safeHref(allResults[0].url);
-            if (target !== '#') window.open(target, '_self');
-        });
+        if (!val) { input.focus(); return; }
+        // The old version jumped as soon as the fast local stage resolved.
+        // With a cold local index that stage is legitimately empty, so the
+        // guard below bailed out and the button looked dead. Waiting for the
+        // enriched list (capped at 5s) means there is always something to open
+        // when the query really does have a first hit.
+        const completed = await performSearch('mainSearchInput', { waitForEnrichment: true });
+        if (!completed || lastQuery !== val) return;
+        const first = allResults.find(r => r && r.url && _safeHref(r.url) !== '#');
+        if (!first) return;
+        // location.assign rather than window.open(..., '_self'): popup
+        // blockers treat programmatic window.open as a popup even for _self.
+        window.location.assign(_safeHref(first.url));
     };
 
     window.searchSuggestion = function(term) {
@@ -1471,15 +1687,8 @@
         }
     } catch(_) {}
 
-    if ($('indexStats') && typeof window.gatewayIndexSize === 'function') {
-        window.gatewayIndexSize().then(count => {
-            localIndexCount = count || 0;
-            const stats = $('indexStats');
-            if (stats) stats.textContent = localIndexCount
-                ? _t('indexPages', { count: localIndexCount.toLocaleString(_lang) })
-                : _t('indexLoading');
-        }).catch(() => {});
-    }
+    _syncIndexClearButton();
+    _refreshIndexStats();
 
     _applyTranslations();
     updateCountry();
