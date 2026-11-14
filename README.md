@@ -82,6 +82,10 @@ See the Ranking section below. The implementation uses IDF with additive smoothi
 
 25 language UI, dark mode, autocomplete via `getSuggestions`, Did you mean spell check, I'm Feeling Lucky, uploadable custom index, safe domain filtering and tracking parameter stripping.
 
+## Crawler
+
+The bundled index was generated with the crawler in `crawler/crawler.py`, and you can run the same script to refresh it or to build your own custom index. It is a standalone, dependency free Python script that writes JSON in the same `{t, u, d, s}` shape used by the search engine. Full documentation, all flags, the terminal UI, the output schema and worked examples are in [`ccrawler.md`](crawler.md).
+
 ## Project structure
 
 ```
