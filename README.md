@@ -18,7 +18,7 @@ Your searches are recorded to a local only [search history](history/) you can re
 
 The bundled index is generated from Wikidata and every entry is confirmed to answer over HTTP at build time. Domain owners can opt out of being listed. No account, no form and no API key are required.
 
-**Email `[your-email@example.com]`** with the subject `Index opt-out`. Include the domain to remove, for example `example.com`. List `www.example.com` separately if it resolves on its own. A link to the site, or another way to confirm ownership, speeds up the request but is not mandatory.
+**Email `[xpdevs.github.io.com@gmail.com]`** with the subject `Index opt-out`. Include the domain to remove, for example `example.com`. List `www.example.com` separately if it resolves on its own. A link to the site, or another way to confirm ownership, speeds up the request but is not mandatory.
 
 Opt-out requests are added to a maintained exclusion list. The domain is dropped from the bundled index the next time it is regenerated with `crawler/crawler.py`. Once removed it will not appear in the local index, in live Wikipedia or official-site enrichment, or in any custom index exported from Gateway.
 
