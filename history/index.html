@@ -246,6 +246,91 @@
             margin-bottom: 6px;
         }
         [hidden] { display: none !important; }
+
+        /* ---- Modal (replaces native confirm dialogs) ---- */
+        .gw-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .gw-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, .5);
+            animation: gwFadeIn .15s ease;
+        }
+        .gw-modal-dialog {
+            position: relative;
+            background: var(--bg, var(--background, var(--surface, var(--card-bg, #fff))));
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .28);
+            max-width: 440px;
+            width: 100%;
+            padding: 22px 22px 18px;
+            animation: gwPopIn .18s ease;
+        }
+        .gw-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 8px;
+            color: var(--text);
+        }
+        .gw-modal-body {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin: 0 0 20px;
+        }
+        .gw-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .gw-modal-actions .hist-btn {
+            min-width: 92px;
+            text-align: center;
+        }
+        .gw-modal-actions .hist-btn.danger {
+            color: #b3261e;
+            border-color: #b3261e;
+            font-weight: 600;
+        }
+        .gw-modal-actions .hist-btn.danger:hover {
+            background: rgba(179, 38, 30, .08);
+            color: #b3261e;
+        }
+        :root.dark .gw-modal-actions .hist-btn.danger,
+        .dark .gw-modal-actions .hist-btn.danger {
+            color: #f2b8b5;
+            border-color: #f2b8b5;
+        }
+        :root.dark .gw-modal-actions .hist-btn.danger:hover,
+        .dark .gw-modal-actions .hist-btn.danger:hover {
+            background: rgba(242, 184, 181, .12);
+            color: #f2b8b5;
+        }
+        :root.dark .gw-modal-dialog,
+        .dark .gw-modal-dialog {
+            background: var(--bg, var(--background, var(--surface, var(--card-bg, #1f1f1f))));
+        }
+        @keyframes gwFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes gwPopIn {
+            from { opacity: 0; transform: translateY(6px) scale(.98); }
+            to   { opacity: 1; transform: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .gw-modal-backdrop, .gw-modal-dialog { animation: none; }
+        }
     </style>
 </head>
 <body>
@@ -326,6 +411,19 @@
     </div>
 </footer>
 
+<!-- ==================== CONFIRM MODAL ==================== -->
+<div id="gwConfirmModal" class="gw-modal" hidden>
+    <div class="gw-modal-backdrop" data-modal-dismiss></div>
+    <div class="gw-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="gwModalTitle" aria-describedby="gwModalBody">
+        <h3 id="gwModalTitle" class="gw-modal-title">Are you sure?</h3>
+        <p id="gwModalBody" class="gw-modal-body"></p>
+        <div class="gw-modal-actions">
+            <button type="button" class="hist-btn" id="gwModalCancel">Cancel</button>
+            <button type="button" class="hist-btn danger" id="gwModalConfirm">Delete</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function() {
     'use strict';
@@ -342,6 +440,80 @@
     var metaLine = document.getElementById('histMeta');
     var listWrap = document.getElementById('histList');
     var emptyWrap = document.getElementById('histEmpty');
+
+    // ---- Confirm modal, replaces the native confirm() dialog ----
+    // Returns a Promise<boolean>. The dialog is reusable, so any future
+    // destructive action on this page can reuse it without touching the
+    // page markup again. While open, body scroll is locked, Escape cancels,
+    // backdrop click cancels, Tab cycles between the two buttons, and the
+    // element that opened the modal gets focus back on close.
+    function openConfirm(options) {
+        var opts = options || {};
+        var modal = document.getElementById('gwConfirmModal');
+        if (!modal) return Promise.resolve(false);
+        if (!modal.hidden) return Promise.resolve(false);
+
+        var titleEl = document.getElementById('gwModalTitle');
+        var bodyEl = document.getElementById('gwModalBody');
+        var confirmBtn = document.getElementById('gwModalConfirm');
+        var cancelBtn = document.getElementById('gwModalCancel');
+
+        titleEl.textContent = opts.title || 'Are you sure?';
+        bodyEl.textContent = opts.message || '';
+        confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+        cancelBtn.textContent = opts.cancelLabel || 'Cancel';
+
+        var previousFocus = document.activeElement;
+        var previousOverflow = document.body.style.overflow;
+
+        return new Promise(function(resolve) {
+            function close(result) {
+                modal.hidden = true;
+                document.body.style.overflow = previousOverflow;
+                document.removeEventListener('keydown', onKey);
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+                if (previousFocus && typeof previousFocus.focus === 'function') {
+                    try { previousFocus.focus(); } catch (_) {}
+                }
+                resolve(result);
+            }
+
+            function onKey(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    close(false);
+                    return;
+                }
+                if (e.key === 'Tab') {
+                    var focusables = [cancelBtn, confirmBtn];
+                    var idx = focusables.indexOf(document.activeElement);
+                    if (idx === -1) {
+                        e.preventDefault();
+                        focusables[0].focus();
+                    } else if (e.shiftKey && idx === 0) {
+                        e.preventDefault();
+                        focusables[focusables.length - 1].focus();
+                    } else if (!e.shiftKey && idx === focusables.length - 1) {
+                        e.preventDefault();
+                        focusables[0].focus();
+                    }
+                }
+            }
+
+            confirmBtn.onclick = function() { close(true); };
+            cancelBtn.onclick = function() { close(false); };
+            var backdrop = modal.querySelector('[data-modal-dismiss]');
+            if (backdrop) backdrop.onclick = function() { close(false); };
+
+            modal.hidden = false;
+            document.body.style.overflow = 'hidden';
+            document.addEventListener('keydown', onKey);
+            // Focus Cancel by default, so an accidental Enter does not destroy data.
+            cancelBtn.focus();
+        });
+    }
 
     // ---- storage helpers (all failures are non-fatal: private mode, quota) ----
     function load() {
@@ -509,8 +681,20 @@
 
     // ---- actions ----
     clearBtn.addEventListener('click', function() {
-        if (!confirm('Delete all ' + load().length + ' saved searches? This cannot be undone.')) return;
-        if (save([])) render();
+        var count = load().length;
+        if (count === 0) return;
+
+        openConfirm({
+            title: 'Delete all search history?',
+            message: 'This will permanently remove ' + count + ' saved ' +
+                     (count === 1 ? 'search' : 'searches') +
+                     ' from this browser. This cannot be undone.',
+            confirmLabel: 'Delete all',
+            cancelLabel: 'Cancel'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            if (save([])) render();
+        });
     });
 
     exportBtn.addEventListener('click', function() {
