@@ -2,6 +2,14 @@
 
 A fast, private, multi source search engine by [XPDevs](https://xpdevs.github.io). Gateway searches a bundled local web index of 50,000 real websites across 50,000 domains, plus live Wikipedia and Wikidata open data. It requires no API keys, no build step and no generative AI.
 
+![Gateway Search Homepage](images/hompage_example.png)
+
+*Clean and minimal interface with instant local search.*
+
+![Gateway Search Results for Costa Coffee](images/search_results%20example.png)
+
+*Results for Costa Coffee, featuring the Quick Wiki box, result stats and favicons.*
+
 Live behaviour. Main results paint from the local index first, typically in milliseconds. Quick Wiki, spell check and web enrichment then resolve asynchronously afterwards.
 
 Your searches are recorded to a local only [search history](history/) you can replay, filter, switch off or delete. The history never leaves the browser and never affects ranking.
@@ -172,17 +180,3 @@ Local keys written by the browser, all removable via site data. Preferences are 
 Dangerous domains, private IP hostnames, non HTTP or HTTPS URLs, and malware keyword hits are filtered by `isSafeDomain`, `isSafeResult` and `_safeHref`.
 
 Tracking parameters such as `utm_*`, `fbclid` and `gclid` are stripped, along with URL hashes. There is no third party analytics. Favicon and image loads are the only external requests besides the Wikipedia and Wikidata APIs.
-
-## Screenshots
-
-### Homepage
-
-![Gateway Search Homepage](images/hompage_example.png)
-
-Clean and minimal interface with instant local search.
-
-### Search Results
-
-![Gateway Search Results for Costa Coffee](images/search_results%20example.png)
-
-Results for Costa Coffee, featuring the Quick Wiki box, result stats and favicons.
