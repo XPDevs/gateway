@@ -428,6 +428,33 @@
 (function() {
     'use strict';
 
+    // ---- Dark mode toggle, self-contained for this static page ----
+    // The history page cannot load main.js, so this mirrors the behaviour
+    // used on the search page: toggle the dark class on <html>, persist the
+    // choice under gw-dark, and swap the sun and moon icons.
+    function applyDarkModeUi() {
+        var isDark = document.documentElement.classList.contains('dark');
+        var sun = document.querySelector('.icon-btn .sun');
+        var moon = document.querySelector('.icon-btn .moon');
+        if (sun) sun.style.display = isDark ? 'none' : '';
+        if (moon) moon.style.display = isDark ? '' : 'none';
+    }
+
+    window.toggleDarkMode = function toggleDarkMode() {
+        var root = document.documentElement;
+        var nowDark = root.classList.toggle('dark');
+        try {
+            if (nowDark) localStorage.setItem('gw-dark', '1');
+            else localStorage.removeItem('gw-dark');
+        } catch (_) {
+            // Private mode or quota failures must not break the toggle.
+        }
+        applyDarkModeUi();
+    };
+
+    // Sync the icons with the class applied by the inline head script.
+    applyDarkModeUi();
+
     // Storage contract, shared with main.js (gatewaySearchHistory).
     var KEY = 'gw-history';
     var OPT_OUT = 'gw-history-optout';
@@ -442,11 +469,6 @@
     var emptyWrap = document.getElementById('histEmpty');
 
     // ---- Confirm modal, replaces the native confirm() dialog ----
-    // Returns a Promise<boolean>. The dialog is reusable, so any future
-    // destructive action on this page can reuse it without touching the
-    // page markup again. While open, body scroll is locked, Escape cancels,
-    // backdrop click cancels, Tab cycles between the two buttons, and the
-    // element that opened the modal gets focus back on close.
     function openConfirm(options) {
         var opts = options || {};
         var modal = document.getElementById('gwConfirmModal');
@@ -549,8 +571,6 @@
     }
 
     // ---- formatting ----
-    // Every value below is written with textContent, never innerHTML, so query
-    // strings are rendered as text and cannot inject markup.
     function clockTime(ms) {
         var d = new Date(ms);
         if (isNaN(d.getTime())) return '--:--';
