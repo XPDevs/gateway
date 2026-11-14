@@ -14,6 +14,16 @@ Live behaviour. Main results paint from the local index first, typically in mill
 
 Your searches are recorded to a local only [search history](history/) you can replay, filter, switch off or delete. The history never leaves the browser and never affects ranking.
 
+## Website owner opt-out
+
+The bundled index is generated from Wikidata and every entry is confirmed to answer over HTTP at build time. Domain owners can opt out of being listed. No account, no form and no API key are required.
+
+**Email `[your-email@example.com]`** with the subject `Index opt-out`. Include the domain to remove, for example `example.com`. List `www.example.com` separately if it resolves on its own. A link to the site, or another way to confirm ownership, speeds up the request but is not mandatory.
+
+Opt-out requests are added to a maintained exclusion list. The domain is dropped from the bundled index the next time it is regenerated with `crawler/crawler.py`. Once removed it will not appear in the local index, in live Wikipedia or official-site enrichment, or in any custom index exported from Gateway.
+
+The list is applied at build time, not at query time, because `index/index.json` is a static file served to every visitor. Allow until the next index refresh for the change to reach the shipped build.
+
 ## Features
 
 **Instant main results, faster than Google for the common case**
