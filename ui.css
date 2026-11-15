@@ -10,7 +10,7 @@
     --content-bg: #ffffff;
     --input-bg: #f0f4f9;
     --border: #dee2e6;
-    --primary: #4285f4; /* Softened from #1a73e8 */
+    --primary: #4285f4;
     --active-item: #e2e7ed;
     --link: #1a0dab;
     --url-color: #006621;
@@ -29,7 +29,7 @@ html.dark, body.dark {
     --content-bg: #131314;
     --input-bg: #1e1f20;
     --border: #444746;
-    --primary: #4285f4; /* Softened from #1a73e8 */
+    --primary: #4285f4;
     --active-item: #333537;
     --link: #8ab4f8;
     --url-color: #bdc1c6;
@@ -69,43 +69,26 @@ a:hover { text-decoration: underline; }
 .top-nav-left, .top-nav-right {
     display: flex;
     align-items: center;
-    /* Controls supply their own padding instead of relying on a flex gap. A
-       gap is a dead zone: the cursor stops being a pointer over it, which
-       made the nav links feel broken. Padding keeps the same visual
-       spacing while the entire pill is clickable. */
     gap: 0;
 }
 .top-nav-right {
     gap: 4px;
 }
-/* Shared paint for every nav link, including the sub-page logo. This rule
-   declares NO geometry on purpose: when two rules set `padding` on the same
-   element, the hit box is decided by a specificity tie rather than by
-   intent, and the box can end up smaller than the pill that is painted on
-   it. */
 .top-nav a {
     color: var(--text);
     opacity: 0.85;
     flex-shrink: 0;
     text-decoration: none;
-    /* Layout-neutral (no offsets), so the link always hit-tests above any
-       later sibling layer and nothing invisible can steal the pointer. */
     position: relative;
     z-index: 1;
 }
-/* Opacity only, and deliberately not transitioned (see below). Replaces the
-   old `.top-nav a:hover` rule, which also carried a `text-decoration:
-   underline` that lost a specificity tie and was therefore never rendered. */
 .top-nav a:hover {
     opacity: 1;
 }
-/* Nav links only — the logo carries its own inline sizing and must not shift. */
 .top-nav a:not(.results-logo) {
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
-    /* Fixed box, declared once. The hover state only swaps a colour, so it
-       can never resize, re-position or re-flow the link or its sibling. */
     height: 36px;
     padding: 0 10px;
     margin: 0;
@@ -116,17 +99,11 @@ a:hover { text-decoration: underline; }
     line-height: normal;
     white-space: nowrap;
     cursor: pointer;
-    /* Paint-only. `opacity` is deliberately NOT transitioned: animating it
-       promotes the link to its own composited layer, and two adjacent links
-       whose layers share a subpixel edge make the browser's hit test
-       alternate between them frame to frame. That is what made the cursor
-       blink while the pointer sat still. */
     transition: background-color .15s ease;
 }
 .top-nav a:not(.results-logo):hover {
     background-color: var(--input-bg);
 }
-/* The sub-page logo keeps its own plain box and never gets the pill. */
 .top-nav a.results-logo {
     display: inline-block;
     padding: 6px 0;
@@ -136,20 +113,11 @@ a:hover { text-decoration: underline; }
     outline: 2px solid var(--text-secondary);
     outline-offset: 1px;
 }
-/* Fixed 40x40 box for the header buttons. The previous `min-width`/
-   `min-height` let the box follow its content, and the theme button's only
-   child is swapped (sun <-> moon) on every click, so its hit area was never
-   guaranteed to stay put. Fixed sizing makes that swap a pure paint change.
-   Scoped to the nav so the smaller settings-modal close button is
-   unaffected. */
 .top-nav .icon-btn {
     width: 40px;
     height: 40px;
     flex-shrink: 0;
 }
-/* Both icons are taken out of flow, so toggling the theme never reflows the
-   button or nudges its neighbour. Scoped to the nav: the settings-modal
-   close button sizes itself from its in-flow icon, so it must keep this. */
 .top-nav .icon-btn > svg {
     position: absolute;
     inset: 0;
@@ -167,20 +135,11 @@ a:hover { text-decoration: underline; }
     display: flex;
     align-items: center;
     justify-content: center;
-    /* An inline SVG leaves a descender gap in the line box, which pushed the
-       50% border-radius circle out of line with the icon drawn inside it. */
     line-height: 0;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    /* Layout-neutral (no offsets), so the button always hit-tests above any
-       later sibling layer and nothing invisible can steal the pointer. */
     position: relative;
     z-index: 1;
-    /* Paint-only. `opacity` is deliberately NOT transitioned: animating it
-       promotes the button to its own composited layer, and two adjacent
-       buttons whose layers share a subpixel edge make the browser's hit test
-       alternate between them frame to frame. That is what made the cursor
-       blink. */
     transition: background-color .2s ease;
 }
 .icon-btn:hover {
@@ -283,6 +242,7 @@ a:hover { text-decoration: underline; }
 }
 .search-bar-wrapper .clear-btn.visible { display: flex; }
 .search-bar-wrapper .clear-btn:hover { background: var(--active-item); }
+
 /* Send button: visually hidden to keep the UI clean, but kept in the DOM
    so main.js's visibility and disabled-state logic continues to work. */
 .search-bar-wrapper .send-btn {
@@ -349,7 +309,7 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
 }
 
 .search-bar-wrapper .mic-btn.listening {
-    color: #d93025;   /* red */
+    color: #d93025;
     opacity: 1;
 }
 
@@ -358,7 +318,7 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-top: 32px; /* Increased from 28px for better breathing room */
+    margin-top: 32px;
     flex-wrap: wrap;
 }
 .search-btn {
@@ -485,10 +445,6 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
 }
 #resultsUI.visible { display: flex; }
 
-/* When the preview pane is open it reserves the right half of the viewport.
-   The results column shrinks by the same amount instead of sliding underneath
-   the pane, so no image or result is ever covered. Both sides read the same
-   custom property so the pane edge and the reflow line cannot drift apart. */
 body.preview-open #resultsUI {
     padding-right: var(--preview-width, 50%);
     transition: padding-right 180ms ease;
@@ -553,8 +509,6 @@ body.preview-open #resultsUI {
 }
 
 /* ---- Search Tabs ---- */
-/* Fixed, pre-sized pill. The hover state changes colour only, so moving the
-   pointer across a tab never resizes or re-positions it. */
 .search-tabs {
     display: flex;
     align-items: center;
@@ -562,8 +516,6 @@ body.preview-open #resultsUI {
     margin: 0 0 12px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 0;
-    /* Long translations must be able to scroll rather than squash the tabs or
-       push the border wider than the page. */
     max-width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
@@ -587,8 +539,6 @@ body.preview-open #resultsUI {
     font-size: 13px;
     cursor: pointer;
     white-space: nowrap;
-    /* `border-bottom-color` is included so the active underline can fade
-       without the element's box ever changing height. */
     transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 .search-tab-icon { font-size: 11px; line-height: 1; }
@@ -607,18 +557,11 @@ body.preview-open #resultsUI {
 .tab-panel[hidden] { display: none; }
 
 /* ---- Images Tab ---- */
-/* Justified rows via flex: each tile is sized by its own aspect ratio, so the
-   grid is as dense as Google Images without a fixed column count. */
 .image-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    /* No negative side margin here: the results column already has padding, and
-       pulling the grid past it made the document wider than the viewport, which
-       showed up as a stray horizontal scrollbar on every screen size. */
     margin: 0;
-    /* Tiles carry their own inline aspect-ratio, which would otherwise let a
-       tall portrait image push the row taller than the results column allows. */
     align-items: flex-start;
 }
 .image-tile {
@@ -634,8 +577,6 @@ body.preview-open #resultsUI {
     overflow: hidden;
     background: var(--input-bg);
     cursor: pointer;
-    /* No transition at all on the tile: the caption is a child that is always
-       present, and only its opacity animates on hover. */
 }
 .image-tile-media {
     position: absolute;
@@ -662,8 +603,6 @@ body.preview-open #resultsUI {
     text-align: left;
     color: #ffffff;
     background: linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0));
-    /* Opacity only: the caption is always laid out, so revealing it cannot
-       move the image or reflow the grid. */
     opacity: 0;
     transition: opacity .15s ease;
     pointer-events: none;
@@ -708,14 +647,9 @@ body.preview-open #resultsUI {
 .image-empty .title { font-size: 16px; }
 .image-empty .sub { font-size: 13px; }
 
-/* ---- Touch devices ----
-   A tile caption is revealed on hover, which never happens on touch, so it has
-   to be visible by default or the source and licence are unreachable there. */
 @media (hover: none) {
     .image-tile-caption { opacity: 1; }
 }
-/* Respect the OS "reduce motion" setting for the two animated surfaces: the
-   preview slide-in and the results reflow. */
 @media (prefers-reduced-motion: reduce) {
     .lightbox { animation: none; }
     body.preview-open #resultsUI,
@@ -724,11 +658,7 @@ body.preview-open #resultsUI {
     .search-tab { transition: none; }
 }
 
-/* ---- Image Preview Pane ----
-   The preview docks to the right half of the viewport and the results keep
-   scrolling on the left, so choosing an image never hides the list it came
-   from. The left half is not covered by a scrim, so the page underneath
-   stays visible and interactive. */
+/* ---- Image Preview Pane ---- */
 .lightbox {
     position: fixed;
     top: 0;
@@ -751,10 +681,6 @@ body.preview-open #resultsUI {
     from { transform: translateX(24px); opacity: 0; }
     to   { transform: translateX(0);    opacity: 1; }
 }
-/* One toolbar row across the top of the pane: previous, next, close. Keeping
-   the arrows here (instead of floating them over the middle of the image)
-   means they never sit on top of the picture, and the three controls are
-   reachable without moving the pointer across the image. */
 .lightbox-toolbar {
     position: absolute;
     top: 0;
@@ -784,9 +710,6 @@ body.preview-open #resultsUI {
     inset: auto;
     margin: auto;
 }
-/* The figure owns the flexible space; the image shrinks to fit inside it
-   rather than the pane growing past the viewport. Top padding matches the
-   toolbar height so nothing sits under the buttons. */
 .lightbox-figure {
     display: flex;
     flex-direction: column;
@@ -847,9 +770,6 @@ body.preview-open #resultsUI {
 .lightbox-open:hover { text-decoration: underline; }
 .lightbox-open[hidden] { display: none; }
 
-/* Related strip: other images from the same query, ranked by shared source
-   and title words. Laid out as a horizontally scrollable row so a long strip
-   never pushes the caption taller than the pane. */
 .lightbox-related {
     width: 100%;
     margin-top: 2px;
@@ -894,16 +814,9 @@ body.preview-open #resultsUI {
     outline-offset: 2px;
 }
 
-/* A tablet held upright cannot spare half its width for the preview and still
-   show the grid the image was picked from, so below 1024px the preview goes
-   full-screen and overlays instead of splitting. The results keep the whole
-   viewport rather than being squeezed to nothing. */
 @media (max-width: 1024px) {
     :root { --preview-width: 100%; }
     .lightbox {
-        /* Left-anchored and full-bleed rather than right-anchored at 100%: a
-           vertical scrollbar makes a 100%-wide right-anchored box overhang the
-           viewport and produce a horizontal scrollbar. */
         left: 0;
         right: 0;
         width: auto;
@@ -916,14 +829,13 @@ body.preview-open #resultsUI {
 }
 
 /* ---- Results Content ---- */
-/* Both tabs share one measure, so the header above them never appears to
-   change width or position when the active tab changes. */
 .results-content {
     flex: 1;
     max-width: 1100px;
     width: 100%;
     margin: 0 auto;
-    padding: 12px 20px 60px;
+    /* Increased top padding to give the tabs breathing room */
+    padding: 20px 20px 60px;
 }
 .result-stats {
     font-size: 13px;
@@ -986,6 +898,7 @@ body.preview-open #resultsUI {
     font-weight: 700;
     color: var(--text-secondary);
     line-height: 1;
+    margin: 0;
 }
 .answer-link-wrap {
     display: inline-flex;
@@ -998,12 +911,15 @@ body.preview-open #resultsUI {
     height: 20px;
 }
 .answer-link-wrap .result-favicon { width: 12px; height: 12px; }
+
+/* Adjusted spacing for the Gateway Index badge */
 .result-item-url .result-source {
     flex-shrink: 0;
     max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
     padding: 1px 6px;
+    margin-left: 4px; /* Added breathing room from the URL */
     border: 1px solid var(--border);
     border-radius: 10px;
     color: var(--text-secondary);
@@ -1108,12 +1024,15 @@ html.dark .no-ai-badge {
     color: #81c995;
     background: #17351f;
 }
+
+/* Cleaned up the answer text: lighter weight, smaller size, better line-height */
 .quick-wiki-answer {
     color: var(--text);
-    font-size: 23px;
-    line-height: 1.32;
-    font-weight: 600;
-    letter-spacing: -0.015em;
+    font-size: 18px;
+    line-height: 1.5;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
 }
 .quick-wiki-body {
     display: block;
@@ -1123,8 +1042,6 @@ html.dark .no-ai-badge {
     display: table;
     clear: both;
 }
-/* Text wraps around the floated image and continues underneath it,
-   instead of sitting in a narrow column on the left. */
 .quick-wiki-text { min-width: 0; overflow: visible; }
 .quick-wiki-figure {
     margin: 2px 0 12px 16px;
@@ -1150,6 +1067,8 @@ html.dark .no-ai-badge {
 }
 .quick-wiki-context {
     color: var(--result-desc);
+    font-size: 14px;
+    line-height: 1.6;
 }
 .answer-property {
     padding: 1px 5px;
@@ -1189,15 +1108,19 @@ html.dark .no-ai-badge {
     line-height: 1.58;
     color: var(--result-desc);
 }
+
+/* Improved the meta footer line spacing so links and badges wrap cleanly */
 .answer-box .answer-meta {
-    margin-top: 10px;
-    padding-top: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
     border-top: 1px solid var(--border);
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
+    row-gap: 8px;
+    column-gap: 10px;
     font-size: 12px;
+    line-height: 1.5;
 }
 .answer-box .answer-meta .badge {
     font-size: 10px;
@@ -1271,7 +1194,7 @@ html.dark .no-ai-badge {
     .home-center { margin-top: -40px; }
     .home-logo { font-size: 48px; margin-bottom: 12px; }
     .search-buttons { margin-top: 16px; }
-    .results-content { padding-top: 4px; }
+    .results-content { padding-top: 12px; }
 }
 @media (max-width: 768px) {
     .quick-wiki-figure { float: none; width: 100%; max-width: 100%; margin: 0 0 12px; }
@@ -1288,7 +1211,7 @@ html.dark .no-ai-badge {
     .results-logo { font-size: 22px; }
     .results-search-area { width: auto; max-width: none; flex: 1; min-width: 0; }
     .results-search-area .search-bar-wrapper input { font-size: 16px; }
-    .results-content { padding: 8px 12px 40px; }
+    .results-content { padding: 16px 12px 40px; }
     .image-grid { gap: 8px; }
     .image-tile { flex-basis: 150px; max-width: 100%; height: 130px; }
     .result-item-title { font-size: 18px; }
@@ -1307,8 +1230,6 @@ html.dark .no-ai-badge {
     .search-tab { padding: 0 12px; }
     .image-grid { gap: 6px; }
     .image-tile { flex-basis: 130px; height: 112px; border-radius: 8px; }
-    /* Full-screen preview on a phone: the figure owns the space, so the image
-       needs no extra max-height and is free to use all of it. */
     .lightbox-figure { padding: 48px 8px 8px; }
     .lightbox-caption { padding: 10px 12px 14px; }
     .lightbox-image { border-radius: 4px; }
@@ -1322,7 +1243,7 @@ html.dark .no-ai-badge {
     }
     .index-stats { grid-column: 1 / 3; }
     .no-ai-badge { display: none; }
-    .quick-wiki-answer { font-size: 20px; }
+    .quick-wiki-answer { font-size: 16px; }
     .results-top-bar { flex-wrap: wrap; gap: 6px; }
     .results-logo { font-size: 18px; }
     .results-search-area { order: 3; width: 100%; max-width: 100%; margin-top: 4px; }
@@ -1398,9 +1319,6 @@ html.dark .no-ai-badge {
 .settings-row select:focus {
     border-color: var(--primary);
 }
-/* Destructive-ish action, so it is a bordered button rather than a link:
-   it stays visually quieter than the settings toggles but still reads as
-   pressable, and its disabled state is obvious at a glance. */
 .settings-clear-btn {
     padding: 8px 14px;
     border-radius: 8px;
@@ -1431,7 +1349,7 @@ html.dark .no-ai-badge {
     color: var(--text-secondary);
 }
 
-/* ---- Toggle Switch (reused from design.md) ---- */
+/* ---- Toggle Switch ---- */
 .toggle {
     position: relative;
     display: inline-block;
