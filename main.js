@@ -920,9 +920,8 @@
         const q = input.value.trim();
         if (!q) return false;
 
-        // "I'm Feeling Lucky" needs the enriched list, not just the fast local
-        // pass: with a cold local index the first stage can legitimately return
-        // nothing, and jumping on that would look like a dead button.
+        // Callers that need the finished list can opt into waiting for the
+        // enrichment pass below; the fast local pass is enough by default.
         const waitForEnrichment = !!(options && options.waitForEnrichment);
 
         const requestId = ++searchRequestId;
@@ -1086,9 +1085,9 @@
             }).catch(() => {});
         }
 
-        // Callers that need the finished list (I'm Feeling Lucky) can ask to
-        // wait here. A slow source must not hang them forever, so the wait is
-        // capped; whatever has landed by then is what they get.
+        // Callers that need the finished list can ask to wait here. A slow
+        // source must not hang them forever, so the wait is capped; whatever
+        // has landed by then is what they get.
         if (waitForEnrichment && enrichment) {
             await Promise.race([
                 enrichment,
@@ -1655,23 +1654,40 @@
 
     // ======================== LUCKY SEARCH ========================
 
-    window.luckySearch = async function() {
-        const input = $('mainSearchInput');
-        if (!input) return;
-        const val = input.value.trim();
-        if (!val) { input.focus(); return; }
-        // The old version jumped as soon as the fast local stage resolved.
-        // With a cold local index that stage is legitimately empty, so the
-        // guard below bailed out and the button looked dead. Waiting for the
-        // enriched list (capped at 5s) means there is always something to open
-        // when the query really does have a first hit.
-        const completed = await performSearch('mainSearchInput', { waitForEnrichment: true });
-        if (!completed || lastQuery !== val) return;
-        const first = allResults.find(r => r && r.url && _safeHref(r.url) !== '#');
-        if (!first) return;
-        // location.assign rather than window.open(..., '_self'): popup
-        // blockers treat programmatic window.open as a popup even for _self.
-        window.location.assign(_safeHref(first.url));
+    // Doodle-style "I'm Feeling Lucky": run a random query from this pool
+    // instead of redirecting to the first result.
+    const RANDOM_QUERIES = [
+        'Costa Coffee', 'Mount Everest', 'Ada Lovelace', 'Great Barrier Reef',
+        'World War 2', 'The Beatles', 'Black holes', 'Renaissance art',
+        'NASA', 'Formula 1', 'William Shakespeare', 'Tokyo',
+        'climate change', 'Nintendo', 'British Museum', 'jazz',
+        'volcanoes', 'Python programming', 'Mars', 'Ancient Egypt'
+    ];
+
+    window.luckySearch = function() {
+        if (!RANDOM_QUERIES.length) return;
+        const query = RANDOM_QUERIES[Math.floor(Math.random() * RANDOM_QUERIES.length)];
+        const input = $('mainSearchInput') || $('resultsSearchInput');
+        if (input) {
+            input.value = query;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            // There is no <form> in the markup today, but requestSubmit is
+            // preferred so a form added later is submitted with its own
+            // handler and validation.
+            if (input.form && typeof input.form.requestSubmit === 'function') {
+                input.form.requestSubmit();
+                return;
+            }
+            // Fall back to the same entry points the visible search buttons
+            // use: performSearch first, then its submitSearch guard wrapper.
+            const submit = window.performSearch || window.submitSearch;
+            if (typeof submit === 'function' && input.id) {
+                submit(input.id);
+                return;
+            }
+        }
+        // Last resort: the app already honours ?q= (and ?query=) on load.
+        window.location = '?q=' + encodeURIComponent(query);
     };
 
     window.searchSuggestion = function(term) {
