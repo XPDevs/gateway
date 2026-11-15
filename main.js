@@ -437,8 +437,10 @@
         document.documentElement.classList.toggle('dark', enabled);
         document.body.classList.toggle('dark', enabled);
         localStorage.setItem('gw-dark', enabled ? '1' : '0');
-        document.querySelectorAll('.sun').forEach(el => el.style.display = enabled ? 'none' : '');
-        document.querySelectorAll('.moon').forEach(el => el.style.display = enabled ? '' : 'none');
+        
+        // The .sun and .moon query selectors were removed here because the 
+        // buttons were removed from the top navigation in index.html.
+        
         const dt = $('settingsDarkToggle');
         if (dt) dt.checked = enabled;
     }
@@ -508,6 +510,8 @@
     // The send arrow mirrors the bar's theme: accented while there is a query
     // to send, flat while the field is empty, and it carries the localised
     // "Gateway Search" label for pointer and screen-reader users.
+    // Note: The visual arrow button is hidden via CSS (display: none), but
+    // this JS still updates its state in the background so nothing breaks.
     function updateSendBtn(inputId) {
         const input = $(inputId);
         const btn = inputId === 'mainSearchInput' ? $('homeSendBtn') : $('resultsSendBtn');

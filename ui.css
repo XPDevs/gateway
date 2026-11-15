@@ -10,7 +10,7 @@
     --content-bg: #ffffff;
     --input-bg: #f0f4f9;
     --border: #dee2e6;
-    --primary: #1a73e8;
+    --primary: #4285f4; /* Softened from #1a73e8 */
     --active-item: #e2e7ed;
     --link: #1a0dab;
     --url-color: #006621;
@@ -29,7 +29,7 @@ html.dark, body.dark {
     --content-bg: #131314;
     --input-bg: #1e1f20;
     --border: #444746;
-    --primary: #1a73e8;
+    --primary: #4285f4; /* Softened from #1a73e8 */
     --active-item: #333537;
     --link: #8ab4f8;
     --url-color: #bdc1c6;
@@ -283,23 +283,10 @@ a:hover { text-decoration: underline; }
 }
 .search-bar-wrapper .clear-btn.visible { display: flex; }
 .search-bar-wrapper .clear-btn:hover { background: var(--active-item); }
-/* Send button: lives inside the bar on the right, uses the same accent and
-   surface variables as the rest of the UI so it follows light and dark. */
+/* Send button: visually hidden to keep the UI clean, but kept in the DOM
+   so main.js's visibility and disabled-state logic continues to work. */
 .search-bar-wrapper .send-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    margin-left: 4px;
-    padding: 0;
-    border: 1px solid transparent;
-    border-radius: 50%;
-    background: var(--primary);
-    color: #fff;
-    cursor: pointer;
-    transition: background .2s, opacity .2s, transform .1s, box-shadow .2s;
+    display: none !important; 
 }
 .search-bar-wrapper .send-btn:not(:disabled):hover {
     box-shadow: 0 1px 4px rgba(26,115,232,.4);
@@ -371,7 +358,7 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-top: 28px;
+    margin-top: 32px; /* Increased from 28px for better breathing room */
     flex-wrap: wrap;
 }
 .search-btn {
@@ -485,14 +472,9 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
 }
 .footer-links a:hover { text-decoration: underline; }
 .footer-brand {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--text-secondary);
-    opacity: 0.7;
 }
-.footer-brand img { width: 16px; height: 16px; border-radius: 3px; }
 
 /* ---- Results Page ---- */
 #resultsUI {

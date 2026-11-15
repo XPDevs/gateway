@@ -342,16 +342,7 @@
             <span>G</span><span>a</span><span>t</span><span>e</span><span>w</span><span>a</span><span>y</span>
         </a>
     </div>
-    <div class="top-nav-right">
-        <button class="icon-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
-            <svg class="sun" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
-            <svg class="moon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-            </svg>
-        </button>
-    </div>
+    <!-- The top-nav-right block containing the theme toggle was removed -->
 </nav>
 
 <!-- ==================== CONTENT ==================== -->
@@ -403,10 +394,7 @@
         <div class="links-group">
             <a href="../privacy/">Privacy</a>
             <a href="../terms/">Terms</a>
-            <a href="https://xpdevs.github.io" target="_self" class="footer-brand" style="text-decoration:none;color:inherit">
-                <img src="https://xpdevs.github.io/logo/XPDevs.png" alt="XPDevs" onerror="this.style.display='none'">
-                XPDevs
-            </a>
+            <a href="https://xpdevs.github.io" target="_self" class="footer-brand">© 2026 XPDevs</a>
         </div>
     </div>
 </footer>
@@ -430,16 +418,8 @@
 
     // ---- Dark mode toggle, self-contained for this static page ----
     // The history page cannot load main.js, so this mirrors the behaviour
-    // used on the search page: toggle the dark class on <html>, persist the
-    // choice under gw-dark, and swap the sun and moon icons.
-    function applyDarkModeUi() {
-        var isDark = document.documentElement.classList.contains('dark');
-        var sun = document.querySelector('.icon-btn .sun');
-        var moon = document.querySelector('.icon-btn .moon');
-        if (sun) sun.style.display = isDark ? 'none' : '';
-        if (moon) moon.style.display = isDark ? '' : 'none';
-    }
-
+    // used on the search page: toggle the dark class on <html> and persist the
+    // choice under gw-dark.
     window.toggleDarkMode = function toggleDarkMode() {
         var root = document.documentElement;
         var nowDark = root.classList.toggle('dark');
@@ -449,11 +429,7 @@
         } catch (_) {
             // Private mode or quota failures must not break the toggle.
         }
-        applyDarkModeUi();
     };
-
-    // Sync the icons with the class applied by the inline head script.
-    applyDarkModeUi();
 
     // Storage contract, shared with main.js (gatewaySearchHistory).
     var KEY = 'gw-history';
