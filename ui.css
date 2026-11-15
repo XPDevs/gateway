@@ -171,6 +171,47 @@ a:hover { text-decoration: underline; }
     background: var(--input-bg);
 }
 
+/* Upload index picker.
+   The .pill utility rounds the input box, but a file input renders an
+   internal ::file-selector-button that is a separate box with its own
+   shape, so give the chooser button the same stadium treatment. The
+   font-size that used to be inline on the input now lives here. */
+#indexUpload.pill {
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    max-width: 100%;
+}
+#indexUpload.pill::file-selector-button {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin-right: 10px;
+    background: var(--primary);
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+    transition: filter .15s ease;
+}
+#indexUpload.pill::file-selector-button:hover {
+    filter: brightness(1.07);
+}
+/* Older WebKit builds only honour the prefixed pseudo-element */
+#indexUpload.pill::-webkit-file-upload-button {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin-right: 10px;
+    background: var(--primary);
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+}
+
 /* ---- Home Page ---- */
 #homeUI {
     display: flex;
