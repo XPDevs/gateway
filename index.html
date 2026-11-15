@@ -17,6 +17,38 @@
     <!-- Download the two scripts alongside the markup instead of after it. -->
     <script src="crawl.js" defer></script>
     <script src="main.js" defer></script>
+    <style>
+        /* Comfortable gap between the Gateway wordmark and the search bar */
+        .home-logo {
+            margin-bottom: 40px !important;
+        }
+        .search-section {
+            margin-top: 0 !important;
+        }
+
+        /* Microphone button — shown when the input is empty, hidden the
+           moment the user types so the X clear button can take its slot.
+           The CSS-only toggle uses :placeholder-shown so it works in lock
+           step with main.js's existing clear-button visibility handling. */
+        .search-bar-wrapper .mic-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            padding: 0 8px;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.6;
+            transition: opacity 0.15s ease;
+        }
+        .search-bar-wrapper .mic-btn:hover {
+            opacity: 1;
+        }
+        .search-bar-wrapper input:not(:placeholder-shown) ~ .mic-btn {
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
@@ -121,7 +153,6 @@
         <div class="home-logo">
             <span>G</span><span>a</span><span>t</span><span>e</span><span>w</span><span>a</span><span>y</span>
         </div>
-        <div class="home-tagline" data-i18n="tagline">Faster than Google. Same results.</div>
 
         <div class="search-section">
             <div class="search-bar-wrapper" style="border-radius:24px;position:relative">
@@ -131,9 +162,18 @@
                     </svg>
                 </span>
                 <input type="text" id="mainSearchInput"
-                    data-i18n-placeholder="searchPlaceholder"
-                    placeholder="Search or type a URL"
+                    placeholder="Search"
                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <button class="mic-btn" id="homeMicBtn" type="button"
+                    onclick="startVoiceSearch('mainSearchInput')"
+                    aria-label="Voice search" title="Search by voice">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                        <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                </button>
                 <button class="clear-btn" id="homeClearBtn" onclick="clearSearch('mainSearchInput')">
                     <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
@@ -144,19 +184,13 @@
             </div>
 
             <div class="search-buttons">
-                <button class="search-btn" data-i18n="gatewaySearch" onclick="performSearch('mainSearchInput')">Gateway Search</button>
-                <button class="search-btn" data-i18n="feelingLucky" onclick="luckySearch()">I'm Feeling Lucky</button>
+                <button class="search-btn" style="border-radius:999px" data-i18n="gatewaySearch" onclick="performSearch('mainSearchInput')">Gateway Search</button>
+                <button class="search-btn" style="border-radius:999px" data-i18n="feelingLucky" onclick="luckySearch()">I'm Feeling Lucky</button>
             </div>
 
-            <div class="quick-wiki-teaser">
-                <div class="quick-wiki-teaser-mark" aria-hidden="true">W</div>
-                <div class="quick-wiki-teaser-copy">
-                    <strong data-i18n="quickWiki">Quick Wiki</strong>
-                    <span data-i18n="quickWikiHint">Ask a question for a sourced, deterministic answer</span>
-                </div>
-                <button class="quick-wiki-example" data-i18n="quickWikiExample" onclick="useQuickWikiExample()">Try "release date of PlayStation 5"</button>
-                <span class="index-stats" id="indexStats" data-i18n="indexLoading">Loading the local web index…</span>
-            </div>
+            <!-- Kept for main.js (it writes the index status into this node),
+                 but visually hidden so the loading text is never shown. -->
+            <span class="index-stats" id="indexStats" style="display:none" aria-hidden="true"></span>
         </div>
     </div>
 
@@ -197,9 +231,18 @@
                         </svg>
                     </span>
                     <input type="text" id="resultsSearchInput"
-                        data-i18n-placeholder="searchPlaceholder"
-                        placeholder="Search or type a URL"
+                        placeholder="Search"
                         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <button class="mic-btn" id="resultsMicBtn" type="button"
+                        onclick="startVoiceSearch('resultsSearchInput')"
+                        aria-label="Voice search" title="Search by voice">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                            <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                    </button>
                     <button class="clear-btn" id="resultsClearBtn" onclick="clearSearch('resultsSearchInput')">
                         <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                     </button>
@@ -343,6 +386,33 @@
         </figcaption>
     </figure>
 </div>
+
+<script>
+/* Voice search — uses the Web Speech API when available. Fills the input,
+   notifies main.js via an input event (so the clear and send buttons update),
+   then auto-submits. Silently does nothing if the browser has no support. */
+function startVoiceSearch(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        // No voice support — leave the button inert rather than erroring.
+        return;
+    }
+    const rec = new SR();
+    rec.lang = document.documentElement.lang || navigator.language || 'en-GB';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        input.value = text;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        if (typeof performSearch === 'function') performSearch(inputId);
+    };
+    rec.onerror = () => {};
+    try { rec.start(); } catch (err) {}
+}
+</script>
 
 </body>
 </html>
