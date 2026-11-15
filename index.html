@@ -62,7 +62,7 @@
         <div class="settings-body">
             <div class="settings-row">
                 <label data-i18n="language">Language</label>
-                <select id="langSelect" onchange="setLanguage(this.value)">
+                <select id="langSelect" class="pill" onchange="setLanguage(this.value)">
                     <option value="auto">Auto</option>
                     <option value="en">English</option>
                     <option value="es">Español</option>
@@ -107,14 +107,14 @@
             </div>
             <div class="settings-row">
                 <label>Upload Index</label>
-                <input type="file" id="indexUpload" accept=".json" onchange="handleIndexUpload(event)" style="font-size:12px">
+                <input type="file" id="indexUpload" accept=".json" onchange="handleIndexUpload(event)" class="pill">
             </div>
             <!-- A custom corpus has to be removable again: without this a bad
                  or outdated upload stays live for good. The button is enabled
                  only while an uploaded index is actually in use. -->
             <div class="settings-row">
                 <label>Clear Index</label>
-                <button type="button" class="settings-clear-btn" id="clearIndexBtn"
+                <button type="button" class="settings-clear-btn pill" id="clearIndexBtn"
                     onclick="clearUploadedIndex()" disabled
                     title="No uploaded index to clear">Clear uploaded index</button>
             </div>
