@@ -194,3 +194,7 @@ Local keys written by the browser, all removable via site data. Preferences are 
 Dangerous domains, private IP hostnames, non HTTP or HTTPS URLs, and malware keyword hits are filtered by `isSafeDomain`, `isSafeResult` and `_safeHref`.
 
 Tracking parameters such as `utm_*`, `fbclid` and `gclid` are stripped, along with URL hashes. There is no third party analytics. Favicon and image loads are the only external requests besides the Wikipedia and Wikidata APIs.
+
+## License
+
+This project is licensed under the XPDevs Source License (XPSL) v1.2. See [LICENSE.md](LICENSE.md) for full terms.
