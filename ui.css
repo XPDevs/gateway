@@ -212,6 +212,37 @@ a:hover { text-decoration: underline; }
     cursor: pointer;
 }
 
+/* Language dropdown — the .pill utility rounds the select box itself, but
+   selects have a native rendering (padding, chevron, appearance) that needs
+   settling so the stadium shape reads cleanly. Padding is raised a little
+   from the base .settings-row select rule so the curve does not clip the
+   text, and the focus ring is redrawn to follow the pill. */
+.settings-row select.pill {
+    padding: 8px 36px 8px 16px;
+    border-radius: 999px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Custom chevron drawn as a background image so it sits inside the
+       curve instead of the browser's native control, which ignores padding
+       on some platforms. Colour is baked in per theme below. */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%2370757a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px 8px;
+    background-color: var(--input-bg);
+}
+html.dark .settings-row select.pill,
+.dark .settings-row select.pill {
+    /* Lighter chevron for dark mode so it stays visible on the dark field */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%239aa0a6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+}
+.settings-row select.pill:focus {
+    border-color: var(--primary);
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
 /* ---- Home Page ---- */
 #homeUI {
     display: flex;
