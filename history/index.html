@@ -80,6 +80,33 @@
             border-color: #f2b8b5;
         }
 
+        /* ---- Pill controls ----
+           The .pill utility in ui.css only reshapes the corners. These rules
+           give the pill controls on this page a little more horizontal
+           padding so the curve does not crowd their labels, and preserve the
+           filled "Back to Search" look on the primary link. */
+        .hist-search.pill,
+        .hist-btn.pill {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+        .hist-empty a.pill {
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+        .hist-back-link.pill {
+            display: inline-block;
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 24px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .hist-back-link.pill:hover {
+            filter: brightness(1.07);
+            text-decoration: none;
+        }
+
         .hist-meta {
             font-size: 12px;
             color: var(--text-secondary);
@@ -351,9 +378,9 @@
     <p class="subtitle">The searches you have run in this browser, newest first. Nothing here leaves your device.</p>
 
     <div class="hist-toolbar">
-        <input type="text" id="histFilter" class="hist-search" placeholder="Filter searches&hellip;" autocomplete="off" spellcheck="false" aria-label="Filter searches">
-        <button type="button" class="hist-btn" id="histExport">Export</button>
-        <button type="button" class="hist-btn danger" id="histClear">Delete all</button>
+        <input type="text" id="histFilter" class="hist-search pill" placeholder="Filter searches&hellip;" autocomplete="off" spellcheck="false" aria-label="Filter searches">
+        <button type="button" class="hist-btn pill" id="histExport">Export</button>
+        <button type="button" class="hist-btn danger pill" id="histClear">Delete all</button>
     </div>
     <p class="hist-meta" id="histMeta">&nbsp;</p>
 
@@ -364,7 +391,7 @@
 
     <div id="histEmpty" class="hist-empty" hidden>
         <p>No searches recorded yet. Searches you run on Gateway appear here so you can find and replay them.</p>
-        <a href="../">Start searching</a>
+        <a href="../" class="pill">Start searching</a>
     </div>
 
     <div id="histList"></div>
@@ -379,7 +406,7 @@
     </ul>
     <p>See the <a href="../privacy/">Privacy</a> page for how Gateway handles data in general.</p>
     <div style="margin-top: 40px; text-align: center;">
-    <a href="../" style="display: inline-block; background: var(--primary); color: #fff; padding: 10px 24px; border-radius: 24px; text-decoration: none; font-weight: 500;">Back to Search</a>
+    <a href="../" class="hist-back-link pill">Back to Search</a>
 </div>
 </div>
 
@@ -409,8 +436,8 @@
         <h3 id="gwModalTitle" class="gw-modal-title">Are you sure?</h3>
         <p id="gwModalBody" class="gw-modal-body"></p>
         <div class="gw-modal-actions">
-            <button type="button" class="hist-btn" id="gwModalCancel">Cancel</button>
-            <button type="button" class="hist-btn danger" id="gwModalConfirm">Delete</button>
+            <button type="button" class="hist-btn pill" id="gwModalCancel">Cancel</button>
+            <button type="button" class="hist-btn danger pill" id="gwModalConfirm">Delete</button>
         </div>
     </div>
 </div>
