@@ -147,6 +147,30 @@ a:hover { text-decoration: underline; }
     opacity: 1;
 }
 
+/* ---- .pill — universal pill shape -------------------------------
+   Apply to any element (button, div, a, input, span...) to give it
+   fully-rounded "pill" corners, regardless of its own border-radius.
+   Works at any size/height because 999px exceeds half the height of
+   any realistically-sized element, so it always clamps to a stadium. */
+.pill {
+    border-radius: 999px !important;
+}
+
+/* Optional variants — only if you want them.
+   Left off by default so the base class stays a pure shape utility. */
+
+/* .pill-outline — pill shape plus a hairline border that follows the curve */
+.pill-outline {
+    border-radius: 999px !important;
+    border: 1px solid var(--border);
+}
+
+/* .pill-fill — pill shape plus a background fill */
+.pill-fill {
+    border-radius: 999px !important;
+    background: var(--input-bg);
+}
+
 /* ---- Home Page ---- */
 #homeUI {
     display: flex;
