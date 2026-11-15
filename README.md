@@ -1,6 +1,6 @@
 # Gateway Search
 
-A fast, private, multi source search engine by [XPDevs](https://xpdevs.github.io). Gateway searches a bundled local web index of 50,000 real websites across 50,000 domains, plus live Wikipedia and Wikidata open data. It requires no API keys, no build step and no generative AI.
+A fast, private, multi source search engine by [XPDevs](https://xpdevs.github.io). Gateway searches a bundled local web index of 55,0619 real websites across 55,0619 domains, plus live Wikipedia and Wikidata open data. It requires no API keys, no build step and no generative AI.
 
 ![Gateway Search Homepage](images/hompage_example.png)
 
@@ -66,9 +66,9 @@ Images use `loading="lazy"` and `decoding="async"`.
 
 **Unique descriptions**
 
-All 50,000 `index.json` descriptions are unique. Verified counts are 50,000 unique descriptions out of 50,000 and 50,000 unique URLs out of 50,000.
+All 55,0619 `index.json` descriptions are unique. Verified counts are 55,0619 unique descriptions out of 55,0619 and 55,0619 unique URLs out of 55,0619.
 
-All 50,000 entries are real websites, one per domain, sourced from Wikidata and confirmed to answer over HTTP at build time.
+All 55,0619 entries are real websites, one per domain, sourced from Wikidata and confirmed to answer over HTTP at build time.
 
 **Search history, local and reversible**
 
@@ -105,7 +105,7 @@ gateway-main/
 ├── main.js          # UI, staged search orchestration, rendering, favicons, Quick Wiki image
 ├── crawl.js         # Index engine, Wikipedia and Wikidata fetchers, ranking, caches
 ├── index/
-│   ├── index.json       # Bundled local index: [{t, u, d, s}] with 50,000 unique description entries
+│   ├── index.json       # Bundled local index: [{t, u, d, s}] with 55,0619 unique description entries
 │   └── index-meta.json  # Index version and entry count for cache busting
 ├── about/ advertising/ business/ how-search-works/ history/ privacy/ terms/  # Static pages
 ├── favicon.ico
@@ -156,7 +156,7 @@ FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
    `N = 20,000,000,000` at web corpus scale via `RANK_CORPUS_SIZE`, which can be overridden with `window.GATEWAY_RANK_CORPUS` for self hosted corpora. `n(q_i)` is document frequency, counted at index load.
 2. Dynamic query term weighting. `W(q_i) = IDF(q_i) ^ 1.5`. Rare entities are boosted and common terms are damped.
 3. Okapi BM25. `BM25(D, Q) = Σ W(q_i) · (f(q_i,D) · (k1 + 1)) / (f(q_i,D) + k1 · (1 - b + b · (|D| / avgdl)))` with `k1 = 1.2` and `b = 0.75`.
-   Documents are title and description. `|D|` is the word count. `avgdl` is the mean across the whole index, 12.73 words for the bundled set, from 548,586 tokens over 50,000 documents and 79,765 distinct terms.
+   Documents are title and description. `|D|` is the word count. `avgdl` is the mean across the whole index, 12.73 words for the bundled set, from 548,586 tokens over 55,0619 documents and 79,765 distinct terms.
 4. Authority. A pre calculated static float in the range 0.0 to 10.0, PageRank style, resolved per domain. Resolution goes from an exact table to a parent domain walk such as `en.wikipedia.org` to `wikipedia.org`, then to public sector and academic host shapes such as `.gov`, `gov.uk`, `gob.ve`, `.edu` and `ac.uk`, and finally to a deterministic 2.0 to 6.0 hash band for everything else. It never varies with the query. An index entry may ship its own value in `a`, which always wins.
 
 Because authority contributes at most 2.0 points, relevance dominates and authority only breaks ties. This is the intended split of 80 percent relevance and 20 percent authority.
@@ -165,13 +165,13 @@ Tokenisation. Query terms are stopword filtered. Single digits are kept, as in `
 
 Removed in this revision. The old hand tuned constants are gone, including exact title `+700`, title prefix `+380`, per field `+55`, `+32`, `+24` and `+9`, the coverage bonus, and the fixed Wikipedia, official and web boosts of `2000`, `1800`, `930`, `280`, `360` and `260`. A latent `STOPWORDS` bug was also fixed. The old `.split(' ')` bound only to the last string literal, so the set held 20 stray characters and no stopword was ever filtered.
 
-Verified by recalculating IDF, `W`, BM25 and `FinalScore` from the raw index for more than 150 results across 6 queries. Maximum drift is `0.0`. Corpus stats, with `avgdl` at 12.7286 and vocabulary at 79,765, also match an independent count. Warm search averages about 3 ms over 50,000 documents, with a median of 2.6 ms and a p95 of 21.1 ms across 600 timed `gatewaySearchLocal()` calls. One time index preparation costs about 1.3 seconds and is cached in memory.
+Verified by recalculating IDF, `W`, BM25 and `FinalScore` from the raw index for more than 150 results across 6 queries. Maximum drift is `0.0`. Corpus stats, with `avgdl` at 12.7286 and vocabulary at 79,765, also match an independent count. Warm search averages about 3 ms over 55,0619 documents, with a median of 2.6 ms and a p95 of 21.1 ms across 600 timed `gatewaySearchLocal()` calls. One time index preparation costs about 1.3 seconds and is cached in memory.
 
 ## Performance notes
 
 First paint never awaits network, and network failures cannot blank results.
 
-`MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100` and `PER_PAGE=20`. Each search walks only the documents its query terms actually match in a prebuilt inverted index. Warm median is about 2.6 ms measured over the bundled 50,000 entry index, plus a one time `df`, `avgdl` and authority precompute of about 1.3 seconds that is cached in memory.
+`MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100` and `PER_PAGE=20`. Each search walks only the documents its query terms actually match in a prebuilt inverted index. Warm median is about 2.6 ms measured over the bundled 55,0619 entry index, plus a one time `df`, `avgdl` and authority precompute of about 1.3 seconds that is cached in memory.
 
 To verify, search anything and read `result-stats`, for example `(0.04 seconds)`. Compare against Google's typical 0.3 to 0.6 second SERP time.
 
