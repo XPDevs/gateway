@@ -1,0 +1,7 @@
+# robots.txt for Gateway
+# Allow all crawlers full access
+
+User-agent: *
+Allow: /
+
+Sitemap: https://xpdevs.github.io/gateway/sitemap.xml
