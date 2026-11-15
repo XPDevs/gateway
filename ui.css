@@ -361,6 +361,11 @@ html.dark .search-bar-wrapper .send-btn { color: #fff; }
     font-weight: 600;
 }
 
+.search-bar-wrapper .mic-btn.listening {
+    color: #d93025;   /* red */
+    opacity: 1;
+}
+
 /* ---- Search Buttons ---- */
 .search-buttons {
     display: flex;

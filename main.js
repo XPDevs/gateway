@@ -626,158 +626,29 @@
     }
 
     // ======================== XPDEV PROFILE ========================
-    // Searching "XPDevs" (or anything that mentions it) is answered from a
-    // local, deterministic profile: the Quick Wiki box with the XPDevs logo,
-    // the official website, the GitHub organisation, and every public
-    // repository it publishes. No network round-trip, no generative AI.
+    // Searching "XPDevs" (or anything that mentions it) shows a local,
+    // deterministic Quick Wiki card with the XPDevs logo. The searchable
+    // rows themselves live in index/xpdevs.json as ordinary {t,u,d,s}
+    // entries, merged into the main index by crawl.js, so they rank and
+    // paginate exactly like every other result. No generative AI.
 
     const XPDEV_PROFILE = {
         name: 'XPDevs',
+        realName: 'James Turner',
         website: 'https://xpdevs.github.io',
         github: 'https://github.com/XPDevs',
         logo: 'https://xpdevs.github.io/logo/XPDevs.png',
-        repoCount: 59,
+        repoCount: 64,
+        followers: 8,
         location: 'United Kingdom',
-        focus: 'operating systems, web tools and open-source experiments'
+        focus: 'operating systems, browser tools and open-source experiments',
+        currentFocus: 'Genesis-AI and Genesis AI Studio',
+        flagship: 'DoorsOS'
     };
-
-    // [name, language, description, stars, updated, fork?]
-    const XPDEV_REPO_DATA = [
-        ['64232', 'JavaScript', 'Convert 64 bit exes to 32 bit exes', 1, '2025-08-15'],
-        ['A-bad-codebase-scanner', 'C', 'This was supposed to be working but i kinda doesnt if you want to modify it you can freely', 0, '2026-06-20'],
-        ['aimi', '', 'The langauge of C but giving the dev more control', 0, '2026-06-26'],
-        ['ASM-plus-', 'C', 'this repo contains the code for the "compiler" for a custom assmelby language made by XPDevs for use in booloaders, it takes the cusomt ASM and turns ', 0, '2025-10-01'],
-        ['AudioNoise', '', 'Random digital audio effects', 0, '2026-01-11', true],
-        ['AuraOS', 'HTML', 'This repo contains the code for the AuraOS interface Link: https://xpdevs.github.io/AuraOS', 0, '2026-09-15'],
-        ['Beluma', 'HTML', 'https://xpdevs.github.io/Beluma', 0, '2026-09-16'],
-        ['CastOS', 'HTML', 'an operating system for casting so you dont have to pay for a chromecast', 1, '2025-02-15'],
-        ['chess', 'HTML', 'A very bad chess website', 0, '2026-06-08'],
-        ['CMD', 'HTML', 'No repository description yet.', 0, '2026-09-23'],
-        ['controller.API', 'HTML', 'a free and open source API to give any website controller support', 0, '2025-10-27'],
-        ['copyright', '', 'the javascritp code for the XPDevs copyright footer', 0, '2025-02-17'],
-        ['Doors-Operating-System', 'HTML', 'This is the old wesite for the XPDevs website', 0, '2026-04-29'],
-        ['DoorsOS-Server', 'HTML', 'DoorsOS Server OS', 0, '2025-02-16'],
-        ['exe2msi', '', 'No repository description yet.', 0, '2025-03-03'],
-        ['Foresight', 'HTML', 'No repository description yet.', 0, '2026-02-26'],
-        ['gateway', 'JavaScript', 'A small search engine made from scratch', 1, '2026-09-27'],
-        ['Genesis-AI', 'JavaScript', 'This is the official website for the Genisis AI made by XPDevs', 0, '2026-07-15'],
-        ['Genesis-pof', 'Python', 'simple proof of concept for a new Genesis model', 0, '2026-08-19'],
-        ['Genvid', 'JavaScript', 'TEST', 0, '2026-05-08'],
-        ['ggwave', '', 'Tiny data-over-sound library', 0, '2025-10-18', true],
-        ['Hostly', 'HTML', 'Host any website for free', 0, '2026-03-19'],
-        ['HTML-APP-TEMPLATES', 'HTML', 'No repository description yet.', 0, '2025-05-19'],
-        ['Hue', 'HTML', 'An app that makes small images of art based on your moods for that week based on the colours you pick', 0, '2026-04-08'],
-        ['iframe-control', 'JavaScript', 'this basic JS api allows you to call the api and show an iframe and pass control to it.', 0, '2025-10-02'],
-        ['JS2PY', 'HTML', 'A program that allows you to convert Javascript to Python', 0, '2025-11-17'],
-        ['L', '', 'Virtual Machine for the Web', 0, '2025-02-15', true],
-        ['Learn-Munhwao', 'JavaScript', 'An app for learning the north Korean language (Munhwao)', 0, '2026-09-25'],
-        ['Linux', 'HTML', 'No repository description yet.', 0, '2025-10-02'],
-        ['LM-Studio-Image-Search', 'TypeScript', 'A simple MCP server that allows models trained for tool use in LM Studio to search the web for images and display them.', 0, '2026-06-30'],
-        ['MacOS', 'HTML', 'MacOS in html, if you would like it to be taken down please visit https://xpdevs,github.io', 0, '2026-09-09'],
-        ['Messaging', 'HTML', 'No repository description yet.', 0, '2026-05-06'],
-        ['Mobile-html-app-tool', 'HTML', 'Mobile html app tool', 1, '2025-10-01'],
-        ['MONS', 'HTML', 'No repository description yet.', 1, '2026-01-16'],
-        ['Musicify', 'HTML', 'This website applies diffrent effects onto the mp3 file you upload', 0, '2025-09-15'],
-        ['NetShield', 'JavaScript', 'This is a very  bad but semi-functional adblocker', 0, '2026-06-19'],
-        ['NexShell', 'C', 'NexShell source code', 1, '2026-07-29'],
-        ['OFL', 'JavaScript', 'A new fast search standard for databases', 0, '2026-08-25'],
-        ['Paral', '', 'Javascript 3D library built upon THREE.js', 0, '2026-02-19'],
-        ['PS4', 'JavaScript', 'No repository description yet.', 0, '2025-04-04'],
-        ['RetroBoot', 'C', 'RetroBoot allows BIOS based OS to run on UEFI based PCs only without modiciation to anything', 0, '2026-03-12'],
-        ['stein-controller', 'JavaScript', 'this js file gives stein.world support for controllers as it currently does not', 0, '2025-04-10'],
-        ['telcom', 'C', 'An open-source framework for managing packet queues, latency on access network gear.', 1, '2026-07-19'],
-        ['The-Holy-Cheddar-Faith', 'HTML', 'This is the website for The Holy Cheddar Religion', 0, '2025-12-10'],
-        ['Undertale', 'JavaScript', 'This is a working in progress to make the entire UNDERTALE game in pure html css and js', 0, '2026-03-30'],
-        ['unlocking-fire-tablet-bootloader', '', 'No repository description yet.', 0, '2024-12-15'],
-        ['URL', 'HTML', 'shorterns urls instead of using Tiny URL', 0, '2026-02-26'],
-        ['VirtualDoors', 'HTML', 'DoorsOS vm running in browser', 0, '2026-01-20', true],
-        ['WebVM', 'HTML', 'collection of vms for a variety of devices all in the web browser', 9, '2026-06-14', true],
-        ['Westgress-Sports', 'HTML', 'No repository description yet.', 1, '2025-02-15'],
-        ['WhiteSur', '', 'No repository description yet.', 0, '2025-04-10'],
-        ['Windows10', 'HTML', 'Windows 10 in the Web', 1, '2026-03-31'],
-        ['WiseAssist', 'HTML', 'The repo contains the html code for the android app called WiseAssist to help elders with their phones it also containslink to the apk file hosted in ', 0, '2026-02-28'],
-        ['XJS', 'JavaScript', 'XJS is the custom XPDevs version of normal JS allowing to be easly inter-changable', 0, '2026-02-01'],
-        ['xmrigC', '', 'RandomX, KawPow, CryptoNight and GhostRider unified CPU/GPU miner and RandomX benchmark Recoded all into C', 0, '2026-01-11', true],
-        ['XPDevs', '', 'No repository description yet.', 0, '2026-06-28'],
-        ['XPDevs-Studio', 'JavaScript', 'A small very new and unfinished Linux IDE.', 0, '2026-08-30'],
-        ['xpdevs.github.io', 'HTML', 'The official XPDevs Website', 1, '2026-09-27'],
-        ['Youtube-On-Kodi', 'Python', 'No repository description yet.', 1, '2026-08-22'],
-    ];
 
     function _isXpdevsQuery(query) {
         const q = String(query || '').toLowerCase();
         return /\bxp[ _-]?devs?\b/.test(q) || /\bgateway search\b/.test(q);
-    }
-
-    function _xpdevsResult(title, url, description, sourceLabel, score) {
-        return {
-            title: title,
-            url: url,
-            description: description,
-            fullSnippet: description,
-            extract: description,
-            thumbnail: null,
-            source: 'special',
-            sourceLabel: sourceLabel,
-            resultType: 'web',
-            score: score,
-            domain: _displayDomain(url),
-            suggestion: null
-        };
-    }
-
-    function _xpdevsRepoResults() {
-        return XPDEV_REPO_DATA.map((row, i) => {
-            const name = row[0], lang = row[1], desc = row[2], stars = row[3], updated = row[4];
-            const fork = row[5] ? ' \u00b7 fork of an upstream project' : '';
-            const meta = [lang, '\u2605 ' + stars, 'updated ' + updated + fork].filter(Boolean).join(' \u00b7 ');
-            return _xpdevsResult(
-                'XPDevs / ' + name,
-                XPDEV_PROFILE.github + '/' + name,
-                desc + ' \u2014 ' + meta,
-                'GitHub',
-                90000 - i
-            );
-        });
-    }
-
-    const XPDEV_SITES = [
-        _xpdevsResult(
-            'XPDevs',
-            XPDEV_PROFILE.website,
-            'The official XPDevs website: ' + XPDEV_PROFILE.focus + '. Based in the '
-                + XPDEV_PROFILE.location + '. Home of DoorsOS, ExamOS and Genesis-AI.',
-            'XPDevs',
-            99999
-        ),
-        _xpdevsResult(
-            'XPDevs on GitHub',
-            XPDEV_PROFILE.github,
-            'Every public repository published by XPDevs \u2014 ' + XPDEV_PROFILE.repoCount
-                + ' projects in total, from Gateway and AuraOS to WebVM, Hostly and XJS.',
-            'GitHub',
-            99998
-        ),
-        _xpdevsResult(
-            'Gateway Search',
-            'https://xpdevs.github.io/gateway',
-            'Gateway, the multi-source search engine by XPDevs. Fast, private, no API keys needed.',
-            'Gateway',
-            99997
-        )
-    ].concat(_xpdevsRepoResults());
-
-    function _boostXpdevs(results, query) {
-        if (_isXpdevsQuery(query)) {
-            const existing = new Set(results.map(r => r.url));
-            const toAdd = XPDEV_SITES.filter(s => !existing.has(s.url));
-            // Pinned ahead of every ranked result, so the profile, the site
-            // and the full repository list are the first rows of the page.
-            results.unshift(...toAdd);
-        }
-        // gatewayCrawl caps its own ranked set at 100; keep the same contract
-        // after adding the XPDevs shortcut set (its 62 rows sit inside it).
-        return results.slice(0, 100);
     }
 
     // Quick Wiki for XPDevs queries: deterministic, local, logo-first.
@@ -785,18 +656,19 @@
         if (!_isXpdevsQuery(query)) return null;
         const p = XPDEV_PROFILE;
         return {
-            answer: 'XPDevs is an open-source developer based in the ' + p.location
-                + ' that builds ' + p.focus + '. The project publishes ' + p.repoCount
-                + ' public repositories on GitHub and is best known for Gateway, a small '
-                + 'multi-source search engine written from scratch, plus the DoorsOS and '
-                + 'ExamOS operating-system experiments and the Genesis-AI platform.',
-            description: 'The current focus is Genesis-AI and Genesis AI Studio, a local AI '
-                + 'experience; DoorsOS is the flagship operating system, built from the kernel up.',
+            answer: 'XPDevs is the open-source project of ' + p.realName + ', based in the '
+                + p.location + ', building ' + p.focus + '. It publishes ' + p.repoCount
+                + ' public repositories on GitHub \u2014 led by Gateway, a small multi-source '
+                + 'search engine written from scratch \u2014 alongside ' + p.flagship
+                + ', a from-scratch operating system, the ExamOS and AuraOS experiments, '
+                + 'and the Genesis-AI platform.',
+            description: 'The current focus is ' + p.currentFocus + ', a local AI experience; '
+                + p.flagship + ' is the flagship operating system, built from the kernel up.',
             title: p.name,
             url: p.website,
             label: 'Project profile',
             sourceLabel: p.name,
-            property: p.repoCount + ' public repositories',
+            property: p.repoCount + ' public repositories \u00b7 ' + p.followers + ' followers',
             note: 'Local profile \u00b7 github.com/XPDevs',
             image: p.logo,
             imageAlt: p.name + ' logo',
@@ -805,7 +677,8 @@
                 { url: p.github, title: 'XPDevs on GitHub', domain: 'github.com' },
                 { url: 'https://xpdevs.github.io/Doors', title: 'DoorsOS', domain: 'xpdevs.github.io' },
                 { url: 'https://xpdevs.github.io/ExamOS', title: 'ExamOS', domain: 'xpdevs.github.io' },
-                { url: 'https://xpdevs.github.io/AI', title: 'Genesis-AI', domain: 'xpdevs.github.io' }
+                { url: 'https://xpdevs.github.io/AI', title: 'Genesis-AI', domain: 'xpdevs.github.io' },
+                { url: 'https://xpdevs.github.io/Gateway', title: 'Gateway', domain: 'xpdevs.github.io' }
             ]
         };
     }
@@ -986,7 +859,7 @@
         } catch(_) { localResults = []; }
         if (requestId !== searchRequestId) return false;
 
-        allResults = _boostXpdevs(localResults || [], q);
+        allResults = localResults || [];
         const paint = () => {
             if (requestId !== searchRequestId) return;
             const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
@@ -1014,7 +887,7 @@
                 if (requestId !== searchRequestId || !Array.isArray(full) || !full.length) return;
                 const seen = new Set(allResults.map(r => r.url));
                 let added = 0;
-                for (const r of _boostXpdevs(full, q)) {
+                for (const r of full) {
                     if (!seen.has(r.url)) { seen.add(r.url); allResults.push(r); added++; }
                 }
                 if (added > 0) {
@@ -1633,9 +1506,9 @@
 
         window._gwLoaded = window._gwLoaded || 0;
         const start = window._gwLoaded;
-        // An XPDevs query is a fixed, known-size set: show the profile, the
-        // site and every repository in one pass instead of 20-row pages.
-        const pageSize = _isXpdevsQuery(lastQuery) ? 120 : PER_PAGE;
+        // XPDevs rows arrive through index/xpdevs.json like any other entry,
+        // so they page at the standard size rather than a special one.
+        const pageSize = PER_PAGE;
         const end = Math.min(start + pageSize, filtered.length);
         const newItems = filtered.slice(start, end);
 
@@ -1705,6 +1578,144 @@
         $('mainSearchInput').value = 'release date of PlayStation 5';
         updateClearBtn('mainSearchInput');
         performSearch('mainSearchInput');
+    };
+    // ======================== VOICE SEARCH ========================
+
+    // Web Speech API, prefixed in some browsers.
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // Map the app's short codes onto BCP-47 tags for better recognition.
+    const VOICE_LANG_MAP = {
+        en: 'en-GB', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', it: 'it-IT',
+        pt: 'pt-PT', ru: 'ru-RU', ja: 'ja-JP', 'zh-CN': 'zh-CN', 'zh-TW': 'zh-TW',
+        ko: 'ko-KR', ar: 'ar-SA', hi: 'hi-IN', bn: 'bn-BD', tr: 'tr-TR',
+        nl: 'nl-NL', pl: 'pl-PL', sv: 'sv-SE', da: 'da-DK', fi: 'fi-FI',
+        no: 'nb-NO', cs: 'cs-CZ', ro: 'ro-RO', hu: 'hu-HU', el: 'el-GR'
+    };
+
+    let _activeVoice = null;   // { recognition, inputId, button }
+
+    function _voiceButtonFor(inputId) {
+        return inputId === 'mainSearchInput' ? $('homeMicBtn') : $('resultsMicBtn');
+    }
+
+    function _voiceSupported() {
+        return !!SpeechRecognitionCtor;
+    }
+
+    function _resetMicButton(button) {
+        if (!button) return;
+        button.classList.remove('listening');
+        button.setAttribute('aria-label', 'Voice search');
+        button.title = 'Search by voice';
+    }
+
+    window.startVoiceSearch = function(inputId) {
+        const input = $(inputId);
+        const button = _voiceButtonFor(inputId);
+        if (!input) return;
+
+        // Tapping the mic again while listening cancels: the transcript
+        // already in the box is kept, but no search is triggered.
+        if (_activeVoice && _activeVoice.inputId === inputId) {
+            const session = _activeVoice;
+            _activeVoice = null;
+            session.recognition._cancelled = true;
+            try { session.recognition.stop(); } catch (_) {}
+            _resetMicButton(session.button);
+            return;
+        }
+
+        // Only one microphone session at a time: abandon any other.
+        if (_activeVoice) {
+            const session = _activeVoice;
+            _activeVoice = null;
+            session.recognition._cancelled = true;
+            try { session.recognition.stop(); } catch (_) {}
+            _resetMicButton(session.button);
+        }
+
+        if (!_voiceSupported()) {
+            if (button) button.title = 'Voice search is not supported in this browser';
+            console.log('[Gateway] Voice search unavailable: SpeechRecognition API missing.');
+            return;
+        }
+
+        const recognition = new SpeechRecognitionCtor();
+        recognition._cancelled = false;
+        recognition._hadError = false;
+        recognition.lang = VOICE_LANG_MAP[_lang] || _lang || navigator.language || 'en-GB';
+        // The point of this mode: interim results arrive while the user is
+        // still talking, so the transcript types itself into the input live.
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        recognition.continuous = false;
+
+        // Preserve whatever was already typed before the mic was tapped;
+        // the spoken transcript is appended to it.
+        const prefix = input.value.trim();
+        let finalTranscript = '';
+
+        recognition.onstart = () => {
+            if (button) {
+                button.classList.add('listening');
+                button.setAttribute('aria-label', 'Listening…');
+                button.title = 'Listening… tap to stop';
+            }
+        };
+
+        recognition.onresult = (event) => {
+            let interim = '';
+            let final = '';
+            // resultIndex is where the new batch begins. Everything before
+            // it was already accounted for in previous onresult calls.
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const result = event.results[i];
+                const text = result[0] ? result[0].transcript : '';
+                if (result.isFinal) final += text;
+                else interim += text;
+            }
+            finalTranscript += final;
+            const spoken = (finalTranscript + interim).replace(/\s+/g, ' ').trim();
+            input.value = prefix ? (prefix + ' ' + spoken) : spoken;
+            // Refresh clear/send buttons directly rather than dispatching an
+            // input event, so the autocomplete dropdown does not flash open
+            // on every interim word.
+            updateClearBtn(inputId);
+        };
+
+        recognition.onerror = (event) => {
+            recognition._hadError = true;
+            const reason = event && event.error ? event.error : 'unknown';
+            if (reason !== 'aborted' && reason !== 'no-speech') {
+                console.log('[Gateway] Voice search error: ' + reason);
+            }
+            if ((reason === 'not-allowed' || reason === 'service-not-allowed') && button) {
+                button.title = 'Microphone permission denied';
+            }
+        };
+
+        recognition.onend = () => {
+            if (_activeVoice && _activeVoice.recognition === recognition) {
+                _resetMicButton(button);
+                _activeVoice = null;
+            }
+            // A cancelled session leaves the text in the box but does not
+            // search; a natural finish (user paused) submits what was heard.
+            if (!recognition._cancelled && !recognition._hadError) {
+                if (input.value.trim()) doSearch(inputId);
+            }
+        };
+
+        _activeVoice = { recognition, inputId, button };
+        try {
+            recognition.start();
+        } catch (err) {
+            console.log('[Gateway] Voice search could not start: '
+                + (err && err.message ? err.message : err));
+            _activeVoice = null;
+            _resetMicButton(button);
+        }
     };
 
     // ======================== KEY HANDLING ========================
