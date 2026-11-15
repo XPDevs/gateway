@@ -264,17 +264,85 @@
         }
     }
 
-    // Reads the live page count back from the crawler and repaints the home
-    // page stat line. Shared by init and by the clear button.
+    // index/index-meta.json is the small freshness probe that is preloaded in
+    // <head> and refetched by crawl.js for its version check. It carries
+    // `entries`, the corpus size, so the home page can show the real page
+    // count straight away instead of waiting for the 6 MB index.json to
+    // download, parse and land in IndexedDB. `entries` is cached for the
+    // lifetime of the page. It only goes stale if an uploaded corpus is live,
+    // and that path asks the crawler for the actual size instead.
+    let _metaEntries = 0;
+    async function _readMetaEntries() {
+        if (_metaEntries > 0) return _metaEntries;
+        try {
+            const res = await fetch('index/index-meta.json', { cache: 'no-cache' });
+            if (!res.ok) {
+                console.log('[Gateway] index-meta.json not loaded, HTTP ' + res.status
+                    + ', falling back to gatewayIndexSize()');
+                return 0;
+            }
+            const meta = await res.json();
+            const n = Number(meta && meta.entries);
+            if (!Number.isFinite(n) || n <= 0) {
+                console.log('[Gateway] index-meta.json loaded but has no usable entries field, got '
+                    + JSON.stringify(meta && meta.entries)
+                    + ', falling back to gatewayIndexSize()');
+                return 0;
+            }
+            _metaEntries = Math.floor(n);
+            return _metaEntries;
+        } catch (err) {
+            console.log('[Gateway] index-meta.json not loaded, '
+                + (err && err.message ? err.message : String(err))
+                + ', falling back to gatewayIndexSize()');
+            return 0;
+        }
+    }
+
+    function _renderIndexStats(count) {
+        const stats = $('indexStats');
+        if (!stats) return;
+        localIndexCount = count || 0;
+        // Keep localIndexCount in step so _applyTranslations() re-renders the
+        // number, not the loading placeholder, when the user switches
+        // language later.
+        stats.textContent = localIndexCount
+            ? _t('indexPages', { count: localIndexCount.toLocaleString(_lang) })
+            : _t('indexLoading');
+    }
+
+    // Repaints the home page stat line. For the bundled corpus, take the count
+    // from index-meta.json. For an uploaded corpus, ask the crawler for the
+    // live size, because the meta file describes the built in index, not the
+    // upload.
     function _refreshIndexStats() {
-        if (!$('indexStats') || typeof window.gatewayIndexSize !== 'function') return;
-        window.gatewayIndexSize().then(count => {
-            localIndexCount = count || 0;
-            const stats = $('indexStats');
-            if (stats) stats.textContent = localIndexCount
-                ? _t('indexPages', { count: localIndexCount.toLocaleString(_lang) })
-                : _t('indexLoading');
-        }).catch(() => {});
+        if (!$('indexStats')) return;
+        if (_uploadedIndexActive) {
+            console.log('[Gateway] index stats not from index-meta.json, an uploaded index is active, asking gatewayIndexSize()');
+            _refreshIndexStatsFromEngine();
+            return;
+        }
+        _readMetaEntries().then(n => {
+            if (n > 0) { _renderIndexStats(n); return; }
+            // _readMetaEntries() has already logged the specific reason.
+            _refreshIndexStatsFromEngine();
+        });
+    }
+
+    function _refreshIndexStatsFromEngine() {
+        if (typeof window.gatewayIndexSize !== 'function') {
+            console.log('[Gateway] index stats unavailable, gatewayIndexSize() is not defined, crawl.js may not be loaded, keeping the loading placeholder');
+            return;
+        }
+        window.gatewayIndexSize()
+            .then(count => {
+                console.log('[Gateway] index stats from gatewayIndexSize(): ' + (count || 0));
+                _renderIndexStats(count || 0);
+            })
+            .catch(err => {
+                console.log('[Gateway] index stats unavailable, gatewayIndexSize() rejected, '
+                    + (err && err.message ? err.message : String(err)));
+            });
     }
 
     // ======================== SETTINGS ========================
