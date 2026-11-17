@@ -1,6 +1,7 @@
 /**
  * Gateway | Main Application
  * XPDevs | https://xpdevs.github.io
+ * Copyright (c) 2024–2026 XPDevs — Licensed under XPSL v1.2
  */
 (function() {
     'use strict';
