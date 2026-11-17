@@ -1,23 +1,23 @@
 # Gateway Crawler
 
-`crawler/crawler.py` is the standalone web crawler that ships with Gateway and was used to generate the bundled index. It walks the web politely, respects `robots.txt`, and writes a single JSON array in the same `{t, u, d, s}` shape that Settings then Upload Index expects. This document is its reference.
+`crawler/` contains the standalone Gateway web crawler (C11 port of `crawler.py` v3.1.0). It walks the web politely, respects `robots.txt`, and writes a single JSON array in the same `{t, u, d, s}` shape that Settings → Upload Index expects. This document is its reference.
 
 Version 3.1.0.
 
 ## Contents
 
 1. Overview
-2. Requirements
-3. Quick start
-4. Output format
-5. Command line reference
-6. Terminal UI
-7. Examples
-8. Resume and checkpoints
-9. ntfy.sh notifications
-10. Safety
-11. Limitations and behaviour notes
-12. Version history
+2. Pre-built binaries (Releases)
+3. Building from source
+4. Quick start
+5. Output format
+6. Command line reference
+7. Terminal UI
+8. Examples
+9. Resume and checkpoints
+10. ntfy.sh notifications
+11. Safety
+12. Limitations and behaviour notes
 
 ## Overview
 
@@ -25,78 +25,102 @@ Gateway itself does not need a crawler. The bundled index in `index/index.json` 
 
 - Refreshing or extending the bundled index from seeds you control.
 - Building a small index from scratch on a specific topic with its own seed URLs.
-- Producing a larger or fresher custom index that you then load through Settings then Upload Index.
+- Producing a larger or fresher custom index that you then load through Settings → Upload Index.
 
-The crawler is designed to run by one person on one machine, unattended, with predictable memory use and a clean shutdown at any moment. It is memory bounded by construction. The frontier is capped, deduplication uses a Bloom filter with a configurable capacity and false positive rate, and each response body is read through a streaming decoder with a hard byte limit. Nothing about it needs a server, a database service or an account.
+The crawler is designed to run unattended on one machine with predictable memory use and a clean shutdown at any moment. It is memory bounded by construction. The frontier is capped, deduplication uses a Bloom filter with a configurable capacity and false positive rate, and each response body is read through a streaming decoder with a hard byte limit. No server, database service, or account is required.
 
 Two properties are worth stating up front.
 
-- Every URL is checked against an SSRF filter before any request, including every redirect hop. Metadata endpoints such as `169.254.169.254`, localhost, private IP ranges and non HTTP schemes are rejected.
+- Every URL is checked against an SSRF filter before any request, including every redirect hop. Metadata endpoints such as `169.254.169.254`, localhost, private IP ranges, and non-HTTP schemes are rejected.
 - `robots.txt` is fetched and respected by default. You can disable it with `--ignore-robots`, but only do that on sites you own or are authorised to crawl.
 
-The output is always a single JSON array file. The crawler never writes JSONL or NDJSON. If it finishes with nothing to write, the file contains `[]`. The file is written atomically through a `.part` temporary, an `fsync`, then `os.replace`, so an interrupted crawl never leaves a half written `index.json` behind.
+The output is always a single JSON array file. The crawler never writes JSONL or NDJSON. If it finishes with nothing to write, the file contains `[]`. The file is written atomically through a `.part` temporary, `fsync`, then rename, so an interrupted crawl never leaves a half-written index behind.
 
-## Requirements
+## Pre-built binaries (Releases)
 
-Python 3.8 or later. No `pip install` and no build step. The script uses only the Python standard library. A terminal that supports ANSI escape codes is needed for the full screen UI. On Windows, `msvcrt` supplies key input.
+Pre-built options for the crawler are available in the repository's **Releases** tab. Download the binary that matches your platform (for example `crawler-x86_64`, `crawler-arm64`, or `crawler-armhf`) from the latest release, make it executable if needed, and run it directly:
 
-The script is cross platform and runs on Linux, macOS and Windows. Signal handling is skipped gracefully when the crawler is imported and used as a library from a worker thread.
+```bash
+chmod +x ./crawler-x86_64
+./crawler-x86_64 --seed https://example.com --max-pages 500 --output my_index.json
+```
 
-There must be enough free disk for the output file. The crawler refuses to continue when free space on the output volume falls below 50 MB.
+Pre-built binaries target Linux and are linked against system libraries commonly present on current Linux distributions / Raspberry Pi OS (glibc ≥ 2.28, `libcurl`, `libz`, `libsqlite3`). No Python installation is required.
+
+## Building from source
+
+If you want to compile a new build, use the build workflow in `crawler/`. The build scripts will automatically download any required toolchain and target libraries/assets as needed (for example, when compiling for ARM targets like `arm64`/`armhf`).
+
+From `crawler/`, run:
+
+```bash
+make deps   # download required build assets (cached in toolchain/ and vendor/)
+make dist   # build dist/crawler-x86_64, dist/crawler-arm64, dist/crawler-armhf
+```
+
+- `make dist-arm64` / `make dist-armhf` build only the specified ARM target (and will download the required assets for that target if missing).
+- `make help` lists available targets and shows what is already downloaded.
+- `make` performs a native build with the system compiler (producing `./crawler`) if you already have build dependencies installed.
+- `make distclean` removes downloaded `toolchain/` and `vendor/` artifacts.
+
+(See `crawler/README.md` for the full list of build targets and exact compiler commands.)
 
 ## Quick start
 
-Smallest useful run.
+From the `crawler/` directory (using a built or pre-built binary), the smallest useful run is:
 
 ```bash
-python3 crawler/crawler.py --seed https://example.com --max-pages 500 --output my_index.json
+./dist/crawler-x86_64 --seed https://example.com --max-pages 500 --output my_index.json
 ```
 
-That crawls up to 500 pages starting from `example.com`, follows links on the same host at a polite one second delay per host, and writes `my_index.json` as a JSON array. Load it through Settings then Upload Index in Gateway.
+(Replace the binary name with the one for your platform, or `./crawler` if you did a native `make`.)
 
-Crawl from a list of seeds.
+That crawls up to 500 pages starting from `example.com` at a polite per-host delay and writes `my_index.json` as a JSON array. Load it through Settings → Upload Index in Gateway.
+
+Crawl from a list of seeds:
 
 ```bash
-python3 crawler/crawler.py --seed-file seeds.txt --max-pages 5000 --output my_index.json
+./dist/crawler-x86_64 --seed-file seeds.txt --max-pages 5000 --output my_index.json
 ```
 
 `seeds.txt` contains one URL per line. Blank lines and lines starting with `#` are ignored.
 
-Crawl until the frontier empties.
+Crawl until the frontier empties:
 
 ```bash
-python3 crawler/crawler.py --seed-file seeds.txt --forever --output my_index.json
+./dist/crawler-x86_64 --seed-file seeds.txt --forever --output my_index.json
 ```
 
 ## Output format
 
-The output is one JSON array at `--output`, for example `gateway_index.json` by default. Every element has the following fields. Only `t`, `u`, `d` and `s` are required by the search engine. The rest is metadata that Gateway ignores but that helps with auditing, re ranking or downstream tooling.
+The output is one JSON array at `--output` (default `gateway_index.json`). Every element has the following fields. Only `t`, `u`, `d`, and `s` are required by the search engine. The rest is metadata that Gateway ignores but that helps with auditing, re-ranking, or downstream tooling.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | string | Stable 16 character hex identifier derived from the URL |
-| `t` | string | Page title, cleaned and truncated to 200 characters |
+| `t` | string | Page title, cleaned and truncated |
 | `u` | string | Final URL, tracking parameters stripped, canonical applied |
-| `d` | string | Description, from meta description, `og:description`, `twitter:description` or the first substantial paragraph |
+| `d` | string | Description, from meta description, `og:description`, `twitter:description`, or the first substantial paragraph |
 | `s` | string | Normalised domain with no `www.` prefix |
 | `status` | int | HTTP status code of the final response |
 | `content_type` | string | Response MIME type, lowercase, no charset |
 | `lang` | string | Language code from `Content-Language`, `<html lang>`, or a stopword heuristic |
-| `author` | string | Author from meta, Open Graph or JSON-LD |
-| `pub_date` | string | Published date from meta, Open Graph or JSON-LD |
-| `mod_date` | string | Modified date from meta, Open Graph or JSON-LD |
+| `author` | string | Author from meta, Open Graph, or JSON-LD |
+| `pub_date` | string | Published date from meta, Open Graph, or JSON-LD |
+| `mod_date` | string | Modified date from meta, Open Graph, or JSON-LD |
 | `canonical` | string | Final URL after canonical resolution |
+| `favicon` | string | Discovered favicon URL for the site (omitted with `--no-favicons`) |
 | `word_count` | int | Approximate visible word count |
 | `reading_minutes` | int | Approximate reading time in minutes at 200 wpm |
-| `content_hash` | string | SHA 256 of the extracted visible text, used for cross page deduplication |
+| `content_hash` | string | SHA-256 of the extracted visible text, used for cross-page deduplication |
 
 An empty crawl writes `[]`.
 
-When you upload this file through Settings then Upload Index, Gateway validates that each entry has a non empty `t`, `u`, `d` and `s`, persists it to IndexedDB and uses it exactly like the bundled index. The extra fields are ignored by the ranking engine.
+When you upload this file through Settings → Upload Index, Gateway validates that each entry has a non-empty `t`, `u`, `d`, and `s`, persists it to IndexedDB, and uses it exactly like the bundled index. Extra fields are ignored by the ranking engine.
 
 ## Command line reference
 
-All flags are optional except that you must supply at least one `--seed` or a `--seed-file`.
+All flags are optional except that you must supply at least one `--seed` or a `--seed-file`. Run the binary with `--help` to see the full, version-matched usage.
 
 ### Seeds and input
 
@@ -118,10 +142,10 @@ All flags are optional except that you must supply at least one `--seed` or a `-
 | Flag | Description |
 | --- | --- |
 | `--delay SECONDS` | Minimum delay between requests to the same host. Default `1.0`. Honours `Crawl-delay` from `robots.txt` when larger. |
-| `--timeout SECONDS` | Per request timeout. Default `10.0`. |
-| `--user-agent STRING` | User agent string. Default `GatewayCrawler/3.1 (+https://github.com/XPDevs/gateway)`. Please do not spoof a browser UA when crawling sites you do not own. |
-| `--same-host` | Only follow links whose domain matches one of the seed domains. Recommended for single site runs. |
-| `--max-retries N` | Retry count on `429`, `500`, `502`, `503` and `504`, with exponential backoff and `Retry-After` support. Default `3`. |
+| `--timeout SECONDS` | Per-request timeout. Default `10.0`. |
+| `--user-agent STRING` | User agent string. Default `GatewayCrawler/3.1 (+https://github.com/XPDevs/gateway)`. Do not spoof a browser UA when crawling sites you do not own. |
+| `--same-host` | Only follow links whose domain matches one of the seed domains. Recommended for single-site runs. |
+| `--max-retries N` | Retry count on `429`, `500`, `502`, `503`, and `504`, with exponential backoff and `Retry-After` support. Default `3`. |
 
 ### Limits
 
@@ -137,44 +161,47 @@ All flags are optional except that you must supply at least one `--seed` or a `-
 | `--bloom-fp FLOAT` | Bloom filter false positive rate. Default `0.01`. |
 | `--max-page-bytes N` | Hard cap on bytes read from a single response. Default `2097152` (2 MB). |
 | `--chunk-size N` | Streaming read chunk size. Default `65536` (64 KB). |
-| `--max-memory-mb MB` | Abort if current RSS exceeds this many megabytes. Checked periodically, not on every loop. Off by default. |
+| `--max-memory-mb MB` | Abort if current RSS exceeds this many megabytes. Checked periodically. Off by default. |
 
 ### Filtering and content rules
 
 | Flag | Description |
 | --- | --- |
-| `--exclude-domain REGEX` | Skip any domain matching this regex. Repeatable. Matched against the normalised domain only. |
+| `--exclude-domain REGEX` | Skip any domain matching this regex. Repeatable. Matched against the normalised domain. |
 | `--exclude-url REGEX` | Skip any URL matching this regex. Repeatable. Matched against the full URL. |
-| `--language CODE` | Restrict to these language codes. Repeatable. A page with no detectable language is still accepted. |
+| `--language CODE` | Restrict to these language codes (ISO, repeatable). A page with no detectable language is still accepted. |
 | `--ignore-robots` | Skip `robots.txt`. Only for sites you own. |
-| `--verbose-robots` | Log a one line explanation the first time a domain is blocked by `robots.txt`. |
+| `--verbose-robots` | Log a one-line explanation the first time a domain is blocked by `robots.txt`. |
 | `--no-respect-noindex` | Ignore `<meta name="robots" content="noindex">` and the `X-Robots-Tag` header. |
+| `--no-favicons` | Omit favicon discovery and the `favicon` field. |
+| `--clean` | De-duplicate before writing. Near-duplicate pages (matching opening text signature) are resolved by a winner rule (most words, then longest description, then longest title, then shortest URL); the winner is written once and later duplicates are discarded. |
+| `--clean-window N` | Records held before a `--clean` flush (default `20000`). Larger windows resolve duplicates seen further apart. |
 
 ### Discovery
 
 | Flag | Description |
 | --- | --- |
-| `--use-sitemaps` | Try `/sitemap.xml`, `/sitemap_index.xml` and `/sitemap.txt` on each seed domain, and follow sitemap indexes up to depth 2. |
-| `--use-feeds` | Try `/feed`, `/rss`, `/rss.xml`, `/atom.xml` and `/feed.xml` on each seed domain and enqueue their items. |
+| `--use-sitemaps` | Try `/sitemap.xml`, `/sitemap_index.xml`, and `/sitemap.txt` on each seed domain, and follow sitemap indexes up to depth 2. |
+| `--use-feeds` | Try `/feed`, `/rss`, `/rss.xml`, `/atom.xml`, and `/feed.xml` on each seed domain and enqueue their items. |
 
-Both discovery modes honour `robots.txt` for the sitemap or feed file itself, and both honour `--same-host` when it is set. That prevents a third party feed from injecting off site URLs into a single site crawl.
+Both discovery modes honour `robots.txt` and `--same-host` when set.
 
 ### Checkpoint and resume
 
 | Flag | Description |
 | --- | --- |
 | `--checkpoint PATH` | Checkpoint file. Default `.gateway_checkpoint.json`. |
-| `--resume` | If the checkpoint exists, restore the Bloom filter, frontier, page count, per domain counters and statistics. |
+| `--resume` | If the checkpoint exists, restore crawl state (Bloom filter, frontier, counts, per-domain counters, and statistics). |
 
 ### Debugging and UI
 
 | Flag | Description |
 | --- | --- |
 | `--quiet` | Suppress `INFO` and `DEBUG` lines on stderr. The TUI still updates. |
-| `--log-format {text,json}` | Log format when the TUI is disabled. Default `text`. `json` writes one JSON object per line. |
-| `--debug` | Enable debug level logs and write every event to the debug log file. Implies `--no-tui`. |
+| `--log-format {text,json}` | Log format when the TUI is disabled. Default `text`. |
+| `--debug` | Enable detailed tracing and write every event to the debug log file. Implies `--no-tui`. |
 | `--debug-log PATH` | Debug log path when `--debug` is set. Default `crawl_debug.log`. |
-| `--no-tui` | Disable the full screen UI and log to stderr instead. |
+| `--no-tui` | Disable the full-screen UI and log to stderr instead. |
 | `--refresh-rate SECONDS` | TUI refresh interval. Default `0.5`. |
 
 ### Configuration file
@@ -183,17 +210,15 @@ Both discovery modes honour `robots.txt` for the sitemap or feed file itself, an
 | --- | --- |
 | `--config PATH` | Read a JSON file of defaults. CLI flags override file values. |
 
-The config file only needs to contain the keys you want to override. Unknown keys are ignored rather than erroring, so an old config keeps working after an upgrade.
+The config file only needs to contain the keys you want to override. Unknown keys are ignored.
 
 ### ntfy.sh notifications
 
 | Flag | Description |
 | --- | --- |
-| `--ntfy-topic TOPIC` | Push notifications to `https://ntfy.sh/<TOPIC>`. Pass a full URL to use a self hosted server. No account or token is needed. |
-| `--ntfy-events LIST` | Comma separated list of events to notify on. Default `started,finished`. Supported events are `started`, `progress` and `finished`. |
+| `--ntfy-topic TOPIC` | Push notifications to `https://ntfy.sh/<TOPIC>`. Pass a full URL to use a self-hosted server. No account or token is needed. |
+| `--ntfy-events LIST` | Comma-separated list of events to notify on. Default `started,finished`. Supported events are `started`, `progress`, and `finished`. |
 | `--ntfy-progress-every N` | Send a progress notification every N pages. `0` disables it. Only takes effect if `progress` is in `--ntfy-events`. |
-
-See the ntfy.sh notifications section for message contents.
 
 ### Version
 
@@ -227,10 +252,12 @@ Terminal width below 60 columns or height below 16 rows shows a short warning an
 
 ## Examples
 
+(Examples below use `./dist/crawler-x86_64`; substitute your platform binary or `./crawler` as appropriate.)
+
 Crawl one site to a hard cap, same host only.
 
 ```bash
-python3 crawler/crawler.py \
+./dist/crawler-x86_64 \
     --seed https://example.com \
     --same-host \
     --max-pages 2000 \
@@ -241,7 +268,7 @@ python3 crawler/crawler.py \
 Crawl from a large seed list with sitemaps and feeds, no depth limit, memory capped.
 
 ```bash
-python3 crawler/crawler.py \
+./dist/crawler-x86_64 \
     --seed-file seeds.txt \
     --forever \
     --use-sitemaps \
@@ -255,17 +282,28 @@ python3 crawler/crawler.py \
 Resume a long crawl after an interruption.
 
 ```bash
-python3 crawler/crawler.py \
+./dist/crawler-x86_64 \
     --seed-file seeds.txt \
     --resume \
     --forever \
     --output index/crawled.json
 ```
 
-Same crawl, but push start, progress and finish messages to your phone via ntfy.
+Crawl with write-time de-duplication enabled.
 
 ```bash
-python3 crawler/crawler.py \
+./dist/crawler-x86_64 \
+    --seed-file seeds.txt \
+    --max-pages 50000 \
+    --clean \
+    --clean-window 20000 \
+    --output index/crawled_clean.json
+```
+
+Same crawl, but push start, progress, and finish messages to your phone via ntfy.
+
+```bash
+./dist/crawler-x86_64 \
     --seed-file seeds.txt \
     --max-pages 50000 \
     --output index/crawled.json \
@@ -277,7 +315,7 @@ python3 crawler/crawler.py \
 A dry run to check which URLs a site exposes without touching disk.
 
 ```bash
-python3 crawler/crawler.py \
+./dist/crawler-x86_64 \
     --seed https://example.com \
     --max-pages 100 \
     --dry-run \
@@ -287,7 +325,7 @@ python3 crawler/crawler.py \
 Crawl only English pages, skipping anything under `/account` and any subdomain of `example.net`.
 
 ```bash
-python3 crawler/crawler.py \
+./dist/crawler-x86_64 \
     --seed https://example.com \
     --language en \
     --exclude-url '/account' \
@@ -371,24 +409,9 @@ Note that DNS rebinding (a hostname that resolves to a public address on the fir
 - The crawler does not render JavaScript. Single page apps that serve an empty `<body>` on the initial request will produce a record with an empty title and empty description. The record is still written unless `noindex` is set.
 - The `sqlite` storage backend writes a `pages` table that is not uploadable to Gateway. It exists for downstream tooling. Always use `--storage json` when you want a file you can upload.
 
-## Version history
+## Notes
 
-**3.1.0**
-
-- FIX: `Frontier._seen` no longer leaks memory, it discards each popped URL. Deduplication is still enforced by the Bloom filter in the crawler.
-- FIX: SSRF via HTTP redirect is now blocked by `SafeRedirectHandler`. Every redirect hop is validated with the same filter used on the initial URL.
-- FIX: non HTML responses such as PDF, zip, images and archives are no longer written as empty records. They are counted as filtered.
-- FIX: resume now restores `_domain_pages` and the stats counters from the checkpoint, so `--max-per-domain` behaves correctly across resumes and the final report is accurate.
-- FIX: `HTTPResponse` attributes are read before `close()`, so status, headers and final URL are always available.
-- FIX: `signal.signal()` no longer raises when the crawler is constructed off the main thread.
-- FIX: gzip and deflate decompression no longer drops the tail. `flush()` is called at the end of the stream and any remaining bytes are appended.
-- FIX: `NO_TUI=0` and `NO_TUI=false` no longer disable the TUI. The environment flag parser is shared and correct.
-- FIX: sitemap and feed URLs now honour `--same-host` and `robots.txt`.
-- FIX: TUI key polling continues during the per host polite wait, so `q`, `p`, `i` and `c` respond during pauses.
-- FIX: `<title>` length limit is now by character rather than by HTMLParser chunk, so long titles truncate cleanly at 500 characters.
-- NEW: ntfy.sh push notifications via `--ntfy-topic`. No token needed.
-- NEW: `--ntfy-events` and `--ntfy-progress-every` for choosing which events fire and how often progress messages are sent.
-
-**Before 3.1.0**
-
-The crawler existed as an internal tool. Version 3.1.0 is the first release with this documentation and the flags described above.
+- `--storage sqlite` writes a `pages` table for downstream tooling and is not intended for direct upload to Gateway. Use `--storage json` for files you want to upload.
+- With `--clean`, the staging window is flushed before checkpoints so output and checkpoint state remain consistent.
+- `--no-favicons` omits favicon discovery and the `favicon` field (useful when you need output closely matching the legacy Python crawler behavior).
+- This document describes the C crawler in `crawler/` (v3.1.0). For exact flags supported by your binary, run `./crawler --help` (or the equivalent pre-built binary).
