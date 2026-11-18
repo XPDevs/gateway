@@ -84,13 +84,13 @@ Nothing is uploaded. History is never attached to a search, never included in a 
 
 Warning. The storage key is deliberately not named `history`. `performSearch()` uses `window.history.replaceState` from the History API, and a global of that name would clobber it. The API surface is `window.gatewaySearchHistory`.
 
-**BM25 hybrid ranking**
+**Index-size independent BM25F ranking**
 
-See the Ranking section below. The implementation uses IDF with additive smoothing, `IDF^1.5` term weighting, Okapi BM25 and a static authority prior.
+See the Ranking section below. Field-aware BM25F over title and description, corpus-normalised IDF weights, a coordination factor, a phrase bonus and a bounded authority multiplier. Every constant is relative to the loaded corpus, so the bundled index, a custom upload of any size and live results share one score scale.
 
 **Plus**
 
-25 language UI, dark mode, autocomplete via `getSuggestions`, Did you mean spell check, I'm Feeling Lucky, uploadable custom index, safe domain filtering and tracking parameter stripping.
+25 language UI, dark mode, autocomplete via `getSuggestions` with `site:` host completion, Did you mean spell check (index vocabulary first, Wikipedia second), matched-term highlighting via `gatewayHighlight`, I'm Feeling Lucky, the `site:`, `-site:`, `-word` and `"exact phrase"` operators, merge or replace custom indexes, safe domain filtering and tracking parameter stripping.
 
 ## Crawler
 
@@ -124,7 +124,7 @@ python3 -m http.server 8000
 
 You can also use `npx serve .`, GitHub Pages, Nginx or any other static host. Use `http` or `https`, not `file`, because fetch and IndexedDB require it.
 
-Custom index is optional. Go to Settings, then Upload Index, and select a JSON array of `{t, u, d, s}`. The index is validated, persisted to IndexedDB and versioned so old caches are invalidated.
+Custom index is optional. Go to Settings, then Upload Index, and select a JSON array of `{t, u, d, s}`. The index is validated, persisted to IndexedDB and versioned so old caches are invalidated. Settings also has an **Add to current index** toggle: off replaces the corpus (the default), on merges the upload into the corpus already loaded, with uploaded pages winning when a URL appears in both, so a topical or per-site index can sit beside the bundled one.
 
 Settings, opened with the gear icon, include language, dark mode, Quick Wiki on or off and index upload. Quick Wiki is persisted as `gw-quickwiki` in `localStorage` and defaults to on. When Quick Wiki is off, no Quick Wiki box is fetched or rendered. The `Try "release date…"` example enables it again.
 
@@ -140,7 +140,7 @@ User query
 
 Key modules.
 
-`crawl.js` contains `_normalize`, `_prepareIndex` with term frequencies, document frequency, `avgdl` and authority, `searchIndex`, `gatewaySearchLocal`, `gatewayCrawl`, `_searchWikipedia` with opensearch to extracts, pageimages, pageprops and info, plus extlinks for the best page. It also contains `_wikidataClaims`, `_labelsForClaims`, `_formatWikidataTime`, `quickWiki` with `_dedupeAnswerContext` and `_subjectMatchRatio` gating, `getSuggestions`, `spellCheck`, `_dedupeAndRank`, `isSafeResult`, `cleanTracking`, and a tiered cache from memory to `localStorage` `gw_v6_` to IndexedDB `GatewayIndex`. It loads the bundled index from `index/index.json` and `index/index-meta.json` via `INDEX_DIR`. Introspection helpers are `gatewayRankDebug(query)` and `gatewayAuthorityScore(domain)`.
+`crawl.js` contains `_normalize`, `_prepareIndex` with term frequencies, document frequency, `avgdl` and authority, `searchIndex`, `gatewaySearchLocal`, `gatewayCrawl`, `_searchWikipedia` with opensearch to extracts, pageimages, pageprops and info, plus extlinks for the best page. It also contains `_wikidataClaims`, `_labelsForClaims`, `_formatWikidataTime`, `quickWiki` with `_dedupeAnswerContext` and `_subjectMatchRatio` gating, `getSuggestions`, `spellCheck`, `_dedupeAndRank`, `isSafeResult`, `cleanTracking`, and a tiered cache from memory to `localStorage` `gw_v7_` to IndexedDB `GatewayIndex`. It loads the bundled index from `index/index.json` and `index/index-meta.json` via `INDEX_DIR`. Query parsing lives in `_parseQuery` (`site:`, `-site:`, `-word`, quoted phrases), snippet marking in `gatewayHighlight`, offline spelling in `_oneEditNeighbours` and `_localSpellCheck`, and `site:` host completion in `_matchDomains` over the sorted domain list built with the index. Introspection helpers are `gatewayRankDebug(query)`, `gatewayAuthorityScore(domain)` and `gatewayParseQuery(query)`.
 
 `main.js` contains `performSearch` which is staged, `_gwRender` which renders stats with seconds, `renderDidYouMean`, `renderQuickWiki` and paginated `renderItem`, `_faviconHtml` with S2, DDG and letter fallback, `_answerLinkHtml`, translations for 25 locales, dark mode and autocomplete wiring.
 
@@ -148,30 +148,39 @@ Key modules.
 
 Every result, whether from the bundled index, live Wikipedia, official sites or cited web links, is scored with one hybrid function so all sources compete on identical terms.
 
+Every quantity is defined relative to the corpus that is actually loaded, so the same constants rank a 60 page upload and the bundled 50,000 page index.
+
 ```
-FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
+BM25F  ->  x coordination  ->  x phrase bonus  ->  relevance = adjusted / (adjusted + 2)
+final  =  relevance x (0.78 + 0.22 x authority / 10)
 ```
 
-1. IDF with additive smoothing. `IDF(q_i) = ln(1 + (N - n(q_i) + 0.5) / (n(q_i) + 0.5))`.
-   `N = 20,000,000,000` at web corpus scale via `RANK_CORPUS_SIZE`, which can be overridden with `window.GATEWAY_RANK_CORPUS` for self hosted corpora. `n(q_i)` is document frequency, counted at index load.
-2. Dynamic query term weighting. `W(q_i) = IDF(q_i) ^ 1.5`. Rare entities are boosted and common terms are damped.
-3. Okapi BM25. `BM25(D, Q) = Σ W(q_i) · (f(q_i,D) · (k1 + 1)) / (f(q_i,D) + k1 · (1 - b + b · (|D| / avgdl)))` with `k1 = 1.2` and `b = 0.75`.
-   Documents are title and description. `|D|` is the word count. `avgdl` is the mean across the whole index, 12.73 words for the bundled set, from 548,586 tokens over 50,619 documents and 79,765 distinct terms.
-4. Authority. A pre calculated static float in the range 0.0 to 10.0, PageRank style, resolved per domain. Resolution goes from an exact table to a parent domain walk such as `en.wikipedia.org` to `wikipedia.org`, then to public sector and academic host shapes such as `.gov`, `gov.uk`, `gob.ve`, `.edu` and `ac.uk`, and finally to a deterministic 2.0 to 6.0 hash band for everything else. It never varies with the query. An index entry may ship its own value in `a`, which always wins.
+1. Field-aware BM25F. `tf~(q,D) = Σ_f w_f · f(q,f) / (1 - b_f + b_f · |f| / avg_f)` and `BM25F(q) = Σ_q w(q) · tf~ · (k1 + 1) / (k1 + tf~)`, with `k1 = 1.2`, `w_title = 3.0`, `b_title = 0.55`, `w_description = 1.0` and `b_description = 0.75`. Title and description are separate fields, so a title hit beats the same word buried in a long description.
+2. Corpus-normalised IDF. `idf(q) = ln(1 + (N - n(q) + 0.5) / (n(q) + 0.5))` and `w(q) = min(idf(q) / R, 1) ^ 1.35`, where `N` is the size of the loaded index, `n(q)` its document frequency and `R = ln(1 + 1e6)` the IDF of a reference term held by one document in a million.
+   `R` is a fixed property of the weighting curve, not of any corpus, which is what makes the ranking index-size independent: a weight is a function of relative document frequency alone, stays in `[0, 1]`, and caps a document at `k1 + 1` per query term whether the index holds 5 pages or 5 million. `window.GATEWAY_RANK_CORPUS` may enlarge `N` to simulate a bigger corpus, but never shrink it below the live index, because a smaller `N` would clamp document frequencies and flatten every weight.
+3. Coordination. `coverage` is the share of the query's total weight a document matched. The BM25F score is multiplied by `0.35 + 0.65 · coverage`, so a document matching one common word cannot outrank one that matches every term.
+4. Phrase bonus. For multi-word queries, an exact contiguous run of the typed words gives `1.35` in the title or `1.12` in the description. The phrase keeps stopwords, so `university of oxford` matches that exact title instead of the stripped `university oxford`.
+5. Bounded relevance. `relevance = adjusted / (adjusted + 2)` is a saturating map into `[0, 1)`. No term frequency, query length or index size can produce an unbounded score, so results from the index and results discovered live stay directly comparable.
+6. Authority. A pre calculated static float in the range 0.0 to 10.0, PageRank style, resolved per domain. Resolution goes from an exact table to a parent domain walk such as `en.wikipedia.org` to `wikipedia.org`, then to public sector and academic host shapes such as `.gov`, `gov.uk`, `gob.ve`, `.edu` and `ac.uk`, and finally to a deterministic 2.0 to 6.0 hash band for everything else. It never varies with the query. An index entry may ship its own value in `a`, which always wins.
+   Authority enters as the multiplier `0.78 + 0.22 · authority / 10`. It moves a result by at most 22 percent, which is enough to reorder close matches and break ties and never enough to overturn a clearly better one. That is the 80/20 relevance to authority intent without the scale dependence of an additive bonus, which used to swing from negligible to dominant as the index size changed.
 
-Because authority contributes at most 2.0 points, relevance dominates and authority only breaks ties. This is the intended split of 80 percent relevance and 20 percent authority.
+Tokenisation. Query terms are stopword filtered. Single digits are kept, as in `PlayStation 5` and `World War 2`, while lone letters are dropped. Document text keeps every token, so stopwords still count toward the field frequencies and lengths. Matching is whole token, not substring.
 
-Tokenisation. Query terms are stopword filtered. Single digits are kept, as in `PlayStation 5` and `World War 2`, while lone letters are dropped. Document text keeps every token, so stopwords still count toward `f` and `|D|`. Matching is whole token, not substring.
+Only the documents a query term occurs in are scored. `_prepareIndex` builds a postings map from term to document indexes as well as document frequency, average lengths and per field length norms, so a rich per document formula stays cheap.
 
-Removed in this revision. The old hand tuned constants are gone, including exact title `+700`, title prefix `+380`, per field `+55`, `+32`, `+24` and `+9`, the coverage bonus, and the fixed Wikipedia, official and web boosts of `2000`, `1800`, `930`, `280`, `360` and `260`. A latent `STOPWORDS` bug was also fixed. The old `.split(' ')` bound only to the last string literal, so the set held 20 stray characters and no stopword was ever filtered.
+Query operators. `site:example.com` keeps only that host and its subdomains, `site:example.com/news` also restricts to a path prefix, a pasted URL such as `site:https://www.example.com` is accepted, and several `site:` operators are ORed. `-site:example.com` removes a host and `-word` removes documents containing a word, both matched on whole tokens so `-car` does not remove `carpet`. A quoted `"exact phrase"` keeps its words as normal query terms but also requires them to appear adjacent and in order. Operators are removed before tokenisation, so none of them becomes a query word, and they apply to the local index and to live sources alike. They are parsed by `_parseQuery`, with `_parseSiteFilters` kept as a compatibility name, and exposed through `window.gatewayParseQuery`.
 
-Verified by recalculating IDF, `W`, BM25 and `FinalScore` from the raw index for more than 150 results across 6 queries. Maximum drift is `0.0`. Corpus stats, with `avgdl` at 12.7286 and vocabulary at 79,765, also match an independent count. Warm search averages about 3 ms over 50,619 documents, with a median of 2.6 ms and a p95 of 21.1 ms across 600 timed `gatewaySearchLocal()` calls. One time index preparation costs about 1.3 seconds and is cached in memory.
+History. The original hand tuned constants are gone, including exact title `+700`, title prefix `+380`, the per field `+55`, `+32`, `+24` and `+9`, the fixed Wikipedia, official and web boosts of `2000`, `1800`, `930`, `280`, `360` and `260`, and the first BM25 hybrid that weighted IDF against a fixed 20 billion document corpus.
+
+Verified in Node against the bundled index in this repository (50,654 entries, 80,550 terms, description average length 10.80, title average length 2.10). Warm search median is 2.27 ms with a p95 of 8.97 ms across 160 timed `gatewaySearchLocal()` calls covering plain, quoted phrase and exclusion queries; loading and parsing the index takes about 90 ms and one time preparation about 1.6 seconds, both cached in memory.
+
+Index-size behaviour was checked on synthetic corpora of 1, 2, 5, 10, 100, 1,000, 10,000 and 50,000 documents, plus a 150,000 page run. A term kept at a constant share of each corpus converges from weight 0.148 at 100 documents (where the 0.5 smoothing dominates) to 0.227 at 50,000, the result ordering is identical at every size, and no score is ever NaN or outside `[0, 1)`. A term present in every document correctly receives weight 0 instead of dominating. On 150,000 pages a normal query takes about 6 ms and a worst case query matching almost every page stays bounded at 147 ms, because only the best `MAX_INDEX_RESULTS` candidates are ever shaped into results.
 
 ## Performance notes
 
 First paint never awaits network, and network failures cannot blank results.
 
-`MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100` and `PER_PAGE=20`. Each search walks only the documents its query terms actually match in a prebuilt inverted index. Warm median is about 2.6 ms measured over the bundled 50,619 entry index, plus a one time `df`, `avgdl` and authority precompute of about 1.3 seconds that is cached in memory.
+`MAX_INDEX_RESULTS=120`, `MAX_RESULTS=100` and `PER_PAGE=20`. Each search walks only the documents its query terms actually match, through a postings map built at index load, and a top-K buffer keeps the working set at `MAX_INDEX_RESULTS` however many documents match. Warm median is about 2 ms over the bundled 50,654 entry index, plus a one time precompute of postings, document frequency, field lengths and authority that takes about 1.6 seconds and is cached in memory. Preparation hands the main thread back every 2,048 documents, so the page and its spinner stay responsive while a large index is prepared instead of freezing for the whole scan.
 
 To verify, search anything and read `result-stats`, for example `(0.04 seconds)`. Compare against Google's typical 0.3 to 0.6 second SERP time.
 
@@ -187,7 +196,7 @@ python3 -c "import json; d=json.load(open('index/index.json')); print(len(d), le
 
 This prints `50000 50000`.
 
-Local keys written by the browser, all removable via site data. Preferences are `gw-lang`, `gw-dark` and `gw-quickwiki`. The search cache is `gw_v6_` with a 10 minute lifetime and a maximum of 30 keys. Search history uses `gw-history` and `gw-history-optout` with a maximum of 200 entries. Nothing else is persisted, and none of it is ever transmitted.
+Local keys written by the browser, all removable via site data. Preferences are `gw-lang`, `gw-dark` and `gw-quickwiki`. The search cache is `gw_v7_` with a 10 minute lifetime and a maximum of 30 keys. Search history uses `gw-history` and `gw-history-optout` with a maximum of 200 entries. Nothing else is persisted, and none of it is ever transmitted.
 
 ## Security and privacy
 

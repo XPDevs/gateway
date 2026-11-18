@@ -109,18 +109,31 @@
     <p>Quick Wiki is deterministic, not generative. Gateway recognizes common question patterns, matches a Wikipedia article, reads a relevant Wikidata claim when one exists, and formats the value with its property identifier. If structured data is unavailable, it displays a direct extract and labels that fallback clearly.</p>
 
     <h2>Ranking</h2>
-    <p>Every result is scored with one hybrid function, so bundled pages, the XPDevs project index, live Wikipedia articles, official sites and cited web links compete on identical terms:</p>
-    <p><code>FinalScore = BM25F &times; 0.8 &times; Signal + Authority &times; 0.2</code></p>
+    <p>Every result is scored with one hybrid function, so bundled pages, the XPDevs project index, live Wikipedia articles, official sites and cited web links compete on identical terms. Every quantity is defined relative to the corpus actually loaded, so the same code ranks a small custom upload and the full index.</p>
+    <p><code>BM25F &rarr; &times; coordination &rarr; &times; phrase bonus &rarr; relevance = adjusted / (adjusted + 2)</code><br><code>final = relevance &times; (0.78 + 0.22 &times; authority / 10)</code></p>
     <ul>
-        <li><strong>Inverse document frequency</strong>: <code>IDF(q) = ln(1 + (N - n(q) + 0.5) / (n(q) + 0.5))</code>, with <code>N</code> defaulting to the active local corpus size (50,690 documents with the XPDevs file merged) and <code>n(q)</code> the number of indexed documents containing the term. Use <code>window.GATEWAY_RANK_CORPUS</code> to compare against a web-scale corpus instead</li>
-        <li><strong>Dynamic term weighting</strong>: <code>W(q) = IDF(q) ^ 1.5</code> boosts rare entities and damps common words</li>
-        <li><strong>Field-aware BM25F</strong>: title and description are scored separately with <code>k1 = 1.2</code> and <code>b = 0.75</code>, then combined as <code>1.6 &times; title + 0.65 &times; description</code>, so a title match outranks the same words buried in a long description</li>
-        <li><strong>Query coverage</strong>: documents that match more of the query are rewarded, and matches on the title words are rewarded again</li>
-        <li><strong>Exact phrases</strong>: for multi-word queries, an exact match of the phrase sequence gives a 1.35&times; boost in the title or 1.12&times; in the description</li>
-        <li><strong>Authority</strong>: a pre-calculated static score from 0.0 to 10.0 per domain (reference works, government and academic sites, primary documentation). It never changes with the query and contributes at most 2.0 points, so relevance always decides the ranking</li>
+        <li><strong>Field-aware BM25F</strong>: title and description are scored as separate fields with <code>k1 = 1.2</code>, title weight <code>3.0</code>, description weight <code>1.0</code>, and field lengths normalised with <code>b = 0.55</code> for titles and <code>b = 0.75</code> for descriptions, so a title match outranks the same word buried in a long description</li>
+        <li><strong>Corpus-normalised term weighting</strong>: <code>idf(q) = ln(1 + (N - n(q) + 0.5) / (n(q) + 0.5))</code> and <code>w(q) = min(idf(q) / R, 1) ^ 1.35</code>, where <code>N</code> is the size of the active index, <code>n(q)</code> the number of documents containing the term, and <code>R = ln(1 + 1000000)</code> a fixed reference rarity of one document in a million. Because <code>R</code> is a constant, a term's weight depends on its relative document frequency and not on how big the index is: a 60 page upload and a 150,000 page index use identical maths. A term present in every document ends up with no influence at all. <code>window.GATEWAY_RANK_CORPUS</code> can enlarge <code>N</code> to simulate a bigger corpus</li>
+        <li><strong>Coordination</strong>: the BM25F score is multiplied by <code>0.35 + 0.65 &times; coverage</code>, where coverage is the weighted share of the query a document matched, so one common word cannot outrank a full match</li>
+        <li><strong>Exact phrases</strong>: a multi-word query that appears as an exact contiguous run gets <code>1.35&times;</code> in the title or <code>1.12&times;</code> in the description, with stopwords kept so <code>university of oxford</code> matches that title</li>
+        <li><strong>Bounded relevance</strong>: <code>adjusted / (adjusted + 2)</code> saturates into <code>[0, 1)</code>, so no term frequency or index size can blow up a score and local results stay comparable with live ones</li>
+        <li><strong>Authority</strong>: a pre-calculated static score from 0.0 to 10.0 per domain (reference works, government and academic sites, primary documentation), applied as the multiplier <code>0.78 + 0.22 &times; authority / 10</code>. It reorders close matches and breaks ties, and cannot overturn a clearly better one</li>
         <li><strong>Deduplication</strong>: tracking parameters are removed and equivalent URLs are shown once</li>
     </ul>
-    <p>Matching is whole-token rather than substring, and common words are removed from the query before scoring.</p>
+    <p>Matching is whole-token rather than substring, and common words are removed from the query before scoring. Only the documents a query term actually occurs in are scored, through a postings map built when the index loads, and only the best 120 candidates are turned into results, so search cost does not grow with how many pages happen to match.</p>
+
+    <h2>Query operators</h2>
+    <p>Operators are applied before scoring to the local index and to live sources alike, and are removed from the query so none of them is ever treated as a keyword.</p>
+    <ul>
+        <li><code>site:bbc.co.uk news</code> keeps results on <code>bbc.co.uk</code> and its subdomains</li>
+        <li><code>site:bbc.co.uk/news news</code> also restricts to that path prefix</li>
+        <li><code>site:https://www.example.com</code> accepts a pasted URL</li>
+        <li>Several operators are ORed: <code>site:example.com site:example.org report</code></li>
+        <li><code>news -site:example.com</code> removes a host and its subdomains</li>
+        <li><code>apple -fruit</code> removes documents containing that word, on whole tokens only</li>
+        <li><code>"university of oxford"</code> requires those words adjacent and in order, while still scoring them normally</li>
+    </ul>
+    <p>Typing <code>site:</code> in the search box completes host names from the index itself, and matched query words are marked in result titles and snippets.</p>
 
     <h2>Safety &amp; Filtering</h2>
     <p>Every result passes through a safety layer before it reaches you:</p>

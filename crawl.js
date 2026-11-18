@@ -9,9 +9,9 @@
     const _inflight = new Map();
     // Bump the prefix when result-shaping or cache semantics change so old
     // browser data cannot be mistaken for the current format.
-    // v6: ranking replaced by BM25 (IDF^1.5 weighting, k1=1.2, b=0.75) with a
-    // hybrid 0.8/0.2 static authority prior.
-    const LS_PREFIX = 'gw_v6_';
+    // v7: ranking replaced by field-aware BM25F with corpus-normalised IDF, a
+    // coordination factor, a phrase bonus and a bounded authority multiplier.
+    const LS_PREFIX = 'gw_v7_';
     // Bundled search index lives in the index/ folder (index/index.json +
     // index/index-meta.json), relative to the app root page.
     const INDEX_DIR = 'index/';
@@ -197,9 +197,15 @@
 
     function parseQuickWikiQuery(query) {
         const original = (query || '').trim();
-        const q = original.replace(/\s+/g, ' ');
+        // site: is an operator, not a word. Strip it before the subject and
+        // intent patterns run, otherwise "site:bbc.co.uk news" parses as the
+        // subject "site bbc co uk news" and asks Wikipedia a question nobody
+        // typed.
+        const text = _parseSiteFilters(original).text;
+        const q = text.replace(/\s+/g, ' ');
         let subject = '';
         let role = '';
+        if (!q) return { original, text: '', subject: '', intent: null };
 
         // Handle the natural "who/what is the <role> of X" form separately so
         // the role is not mistaken for part of the subject.
@@ -243,7 +249,7 @@
             founder: 'founder', creator: 'creator', director: 'director',
             author: 'author', manufacturer: 'manufacturer', publisher: 'publisher'
         }[role]);
-        return { original, subject, intent: roleIntent || _detectIntent(q) };
+        return { original, text, subject, intent: roleIntent || _detectIntent(q) };
     }
 
     function _cached(k) {
@@ -391,6 +397,154 @@
             const path = new URL(urlStr).pathname.toLowerCase();
             return !/\/(login|signin|account|special|search|cart|checkout)(\/|$)/.test(path);
         } catch(_) { return false; }
+    }
+
+    // ==================== QUERY OPERATORS: site: ====================
+    //
+    // site:example.com         every result on that host or its subdomains
+    // site:example.com/news    ... restricted to that path prefix
+    // site:https://example.com  a pasted URL also works; scheme and www are
+    //                           dropped by the normal domain rules
+    //
+    // The operator is removed from the text before tokenisation, so "site"
+    // and the domain labels are never scored as query words. Several site:
+    // operators in one query are ORed, matching how site search normally
+    // behaves.
+
+    function _parseSiteTarget(value) {
+        let target = String(value == null ? '' : value).trim().toLowerCase();
+        if (!target) return null;
+        target = target.replace(/^[a-z][a-z0-9+.-]*:\/\//, '').replace(/^\/\//, '');
+        const slash = target.indexOf('/');
+        let host = slash >= 0 ? target.slice(0, slash) : target;
+        let path = slash >= 0 ? target.slice(slash) : '';
+        host = host.split('@').pop().split(':')[0];
+        host = _normaliseDomain(host);
+        // A host has to look like a real domain: at least one dot, no empty
+        // labels, and only host characters. Anything else means the user is
+        // still typing, so the token is dropped instead of filtering to zero.
+        if (!host || !host.includes('.') || !/^[a-z0-9.-]+$/.test(host)) return null;
+        if (host.startsWith('.') || host.endsWith('.') || host.includes('..')) return null;
+        path = path.replace(/\/+$/, '').toLowerCase();
+        return { host, path };
+    }
+
+    //
+    // One pass over the raw query. It returns the searchable text plus every
+    // operator, so no operator ever reaches the scorer as a keyword:
+    //
+    //   site:host[/path]     include that host and its subdomains
+    //   -site:host[/path]    exclude that host and its subdomains
+    //   -word                exclude documents containing that word
+    //   "exact phrase"       require those words, adjacent and in order
+    //
+    // Several site: operators are ORed. A quoted phrase's words still count as
+    // normal query terms for BM25F; the quote only adds the hard requirement.
+    function _parseQuery(query) {
+        const raw = String(query == null ? '' : query);
+        const sites = [];
+        const excludedSites = [];
+        const excludedTerms = [];
+        const phrases = [];
+        const kept = [];
+
+        const working = raw.replace(/"([^"]*)"/g, function(whole, inner) {
+            const phrase = _normalize(inner);
+            if (phrase && phrase.indexOf(' ') > 0) phrases.push(phrase);
+            // The words stay in the query text so they are still scored.
+            return ' ' + inner + ' ';
+        });
+
+        const tokens = working.trim().split(/\s+/);
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            if (!token) continue;
+            // Quotes and trailing sentence punctuation are common when an
+            // operator is typed mid sentence: site:"bbc.co.uk",
+            const include = /^site:(.*)$/i.exec(token);
+            if (include) {
+                const parsed = _parseSiteTarget(include[1].replace(/^["'“”]+|["'“”,;]+$/g, '').trim());
+                if (parsed) sites.push(parsed);
+                continue;
+            }
+            const excludeSite = /^-site:(.*)$/i.exec(token);
+            if (excludeSite) {
+                const parsed = _parseSiteTarget(excludeSite[1].replace(/^["'“”]+|["'“”,;]+$/g, '').trim());
+                if (parsed) excludedSites.push(parsed);
+                continue;
+            }
+            const excludeTerm = /^-(.+)$/.exec(token);
+            if (excludeTerm) {
+                const words = _rankTokens(excludeTerm[1]);
+                for (let w = 0; w < words.length; w++) excludedTerms.push(words[w]);
+                continue;
+            }
+            kept.push(token);
+        }
+        return {
+            text: kept.join(' ').trim(),
+            sites,
+            excludedSites,
+            excludedTerms: _unique(excludedTerms),
+            phrases
+        };
+    }
+
+    // The name the rest of the engine and gatewayParseQuery() already use. It
+    // now returns the whole plan rather than only the site filters.
+    function _parseSiteFilters(query) {
+        return _parseQuery(query);
+    }
+
+    function _matchesPhrases(titleNorm, descriptionNorm, phrases) {
+        for (let i = 0; i < phrases.length; i++) {
+            const phrase = phrases[i];
+            if (!(titleNorm.indexOf(phrase) >= 0 || descriptionNorm.indexOf(phrase) >= 0)) return false;
+        }
+        return true;
+    }
+
+    // Whole-token test against an index document's prebuilt frequency maps.
+    function _itemHasTerm(item, terms) {
+        for (let i = 0; i < terms.length; i++) {
+            if (item.titleTf.has(terms[i]) || item.termFreq.has(terms[i])) return true;
+        }
+        return false;
+    }
+
+    // The same operator rules for a live result, which has no prebuilt maps.
+    function _queryAllowsResult(plan, result) {
+        const domain = _normaliseDomain(result.domain || _domainFromUrl(result.url || ''));
+        if (plan.sites.length && !_siteAllows(domain, result.url, plan.sites)) return false;
+        if (plan.excludedSites.length && _siteAllows(domain, result.url, plan.excludedSites)) return false;
+        if (!plan.excludedTerms.length && !plan.phrases.length) return true;
+        const title = ' ' + _normalize(result.title || '') + ' ';
+        const description = ' ' + _normalize(result.description || result.fullSnippet || '') + ' ';
+        for (let i = 0; i < plan.excludedTerms.length; i++) {
+            const term = plan.excludedTerms[i];
+            if (title.indexOf(' ' + term + ' ') >= 0 || description.indexOf(' ' + term + ' ') >= 0) return false;
+        }
+        return _matchesPhrases(title, description, plan.phrases);
+    }
+
+    function _siteHostMatches(host, site) {
+        return host === site.host || host.endsWith('.' + site.host);
+    }
+
+    function _siteAllows(domain, url, sites) {
+        if (!sites || !sites.length) return true;
+        const host = _normaliseDomain(domain || _domainFromUrl(url || ''));
+        if (!host) return false;
+        for (let i = 0; i < sites.length; i++) {
+            if (!_siteHostMatches(host, sites[i])) continue;
+            if (!sites[i].path) return true;
+            if (!url) continue;
+            try {
+                const path = new URL(url).pathname.toLowerCase().replace(/\/+$/, '');
+                if (path === sites[i].path || path.startsWith(sites[i].path + '/')) return true;
+            } catch(_) {}
+        }
+        return false;
     }
 
     function _wikiDomain() {
@@ -603,7 +757,10 @@
         return _indexData;
     });
 
-    window.gatewaySetIndex = async function(data) {
+    // options.mode: 'replace' (default) or 'merge'. Merge adds the upload on
+    // top of the corpus that is live right now and lets the upload win when a
+    // URL appears in both, so a topical index can sit beside the bundled one.
+    window.gatewaySetIndex = async function(data, options) {
         if (!Array.isArray(data) || !data.length) throw new Error('Invalid index');
         const safeData = [];
         for (const entry of data) {
@@ -617,17 +774,30 @@
             if (safeData.length >= 250000) break;
         }
         if (!safeData.length) throw new Error('Index contains no valid public web entries');
+
+        const mode = options && options.mode === 'merge' ? 'merge' : 'replace';
+        let corpus = safeData;
+        if (mode === 'merge') {
+            await _indexReady;
+            const base = Array.isArray(_indexData) ? _indexData : [];
+            const uploaded = new Set();
+            for (const entry of safeData) uploaded.add(_urlKey(entry.u));
+            corpus = safeData.concat(base.filter(entry => !uploaded.has(_urlKey(entry.u))));
+            if (corpus.length > 250000) corpus.length = 250000;
+        }
+
         const version = 'upload-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
         _indexOverridden = true;
         _indexRevision = version;
-        _indexData = safeData;
+        _indexData = corpus;
         _preparedIndex = null;
         _preparedSource = null;
-        _indexReady = Promise.resolve(safeData);
+        _preparedPromise = null;
+        _indexReady = Promise.resolve(corpus);
         _clearSearchCaches();
         await Promise.all([
-            _writeDBRecord({ id: 'data', entries: _packEntries(safeData) }),
-            _writeDBRecord({ id: 'meta', meta: { source: 'upload', version } })
+            _writeDBRecord({ id: 'data', entries: _packEntries(corpus) }),
+            _writeDBRecord({ id: 'meta', meta: { source: 'upload', version, mode } })
         ]);
     };
 
@@ -643,6 +813,7 @@
         ]);
         _preparedIndex = null;
         _preparedSource = null;
+        _preparedPromise = null;
         _clearSearchCaches();
         _indexOverridden = false;
         _indexData = null;
@@ -662,31 +833,54 @@
         return _indexData && _indexData.length || 0;
     };
 
-    // ==================== RANKING: BM25 + AUTHORITY HYBRID ====================
+    // ================= RANKING: BM25F + BOUNDED AUTHORITY =================
     //
-    // FinalScore = (BM25_Score * 0.8) + (Authority_Score * 0.2)
+    // One scoring function for every source. Every quantity below is defined
+    // relative to the live corpus, so the same code ranks a 100 page upload
+    // and the 50,619 page bundled index without retuning a constant:
     //
-    //   1. IDF with additive smoothing
-    //        IDF(q_i) = ln(1 + (N - n(q_i) + 0.5) / (n(q_i) + 0.5))
-    //   2. Dynamic query term weighting (boosts rare entities, damps
-    //      common verbs and filler words)
-    //        W(q_i) = IDF(q_i) ^ 1.5
-    //   3. Okapi BM25 core scoring
-    //        BM25(D, Q) = sum( W(q_i) * (f(q_i, D) * (k1 + 1))
-    //                        / (f(q_i, D) + k1 * (1 - b + b * (|D| / avgdl))) )
-    //   4. Hybrid with a pre-calculated static authority float in [0.0, 10.0]
-    //
-    // n(q_i) is counted over the searchable corpus at load time (document
-    // frequency), |D| and avgdl are word counts.
-    const RANK_K1 = 1.2;              // term-frequency saturation
-    const RANK_B = 0.75;              // length normalisation
-    const RANK_BM25_WEIGHT = 0.8;
-    const RANK_AUTHORITY_WEIGHT = 0.2;
-    // The IDF curve is defined against a ~20 billion document web corpus.
-    // Self-hosted corpora can override it: window.GATEWAY_RANK_CORPUS = 50000.
-    const RANK_CORPUS_SIZE = 2e10;
-    const RANK_FALLBACK_AVGDL = 24;
-    const RANK_MIN_AVGDL = 1;
+    //   1. Field-aware BM25F (Robertson & Zaragoza)
+    //        tf~(q, D) = sum_f  w_f * f(q, f) / (1 - b_f + b_f * |f| / avg_f)
+    //        BM25F(q)  = w(q) * tf~ * (k1 + 1) / (k1 + tf~)
+    //      Title and description are separate fields, so a title hit beats the
+    //      same word buried in a long description.
+    //   2. Corpus-normalised IDF
+    //        idf(q) = ln(1 + (N - n(q) + 0.5) / (n(q) + 0.5))
+    //        w(q)   = min(idf(q) / R, 1) ^ 1.35
+    //      N is the size of the active index and R a fixed rarity reference
+    //      (the idf of a term held by one document in a million). Because the
+    //      reference is a constant and not a function of N, a term with the
+    //      same relative document frequency earns the same weight in a 60 page
+    //      upload and in a five million page index, and every weight stays in
+    //      [0, 1], capping a document at (k1 + 1) per query term at any size.
+    //   3. Coordination: the IDF-weighted share of the query a document hits.
+    //   4. Phrase bonus for an exact contiguous run of the query terms.
+    //   5. Bounded relevance
+    //        relevance = adjusted / (adjusted + 2)
+    //      A saturating map into [0, 1): no term frequency, query length or
+    //      index size can produce an unbounded score.
+    //   6. Authority as a bounded multiplier
+    //        final = relevance * (0.78 + 0.22 * authority / 10)
+    //      Authority reorders close results and breaks ties, but can never
+    //      overturn a clearly better match. That keeps the 80/20 relevance to
+    //      authority intent without the scale dependence of an additive bonus.
+    const RANK_K1 = 1.2;                    // term-frequency saturation
+    const RANK_B_TITLE = 0.55;              // titles are short: milder length norm
+    const RANK_B_DESCRIPTION = 0.75;        // classic b for prose
+    const RANK_FIELD_WEIGHT_TITLE = 3.0;
+    const RANK_FIELD_WEIGHT_DESCRIPTION = 1.0;
+    const RANK_IDF_SHARPNESS = 1.35;        // >1 sharpens the rarity curve
+    // Reference rarity: a term held by one document in a million. This is a
+    // property of the weighting curve, never of the loaded corpus, which is
+    // what keeps the maths identical from a one page index upwards.
+    const RANK_IDF_REFERENCE = Math.log(1 + 1e6);
+    const RANK_COORD_FLOOR = 0.35;          // weakest a partial match can become
+    const RANK_PHRASE_TITLE = 1.35;
+    const RANK_PHRASE_DESCRIPTION = 1.12;
+    const RANK_SATURATION = 2.0;            // midpoint of the relevance curve
+    const RANK_AUTHORITY_FLOOR = 0.78;      // authority multiplier lives in [.78, 1]
+    const RANK_FALLBACK_AVG_LENGTH = 24;
+    const RANK_MIN_AVG_LENGTH = 1;
 
     // --- Static, pre-calculated authority (PageRank-style, 0.0 - 10.0) -----
     // Deterministic per domain: it never varies with the query, so it is a
@@ -778,10 +972,16 @@
         return _authorityForDomain(domain);
     }
 
-    function _rankCorpusSize() {
+    // The IDF corpus is whatever is loaded right now, not a fixed web scale.
+    // window.GATEWAY_RANK_CORPUS may enlarge it to simulate a bigger corpus
+    // (its documented purpose), but it can never shrink it below the live
+    // index: a smaller N would clamp every document frequency and flatten the
+    // weights into noise.
+    function _rankCorpusSize(actualSize) {
+        const actual = Math.max(actualSize || 0, 1);
         const override = Number(window.GATEWAY_RANK_CORPUS);
-        if (Number.isFinite(override) && override > 0) return override;
-        return RANK_CORPUS_SIZE;
+        if (Number.isFinite(override) && override > actual) return override;
+        return actual;
     }
 
     function _rankTokens(text) {
@@ -808,95 +1008,230 @@
         return _unique(parts).slice(0, 12);
     }
 
-    // Step 1 + 2: IDF with additive smoothing, then W(q_i) = IDF ^ 1.5.
+    // Steps 1 + 2: smoothed IDF against the fixed rarity reference, raised to
+    // RANK_IDF_SHARPNESS. The reference does not move with the corpus, so a
+    // term's weight is a function of its relative document frequency only and
+    // means the same thing in a 5 document upload as in a 5 million page one.
     function _rankWeights(terms, stats) {
-        const N = stats.corpusSize;
+        const N = Math.max(stats.corpusSize || 0, 1);
         const df = stats.df;
         const weights = [];
         for (let i = 0; i < terms.length; i++) {
             const term = terms[i];
-            const n = df.get(term) || 0;
-            const idf = Math.log(1 + (N - n + 0.5) / (n + 0.5));
+            const n = Math.min(df.get(term) || 0, N);
+            const idf = Math.max(Math.log(1 + (N - n + 0.5) / (n + 0.5)), 0);
+            const ratio = Math.min(idf / RANK_IDF_REFERENCE, 1);
             weights.push({
                 term,
                 df: n,
-                idf: Math.max(idf, 0),
-                weight: Math.pow(Math.max(idf, 0), 1.5)
+                idf,
+                weight: Math.pow(ratio, RANK_IDF_SHARPNESS)
             });
         }
         return weights;
     }
 
-    // Step 3: Okapi BM25 core scoring with k1 = 1.2, b = 0.75.
-    function _rankBM25(weights, termFreq, docLength, avgdl) {
-        if (!weights.length || !termFreq || !termFreq.size) return 0;
-        const norm = RANK_K1 * (1 - RANK_B + RANK_B * (docLength / avgdl));
-        let score = 0;
-        for (let i = 0; i < weights.length; i++) {
-            const f = termFreq.get(weights[i].term) || 0;
-            if (!f) continue;
-            score += weights[i].weight * (f * (RANK_K1 + 1)) / (f + norm);
-        }
-        return score;
+    // The (1 - b + b * |f| / avg_f) divisor of BM25F, kept in one place so
+    // index documents and live results are shaped identically.
+    function _rankFieldNorm(length, averageLength, b) {
+        const avg = Math.max(averageLength, RANK_MIN_AVG_LENGTH);
+        return 1 - b + b * (length / avg);
     }
 
-    // Step 4: FinalScore = BM25 * 0.8 + Authority * 0.2
-    function _rankFinal(bm25, authority) {
-        return bm25 * RANK_BM25_WEIGHT + authority * RANK_AUTHORITY_WEIGHT;
-    }
-
-    function _rankTermFreq(text) {
-        const tokens = _normalize(text).split(' ').filter(Boolean);
+    // Token frequency for already normalised text. Preparing the index
+    // normalises each field once and reuses the result, which matters across
+    // fifty thousand descriptions.
+    function _rankTokensOf(normalized) {
+        const tokens = normalized ? normalized.split(' ') : [];
         const termFreq = new Map();
+        let length = 0;
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
+            if (!token) continue;
+            length++;
             termFreq.set(token, (termFreq.get(token) || 0) + 1);
         }
-        return { termFreq, length: tokens.length };
+        return { termFreq, length };
+    }
+
+    // Token frequency for one raw field of one document.
+    function _rankFieldTf(text) {
+        return _rankTokensOf(_normalize(text));
+    }
+
+    function _rankWeightTotal(weights) {
+        let total = 0;
+        for (let i = 0; i < weights.length; i++) total += weights[i].weight;
+        return total;
+    }
+
+    // Steps 1, 3, 4 and 5: weighted BM25F over both fields, coordination, the
+    // phrase bonus, then the saturating map into [0, 1).
+    //
+    // Returns the relevance and fills `scratch` with the raw BM25F and coverage.
+    // The scratch object keeps the scan over a large index allocation free.
+    function _rankDocument(doc, weights, phrase, totalWeight, scratch) {
+        scratch.bm25 = 0;
+        scratch.coverage = 0;
+        if (!doc || !weights.length) return 0;
+        const titleTf = doc.titleTf;
+        const termFreq = doc.termFreq;
+        const titleNorm = doc.titleNorm;
+        const descriptionNorm = doc.descriptionNorm;
+        let bm25 = 0;
+        let matchedWeight = 0;
+        for (let i = 0; i < weights.length; i++) {
+            const weight = weights[i].weight;
+            const term = weights[i].term;
+            const inTitle = titleTf ? (titleTf.get(term) || 0) : 0;
+            const inDescription = termFreq ? (termFreq.get(term) || 0) : 0;
+            if (!inTitle && !inDescription) continue;
+            matchedWeight += weight;
+            const tf = (RANK_FIELD_WEIGHT_TITLE * inTitle / titleNorm)
+                + (RANK_FIELD_WEIGHT_DESCRIPTION * inDescription / descriptionNorm);
+            bm25 += weight * (tf * (RANK_K1 + 1)) / (RANK_K1 + tf);
+        }
+        if (bm25 <= 0) return 0;
+        // A document covering one very common word should not ride it past a
+        // document that covers every word of the query.
+        const coverage = totalWeight > 0 ? matchedWeight / totalWeight : 0;
+        let adjusted = bm25 * (RANK_COORD_FLOOR + (1 - RANK_COORD_FLOOR) * coverage);
+        if (phrase) {
+            if (doc.title && doc.title.includes(phrase)) adjusted *= RANK_PHRASE_TITLE;
+            else if (doc.description && doc.description.includes(phrase)) adjusted *= RANK_PHRASE_DESCRIPTION;
+        }
+        scratch.bm25 = bm25;
+        scratch.coverage = coverage;
+        return adjusted / (adjusted + RANK_SATURATION);
+    }
+
+    // Step 6: FinalScore = relevance * a bounded authority multiplier.
+    function _rankFinal(relevance, authority) {
+        const quality = Math.min(Math.max(Number(authority) || 0, 0), 10) / 10;
+        return relevance * (RANK_AUTHORITY_FLOOR + (1 - RANK_AUTHORITY_FLOOR) * quality);
+    }
+
+    // The phrase a document can match: the query words in the order they were
+    // typed, stopwords included, so "university of oxford" can match that exact
+    // title rather than the stopword-stripped "university oxford". A single
+    // word has no phrase; BM25F already scores it.
+    function _rankPhrase(text) {
+        const phrase = _normalize(text || '');
+        return phrase.indexOf(' ') > 0 ? phrase : '';
     }
 
     function _rankEmptyStats() {
-        return { items: [], df: new Map(), avgdl: RANK_FALLBACK_AVGDL, corpusSize: _rankCorpusSize(), size: 0 };
+        return {
+            items: [],
+            df: new Map(),
+            postings: new Map(),
+            domains: [],
+            avgdl: RANK_FALLBACK_AVG_LENGTH,
+            avgTitleLength: RANK_FALLBACK_AVG_LENGTH,
+            corpusSize: _rankCorpusSize(0),
+            size: 0
+        };
     }
 
     // Precomputes, once per index: term frequencies, document frequency,
     // average document length and the static authority of every document.
-    function _prepareIndex(idx) {
+    let _preparedPromise = null;
+
+    // Hands the main thread back so a long preparation does not freeze the
+    // page. Cheap in a browser (one macrotask) and in tests.
+    function _yieldToMain() {
+        return new Promise(function(resolve) { setTimeout(resolve, 0); });
+    }
+
+    async function _prepareIndex(idx) {
         if (_preparedSource === idx && _preparedIndex) return _preparedIndex;
+        if (_preparedSource === idx && _preparedPromise) return _preparedPromise;
+        _preparedSource = idx;
+        _preparedPromise = _buildPreparedIndex(idx);
+        const built = await _preparedPromise;
+        _preparedIndex = built;
+        return built;
+    }
+
+    async function _buildPreparedIndex(idx) {
         const items = [];
         const df = new Map();
+        // term -> document indexes, so a search visits only the documents its
+        // terms occur in instead of the whole corpus.
+        const postings = new Map();
         let totalLength = 0;
+        let totalTitleLength = 0;
         for (let i = 0; i < idx.length; i++) {
+            // Preparing the bundled corpus is about a second of work; yielding
+            // periodically keeps the UI and its spinner responsive instead of
+            // freezing the tab for the whole scan.
+            if ((i & 2047) === 0) await _yieldToMain();
             const entry = idx[i];
             const domain = _normaliseDomain(entry.s || _domainFromUrl(entry.u || ''));
-            const title = entry.t || '';
-            const description = entry.d || '';
-            const { termFreq, length } = _rankTermFreq(title + ' ' + description);
-            termFreq.forEach((count, term) => df.set(term, (df.get(term) || 0) + 1));
-            totalLength += length;
+            const title = _normalize(entry.t || '');
+            const description = _normalize(entry.d || '');
+            const titleField = _rankTokensOf(title);
+            const descriptionField = _rankTokensOf(description);
+            const docIndex = items.length;
+            const addPosting = term => {
+                const list = postings.get(term);
+                if (list) list.push(docIndex);
+                else postings.set(term, [docIndex]);
+            };
+            // Document frequency counts a document once even when a term is in
+            // both fields, and the postings list follows the same rule.
+            titleField.termFreq.forEach((count, term) => {
+                df.set(term, (df.get(term) || 0) + 1);
+                addPosting(term);
+            });
+            descriptionField.termFreq.forEach((count, term) => {
+                if (titleField.termFreq.has(term)) return;
+                df.set(term, (df.get(term) || 0) + 1);
+                addPosting(term);
+            });
+            totalTitleLength += titleField.length;
+            totalLength += descriptionField.length;
             items.push({
                 entry,
-                title: _normalize(title),
-                description: _normalize(description),
-                termFreq,
-                length,
+                title,
+                description,
+                titleTf: titleField.termFreq,
+                termFreq: descriptionField.termFreq,
+                titleLength: titleField.length,
+                length: descriptionField.length,
                 domain,
                 authority: _authorityFromEntry(entry, domain)
             });
         }
         const size = items.length;
-        _preparedIndex = {
+        const avgdl = size ? Math.max(totalLength / size, RANK_MIN_AVG_LENGTH) : RANK_FALLBACK_AVG_LENGTH;
+        const avgTitleLength = size
+            ? Math.max(totalTitleLength / size, RANK_MIN_AVG_LENGTH)
+            : RANK_MIN_AVG_LENGTH;
+        // The length norms need the averages, so they are filled in a second
+        // pass rather than during the first one.
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            item.titleNorm = _rankFieldNorm(item.titleLength, avgTitleLength, RANK_B_TITLE);
+            item.descriptionNorm = _rankFieldNorm(item.length, avgdl, RANK_B_DESCRIPTION);
+        }
+        // Sorted unique hosts, used by site: autocomplete.
+        const domainSet = new Set();
+        for (let i = 0; i < items.length; i++) domainSet.add(items[i].domain);
+
+        return {
             items,
             df,
-            avgdl: size ? Math.max(totalLength / size, RANK_MIN_AVGDL) : RANK_FALLBACK_AVGDL,
-            corpusSize: _rankCorpusSize(),
+            postings,
+            domains: Array.from(domainSet).sort(),
+            avgdl,
+            avgTitleLength,
+            corpusSize: _rankCorpusSize(size),
             size
         };
-        _preparedSource = idx;
-        return _preparedIndex;
     }
 
-    function _rankStats() {
+    async function _rankStats() {
         if (Array.isArray(_indexData) && _indexData.length) return _prepareIndex(_indexData);
         return _rankEmptyStats();
     }
@@ -904,18 +1239,33 @@
     // Scores a result that is not in the bundled index (live Wikipedia,
     // official sites, referenced web links) with the same hybrid formula so
     // every result type stays comparable.
-    function _scoreResult(title, description, domain, weights, stats) {
-        const { termFreq, length } = _rankTermFreq(title + ' ' + description);
-        const bm25 = _rankBM25(weights, termFreq, length, stats.avgdl);
+    // Shapes a live result (Wikipedia article, official site, cited link) with
+    // the same fields and norms as an index document, then scores it with the
+    // identical function. Nothing here is source specific.
+    function _scoreResult(title, description, domain, weights, stats, phrase) {
+        const titleField = _rankFieldTf(title || '');
+        const descriptionField = _rankFieldTf(description || '');
+        const doc = {
+            title: _normalize(title || ''),
+            description: _normalize(description || ''),
+            titleTf: titleField.termFreq,
+            termFreq: descriptionField.termFreq,
+            titleNorm: _rankFieldNorm(titleField.length, stats.avgTitleLength, RANK_B_TITLE),
+            descriptionNorm: _rankFieldNorm(descriptionField.length, stats.avgdl, RANK_B_DESCRIPTION)
+        };
+        const scratch = { bm25: 0, coverage: 0 };
+        const relevance = _rankDocument(doc, weights, phrase, _rankWeightTotal(weights), scratch);
         const authority = _authorityForDomain(domain);
         return {
-            score: _rankFinal(bm25, authority),
-            bm25,
+            score: _rankFinal(relevance, authority),
+            relevance,
+            coverage: scratch.coverage,
+            bm25: scratch.bm25,
             authority
         };
     }
 
-    function _mapIndexEntry(item, score, bm25) {
+    function _mapIndexEntry(item, score, relevance, bm25, coverage) {
         const e = item.entry;
         const url = cleanTracking(e.u || '');
         const domain = item.domain;
@@ -930,6 +1280,8 @@
             sourceLabel: 'Gateway Index',
             resultType: domain.endsWith('wikipedia.org') ? 'wiki' : 'web',
             score,
+            relevance,
+            coverage,
             bm25,
             authority: item.authority,
             domain,
@@ -942,27 +1294,80 @@
         const idx = _indexData;
         if (!Array.isArray(idx) || !idx.length) return [];
 
+        // site: filters are removed before tokenisation, so the operator never
+        // becomes a search term and the filter runs before scoring.
+        const plan = _parseSiteFilters(term);
         // Query terms are the union of the raw query and the parsed subject
-        // (e.g. "who founded google" -> "google"), scored in one BM25 pass so
+        // (e.g. "who founded google" -> "google"), scored in one BM25F pass so
         // the terms of a single query are never split across two runs.
-        const terms = _rankQueryTerms(term, extraTerm);
+        const terms = _rankQueryTerms(plan.text, extraTerm);
         if (!terms.length) return [];
 
-        const stats = _prepareIndex(idx);
+        const stats = await _prepareIndex(idx);
         const weights = _rankWeights(terms, stats);
-        const avgdl = stats.avgdl;
+        const phrase = _rankPhrase(plan.text);
+        const totalWeight = _rankWeightTotal(weights);
+        const sites = plan.sites;
+        const excludedSites = plan.excludedSites;
+        const excludedTerms = plan.excludedTerms;
+        const phrases = plan.phrases;
         const items = stats.items;
-        const matched = [];
+        const postings = stats.postings;
 
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const bm25 = _rankBM25(weights, item.termFreq, item.length, avgdl);
-            if (bm25 <= 0) continue;
-            matched.push(_mapIndexEntry(item, _rankFinal(bm25, item.authority), bm25));
+        // Only documents the query terms actually occur in are scored, so a
+        // rich per document formula stays cheap on a large index.
+        const candidates = new Set();
+        for (let i = 0; i < weights.length; i++) {
+            const list = postings.get(weights[i].term);
+            if (!list) continue;
+            for (let j = 0; j < list.length; j++) candidates.add(list[j]);
         }
 
+        // The scan keeps only a document index and a score per candidate. On a
+        // very large index a common query can match hundreds of thousands of
+        // pages, so shaping a full result object (URL cleaning included) for
+        // every match would dominate the search. Only the survivors below are
+        // mapped, which makes the cost independent of how many pages matched.
+        const scratch = { bm25: 0, coverage: 0 };
+        const buffer = [];
+        for (const index of candidates) {
+            const item = items[index];
+            if (sites.length && !_siteAllows(item.domain, item.entry.u, sites)) continue;
+            if (excludedSites.length && _siteAllows(item.domain, item.entry.u, excludedSites)) continue;
+            if (excludedTerms.length && _itemHasTerm(item, excludedTerms)) continue;
+            if (phrases.length && !_matchesPhrases(item.title, item.description, phrases)) continue;
+            const relevance = _rankDocument(item, weights, phrase, totalWeight, scratch);
+            if (relevance <= 0) continue;
+            buffer.push({ i: index, score: _rankFinal(relevance, item.authority) });
+            if (buffer.length >= MAX_INDEX_RESULTS * 4) _trimToBest(buffer, MAX_INDEX_RESULTS);
+        }
+        _trimToBest(buffer, MAX_INDEX_RESULTS);
+
+        const matched = [];
+        for (let k = 0; k < buffer.length; k++) {
+            const item = items[buffer[k].i];
+            // Recomputing for at most MAX_INDEX_RESULTS survivors is cheaper
+            // than carrying BM25F and coverage through the whole scan.
+            const relevance = _rankDocument(item, weights, phrase, totalWeight, scratch);
+            matched.push(_mapIndexEntry(
+                item,
+                _rankFinal(relevance, item.authority),
+                relevance,
+                scratch.bm25,
+                scratch.coverage
+            ));
+        }
         matched.sort((a, b) => b.score - a.score || String(a.title).localeCompare(String(b.title)));
-        return matched.slice(0, MAX_INDEX_RESULTS);
+        return matched;
+    }
+
+    // Keeps the best `keep` entries sorted by score, with the earlier document
+    // index breaking ties. Numbers only: localeCompare in a trim that runs
+    // repeatedly during a large scan is far too slow.
+    function _trimToBest(list, keep) {
+        list.sort((a, b) => b.score - a.score || a.i - b.i);
+        if (list.length > keep) list.length = keep;
+        return list;
     }
 
     function _pageList(data) {
@@ -1261,7 +1666,7 @@
     async function quickWiki(query) {
         const parsed = parseQuickWikiQuery(query);
         if (!parsed.subject || parsed.subject.length < 2) return null;
-        const key = 'quickwiki:' + _wikiLanguage() + ':' + _normalize(parsed.original);
+        const key = 'quickwiki:' + _wikiLanguage() + ':' + _normalize(parsed.text || parsed.original);
         const cached = _cached(key);
         if (cached) return cached;
 
@@ -1368,10 +1773,11 @@
         });
     }
 
-    function _dedupeAndRank(results) {
+    function _dedupeAndRank(results, plan) {
         const byUrl = new Map();
         for (const result of results) {
             if (!result || !result.url) continue;
+            if (plan && !_queryAllowsResult(plan, result)) continue;
             const key = _urlKey(result.url);
             const current = byUrl.get(key);
             const candidateHttps = /^https:/i.test(String(result.url || ''));
@@ -1391,10 +1797,14 @@
         // results instantly (typically <50ms for ~10k entries) before the
         // slower Wikipedia/Wikidata enrichment resolves.
         if (!term) return [];
+        const plan = _parseSiteFilters(term);
+        // A bare "site:example.com" carries no keywords to rank, so there is
+        // nothing to show rather than an unfiltered fallback list.
+        if (!plan.text) return [];
         try {
-            const parsed = parseQuickWikiQuery(term);
+            const parsed = parseQuickWikiQuery(plan.text);
             const results = await searchIndex(term, parsed.subject);
-            return _dedupeAndRank(results);
+            return _dedupeAndRank(results, plan);
         } catch(_) {
             return [];
         }
@@ -1402,22 +1812,32 @@
 
     async function gatewayCrawl(term) {
         if (!term) return [];
+        const plan = _parseSiteFilters(term);
+        if (!plan.text) return [];
         const key = 'full:' + _indexRevision + ':' + _wikiLanguage() + ':' + _normalize(term);
         const cached = _cached(key);
-        if (cached) return _dedupeAndRank(cached);
+        if (cached) return _dedupeAndRank(cached, plan);
 
-        const parsed = parseQuickWikiQuery(term);
+        const parsed = parseQuickWikiQuery(plan.text);
+        // A site: filter that cannot match wikipedia.org makes the live
+        // Wikipedia leg pointless, so it is skipped instead of fetched and
+        // then thrown away.
+        const wikiDomain = _wikiDomain();
+        const allowWiki = !plan.sites.length
+            || plan.sites.some(site => _siteHostMatches(wikiDomain, site));
         try {
             const [indexed, pages] = await Promise.all([
                 searchIndex(term, parsed.subject),
-                _searchWikipedia(parsed.subject, 12)
+                allowWiki ? _searchWikipedia(parsed.subject, 12) : Promise.resolve([])
             ]);
             const results = indexed;
             // Same hybrid formula for every enrichment source, so live
             // Wikipedia, official sites and referenced links compete with the
             // bundled index on identical terms.
-            const rankStats = _rankStats();
-            const weights = _rankWeights(_rankQueryTerms(term, parsed.subject), rankStats);
+            const terms = _rankQueryTerms(plan.text, parsed.subject);
+            const rankStats = await _rankStats();
+            const weights = _rankWeights(terms, rankStats);
+            const phrase = _rankPhrase(plan.text);
 
             for (let i = 0; i < pages.length; i++) {
                 const page = pages[i];
@@ -1427,7 +1847,7 @@
                 // Relevance comes from BM25 over the article's own text; the
                 // old fixed 2000/280 boost is gone. Authority (wikipedia.org
                 // = 10.0) supplies the source prior instead.
-                const rank = _scoreResult(page.title, description, domain, weights, rankStats);
+                const rank = _scoreResult(page.title, description, domain, weights, rankStats, phrase);
                 results.push({
                     title: page.title,
                     url: page.url,
@@ -1438,7 +1858,10 @@
                     source: 'wikipedia-live',
                     sourceLabel: 'Wikipedia',
                     resultType: 'wiki',
-                    score: rank.score - i * 0.01,
+                    // Relative, not absolute: these keep the discovery order
+                    // of equal-scoring live results without changing meaning
+                    // as the corpus size moves the score scale.
+                    score: rank.score * (1 - i * 1e-6),
                     bm25: rank.bm25,
                     authority: rank.authority,
                     domain,
@@ -1460,7 +1883,7 @@
                     const description = 'Official website listed for ' + page.title + '. ' + (page.description || '');
                     // The official site's own domain authority is the signal
                     // here (e.g. playstation.com outranks a random blog).
-                    const rank = _scoreResult(title, description, domain, weights, rankStats);
+                    const rank = _scoreResult(title, description, domain, weights, rankStats, phrase);
                     results.push({
                         title,
                         url,
@@ -1471,7 +1894,7 @@
                         source: 'official-web',
                         sourceLabel: domain,
                         resultType: 'web',
-                        score: rank.score - pageIndex * 0.01 - urlIndex * 0.001,
+                        score: rank.score * (1 - pageIndex * 1e-6 - urlIndex * 1e-7),
                         bm25: rank.bm25,
                         authority: rank.authority,
                         domain,
@@ -1488,7 +1911,7 @@
                     const description = 'Referenced by the Wikipedia article “' + page.title + '”. ' + (page.description || '');
                     // Referenced pages are ranked on their own text and their
                     // own domain authority, not on which article cited them.
-                    const rank = _scoreResult(title, description, domain, weights, rankStats);
+                    const rank = _scoreResult(title, description, domain, weights, rankStats, phrase);
                     const webResult = {
                         title,
                         url,
@@ -1499,7 +1922,7 @@
                         source: 'open-web',
                         sourceLabel: domain,
                         resultType: 'web',
-                        score: rank.score - results.length * 0.001,
+                        score: rank.score * (1 - results.length * 1e-7),
                         bm25: rank.bm25,
                         authority: rank.authority,
                         domain,
@@ -1512,16 +1935,52 @@
                 if (results.filter(item => item.source === 'open-web').length >= MAX_WEB_LINKS) break;
             }
 
-            const ranked = _dedupeAndRank(results);
+            const ranked = _dedupeAndRank(results, plan);
             if (ranked.length) _store(key, ranked);
             return ranked;
         } catch(_) {
-            return _dedupeAndRank(await searchIndex(term, parsed.subject));
+            return _dedupeAndRank(await searchIndex(term, parsed.subject), plan);
         }
+    }
+
+    // Prefix search over the sorted host list that is built with the index.
+    function _matchDomains(prefix) {
+        const prepared = _preparedIndex;
+        if (!prepared || !prepared.domains || !prefix) return [];
+        const domains = prepared.domains;
+        let lo = 0;
+        let hi = domains.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (domains[mid] < prefix) lo = mid + 1;
+            else hi = mid;
+        }
+        const out = [];
+        for (let i = lo; i < domains.length && out.length < 6; i++) {
+            if (domains[i].indexOf(prefix) !== 0) break;
+            out.push(domains[i]);
+        }
+        return out;
     }
 
     async function getSuggestions(term) {
         if (!term || term.length < 2) return [];
+        const plan = _parseSiteFilters(term);
+
+        // A trailing site: completes hosts from this index instead of asking
+        // Wikipedia for article titles: the operator is about the corpus.
+        const sitePrefix = /(^|\s)site:([^\s]*)$/i.exec(term);
+        if (sitePrefix) {
+            const prefix = sitePrefix[2].replace(/^["']/, '').toLowerCase();
+            const rest = term.slice(0, sitePrefix.index).trim();
+            await _indexReady;
+            if (!Array.isArray(_indexData) || !_indexData.length) return [];
+            await _prepareIndex(_indexData);
+            return _matchDomains(prefix).map(host => 'site:' + host + (rest ? ' ' + rest : ''));
+        }
+
+        const text = plan.text;
+        if (!text || text.length < 2) return [];
         const key = 'sug:' + _indexRevision + ':' + _wikiLanguage() + ':' + _normalize(term);
         const cached = _cached(key);
         if (cached) return cached;
@@ -1529,9 +1988,10 @@
         const local = [];
         try {
             await _indexReady;
-            const wanted = _normalize(term);
+            const wanted = _normalize(text);
             if (_indexData) {
-                for (const item of _prepareIndex(_indexData)) {
+                for (const item of (await _prepareIndex(_indexData)).items) {
+                    if (plan.sites.length && !_siteAllows(item.domain, item.entry.u, plan.sites)) continue;
                     if (item.title.startsWith(wanted) || (wanted.length >= 3 && item.title.includes(wanted))) {
                         local.push(item.entry.t);
                         if (local.length >= 5) break;
@@ -1540,13 +2000,16 @@
             }
         } catch(_) {}
 
+        // A site-restricted query must not be answered with Wikipedia titles.
         let remote = [];
-        try {
-            const data = await _fetch(_mediaWikiUrl(_wikiDomain(), {
-                action: 'opensearch', search: term, limit: 7, namespace: 0
-            }), 2200);
-            remote = Array.isArray(data[1]) ? data[1] : [];
-        } catch(_) {}
+        if (!plan.sites.length) {
+            try {
+                const data = await _fetch(_mediaWikiUrl(_wikiDomain(), {
+                    action: 'opensearch', search: text, limit: 7, namespace: 0
+                }), 2200);
+                remote = Array.isArray(data[1]) ? data[1] : [];
+            } catch(_) {}
+        }
 
         const suggestions = _unique(local.concat(remote)).slice(0, 8);
         if (suggestions.length) _store(key, suggestions);
@@ -1809,7 +2272,9 @@
     }
 
     async function gatewayImages(query, options) {
-        const term = String(query || '').trim();
+        // site: is a result operator, not an image subject: search the words.
+        const raw = String(query || '').trim();
+        const term = _parseSiteFilters(raw).text || raw;
         if (!term) return [];
         const opts = options || {};
         const target = opts.target || IMAGE_TUNING.target;
@@ -1839,24 +2304,120 @@
     }
     window.gatewayImages = gatewayImages;
 
+    // One-edit neighbourhood against the index vocabulary: delete, transpose,
+    // replace or insert at each position. That covers the usual typos without
+    // scanning the dictionary, so correction is instant and needs no network.
+    function _oneEditNeighbours(term) {
+        const prepared = _preparedIndex;
+        if (!prepared || !term) return [];
+        const df = prepared.df;
+        const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        const found = new Map();
+        const consider = candidate => {
+            if (!candidate || candidate === term) return;
+            const count = df.get(candidate);
+            if (!count) return;
+            if (count > (found.get(candidate) || 0)) found.set(candidate, count);
+        };
+        for (let i = 0; i < term.length; i++) {
+            consider(term.slice(0, i) + term.slice(i + 1));
+            if (i + 1 < term.length) {
+                consider(term.slice(0, i) + term.charAt(i + 1) + term.charAt(i) + term.slice(i + 2));
+            }
+            const head = term.slice(0, i);
+            const tail = term.slice(i + 1);
+            for (let c = 0; c < alphabet.length; c++) consider(head + alphabet.charAt(c) + tail);
+        }
+        for (let i = 0; i <= term.length; i++) {
+            const head = term.slice(0, i);
+            const tail = term.slice(i);
+            for (let c = 0; c < alphabet.length; c++) consider(head + alphabet.charAt(c) + tail);
+        }
+        // Most frequent candidate wins: a typo usually targets a common word.
+        return Array.from(found.entries()).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+    }
+
+    // Only the words that are absent from the corpus are rewritten, in place,
+    // so stopwords and the user's word order survive the correction.
+    function _localSpellCheck(plan) {
+        const prepared = _preparedIndex;
+        if (!prepared || !plan.text) return null;
+        const words = plan.text.split(/\s+/).filter(Boolean);
+        if (!words.length) return null;
+        let changed = false;
+        const fixed = words.map(word => {
+            const token = _normalize(word);
+            if (!token || token.length < 3 || prepared.df.has(token)) return word;
+            const best = _oneEditNeighbours(token)[0];
+            if (!best) return word;
+            changed = true;
+            return best[0];
+        });
+        return changed ? fixed.join(' ') : null;
+    }
+
     async function spellCheck(term) {
         if (!term) return null;
-        const key = 'spell:' + _wikiLanguage() + ':' + _normalize(term);
+        // Spell check runs on the words, not on the operators.
+        const plan = _parseSiteFilters(term);
+        const text = plan.text;
+        if (!text || text.length < 2) return null;
+        // The loaded index knows this corpus better than any remote service and
+        // needs no request, so it is tried first. Bare keyword queries only:
+        // rewriting an operator query would drop its operator.
+        if (!plan.sites.length && !plan.excludedSites.length
+            && !plan.excludedTerms.length && !plan.phrases.length) {
+            const local = _localSpellCheck(plan);
+            if (local && local !== _normalize(text)) return local;
+        }
+        const key = 'spell:' + _wikiLanguage() + ':' + _normalize(text);
         const cached = _cached(key);
         if (cached) return cached;
 
         try {
             const data = await _fetch(_mediaWikiUrl(_wikiDomain(), {
-                action: 'query', list: 'search', srsearch: term, srlimit: 1
+                action: 'query', list: 'search', srsearch: text, srlimit: 1
             }), 2500);
             const suggestion = data && data.query && data.query.searchinfo && data.query.searchinfo.suggestion || null;
-            if (suggestion && suggestion.toLowerCase() !== term.toLowerCase()) {
+            if (suggestion && suggestion.toLowerCase() !== text.toLowerCase()) {
                 _store(key, suggestion);
                 return suggestion;
             }
             return null;
         } catch(_) { return null; }
     }
+
+    // ==================== SNIPPET HIGHLIGHTING ====================
+    // Deterministic and local: the same normalisation used for ranking decides
+    // which words get marked, so capitalised and accented forms still match.
+    // Everything is escaped here, so callers can drop the HTML straight into
+    // the page.
+    function _escapeHtmlText(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        })[ch]);
+    }
+
+    window.gatewayHighlight = function(text, query) {
+        const plan = _parseQuery(query || '');
+        const terms = new Set(_rankTokens(plan.text));
+        const source = String(text == null ? '' : text);
+        if (!terms.size) return _escapeHtmlText(source);
+        let out = '';
+        let cursor = 0;
+        const wordRe = /[\p{L}\p{N}]+/gu;
+        let match;
+        while ((match = wordRe.exec(source))) {
+            out += _escapeHtmlText(source.slice(cursor, match.index));
+            const word = match[0];
+            out += terms.has(_normalize(word))
+                ? '<mark>' + _escapeHtmlText(word) + '</mark>'
+                : _escapeHtmlText(word);
+            cursor = match.index + word.length;
+        }
+        out += _escapeHtmlText(source.slice(cursor));
+        return out;
+    };
 
     window.gatewayCrawl = gatewayCrawl;
     window.gatewaySearchLocal = gatewaySearchLocal;
@@ -1870,19 +2431,34 @@
     window.gatewayAuthorityScore = function(domain) {
         return _authorityForDomain(domain);
     };
+    window.gatewayParseQuery = function(query) {
+        return _parseSiteFilters(query);
+    };
     window.gatewayRankDebug = async function(query) {
         if (_indexReady) await _indexReady;
-        const stats = _rankStats();
+        const stats = await _rankStats();
+        const plan = _parseSiteFilters(query || '');
+        const terms = _rankQueryTerms(plan.text, null);
         return {
             size: stats.size,
             vocabulary: stats.df.size,
             avgdl: stats.avgdl,
+            avgTitleLength: stats.avgTitleLength,
             corpusSize: stats.corpusSize,
             k1: RANK_K1,
-            b: RANK_B,
-            bm25Weight: RANK_BM25_WEIGHT,
-            authorityWeight: RANK_AUTHORITY_WEIGHT,
-            terms: _rankWeights(_rankQueryTerms(query || '', null), stats)
+            bTitle: RANK_B_TITLE,
+            bDescription: RANK_B_DESCRIPTION,
+            titleWeight: RANK_FIELD_WEIGHT_TITLE,
+            descriptionWeight: RANK_FIELD_WEIGHT_DESCRIPTION,
+            idfSharpness: RANK_IDF_SHARPNESS,
+            idfReference: RANK_IDF_REFERENCE,
+            coordinationFloor: RANK_COORD_FLOOR,
+            saturation: RANK_SATURATION,
+            authorityFloor: RANK_AUTHORITY_FLOOR,
+            query: plan.text,
+            sites: plan.sites,
+            phrase: _rankPhrase(plan.text),
+            terms: _rankWeights(terms, stats)
         };
     };
 })();

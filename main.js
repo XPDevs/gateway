@@ -1,7 +1,6 @@
 /**
  * Gateway | Main Application
  * XPDevs | https://xpdevs.github.io
- * Copyright (c) 2024–2026 XPDevs — Licensed under XPSL v1.2
  */
 (function() {
     'use strict';
@@ -385,7 +384,19 @@
                 _setIndexStatus('The index engine is not ready yet.');
                 return;
             }
-            window.gatewaySetIndex(data);
+            // Merge keeps the corpus already loaded and layers the upload on
+            // top; replace (the default) swaps it out entirely.
+            const mergeToggle = $('indexMergeToggle');
+            const mode = mergeToggle && mergeToggle.checked ? 'merge' : 'replace';
+            try {
+                const pending = window.gatewaySetIndex(data, { mode });
+                if (pending && typeof pending.catch === 'function') {
+                    pending.catch(() => _setIndexStatus('That index could not be loaded.'));
+                }
+            } catch(_) {
+                _setIndexStatus('That index could not be loaded.');
+                return;
+            }
             try { localStorage.setItem(INDEX_MARKER, '1'); } catch(_) {}
             _uploadedIndexActive = true;
             _syncIndexClearButton();
@@ -1363,6 +1374,11 @@
         const urlDisplay = _escapeHtml(_fmtUrl(r.url));
         const domain = _displayDomain(r.url || '') || r.domain || '';
         const source = r.sourceLabel || (r.resultType === 'wiki' ? _t('wikipedia') : 'Open web');
+        // gatewayHighlight escapes its input and marks the query words, so it
+        // stands in for _escapeHtml here rather than wrapping it.
+        const highlight = typeof window.gatewayHighlight === 'function'
+            ? window.gatewayHighlight
+            : function(value) { return _escapeHtml(value); };
         return `
             <div class="result-item">
                 <div class="result-item-url">
@@ -1370,8 +1386,8 @@
                     <span>${urlDisplay}</span>
                     <span class="result-source">${_escapeHtml(source)}</span>
                 </div>
-                <a class="result-item-title" href="${_escapeHtml(url)}" target="_self">${_escapeHtml(r.title)}</a>
-                <div class="result-item-desc">${_escapeHtml(r.description || '')}</div>
+                <a class="result-item-title" href="${_escapeHtml(url)}" target="_self">${highlight(r.title, lastQuery)}</a>
+                <div class="result-item-desc">${highlight(r.description || '', lastQuery)}</div>
             </div>`;
     }
 

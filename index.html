@@ -109,6 +109,16 @@
                 <label>Upload Index</label>
                 <input type="file" id="indexUpload" accept=".json" onchange="handleIndexUpload(event)" class="pill">
             </div>
+            <!-- Merge keeps the pages already indexed and adds the upload on
+                 top, so a topical or per-site index can sit beside the bundled
+                 corpus instead of replacing it. Off means replace, as before. -->
+            <div class="settings-row">
+                <label>Add to current index</label>
+                <label class="toggle">
+                    <input type="checkbox" id="indexMergeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
             <!-- A custom corpus has to be removable again: without this a bad
                  or outdated upload stays live for good. The button is enabled
                  only while an uploaded index is actually in use. -->
